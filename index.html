@@ -152,6 +152,45 @@
             opacity: 0.9;
         }
 
+        /* QR Code Styles */
+        .qr-container {
+            text-align: center;
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        #qrDisplay {
+            max-width: 150px;
+            display: none;
+            margin: 0 auto 10px;
+        }
+
+        .qr-placeholder {
+            color: #aaa;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .btn-upload {
+            border: 1px solid #ddd;
+            color: #666;
+            background-color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -283,6 +322,18 @@
                     <h4>其他認證 / 備註</h4>
                     <div class="form-group">
                         <input type="text" id="otherInfo" placeholder="可自行輸入其他備註內容">
+                    </div>
+                </div>
+
+                <div class="profile-group">
+                    <h4>報到專用 QR Code</h4>
+                    <div class="qr-container">
+                        <img id="qrDisplay" src="" alt="QR Code">
+                        <div id="qrPlaceholder" class="qr-placeholder">尚未上傳 QR Code</div>
+                        <div class="upload-btn-wrapper">
+                            <button class="btn-upload">上傳/更換圖片</button>
+                            <input type="file" id="qrInput" accept="image/*" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
+                        </div>
                     </div>
                 </div>
 
@@ -418,6 +469,12 @@
         // 其他
         const otherInfo = document.getElementById('otherInfo');
         
+        // QR Code
+        const qrInput = document.getElementById('qrInput');
+        const qrDisplay = document.getElementById('qrDisplay');
+        const qrPlaceholder = document.getElementById('qrPlaceholder');
+        let qrBase64 = '';
+        
         const saveProfileBtn = document.getElementById('saveProfileBtn');
 
         let currentUser = null;
@@ -458,6 +515,21 @@
                 }
             });
 
+            // 處理 QR Code 上傳預覽
+            qrInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        qrBase64 = event.target.result;
+                        qrDisplay.src = qrBase64;
+                        qrDisplay.style.display = 'block';
+                        qrPlaceholder.style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
             // 登入
             loginBtn.addEventListener('click', async () => {
                 try {
@@ -482,7 +554,8 @@
                     radSpecialistId: radSpecialistId.value,
                     neuroMemberId: neuroMemberId.value,
                     neuroSpecialistId: neuroSpecialistId.value,
-                    otherInfo: otherInfo.value
+                    otherInfo: otherInfo.value,
+                    qrCode: qrBase64
                 };
                 
                 try {
@@ -516,6 +589,16 @@
                     neuroSpecialistId.value = data.neuroSpecialistId || '';
                     otherInfo.value = data.otherInfo || '';
                     
+                    if (data.qrCode) {
+                        qrBase64 = data.qrCode;
+                        qrDisplay.src = qrBase64;
+                        qrDisplay.style.display = 'block';
+                        qrPlaceholder.style.display = 'none';
+                    } else {
+                        qrDisplay.style.display = 'none';
+                        qrPlaceholder.style.display = 'block';
+                    }
+                    
                     // 寫入 localStorage 供其他報告工具讀取
                     localStorage.setItem('radiology_user_profile', JSON.stringify(data));
                 } else {
@@ -533,6 +616,10 @@
             neuroMemberId.value = '';
             neuroSpecialistId.value = '';
             otherInfo.value = '';
+            qrBase64 = '';
+            qrDisplay.src = '';
+            qrDisplay.style.display = 'none';
+            qrPlaceholder.style.display = 'block';
         }
     </script>
 </body>
