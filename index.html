@@ -98,16 +98,116 @@
             font-size: 0.85rem;
             border-top: 1px solid #eee;
         }
+
+        .btn {
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .user-profile-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 2px solid var(--primary-color);
+        }
+
+        .user-profile-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        #saveProfileBtn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        #saveProfileBtn:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
 
-    <header>
+    <header style="position: relative;">
         <h1>Radiology Report</h1>
         <p>Automated Reporting Tools & Utilities</p>
+        <div id="authContainer" style="position: absolute; top: 20px; right: 20px;">
+            <button id="loginBtn" class="btn">Google 登入</button>
+            <div id="userInfo" style="display: none; text-align: right; color: white;">
+                <span id="userName" style="font-size: 0.9rem; margin-right: 10px; font-weight: bold;"></span>
+                <button id="logoutBtn" class="btn">登出</button>
+            </div>
+        </div>
     </header>
 
     <main>
+        <div class="user-profile-section" id="userProfileSection" style="display: none;">
+            <h3>個人資料設定 (自動帶入報告)</h3>
+            <div class="form-group">
+                <label>放射線科專科執照</label>
+                <input type="text" id="licenseInput" placeholder="例如: 放射字第XXXX號">
+            </div>
+            <div class="form-group">
+                <label>會員編號</label>
+                <input type="text" id="memberIdInput" placeholder="輸入會員編號">
+            </div>
+            <div class="form-group">
+                <label>專科證號</label>
+                <input type="text" id="specialistIdInput" placeholder="輸入專科證號">
+            </div>
+            <div class="form-group">
+                <label>神經放射線專科證號</label>
+                <input type="text" id="neuroInput" placeholder="輸入神經放射線專科證號">
+            </div>
+            <div class="form-group">
+                <label>介入放射線學專科證號</label>
+                <input type="text" id="interventionalInput" placeholder="輸入介入放射線學專科證號">
+            </div>
+            <div class="form-group">
+                <label>其他證照</label>
+                <input type="text" id="otherLicenseInput" placeholder="輸入其他證照名稱與字號">
+            </div>
+            <button id="saveProfileBtn">儲存資料</button>
+        </div>
+
         <h2 class="section-title">Reporting Tools</h2>
         <div class="grid-container">
             
@@ -187,5 +287,150 @@
         &copy; 2025 Radiology Report Hub. Hosted on GitHub Pages.
     </footer>
 
+    <script type="module">
+        // 匯入 Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+        // ==========================================
+        // TODO: 請在這裡貼上你自己的 Firebase Config
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 避免未填寫 Config 時直接報錯，這裡加個簡單的判斷
+        let app, auth, db, provider;
+        const isConfigValid = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+        if (isConfigValid) {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            provider = new GoogleAuthProvider();
+        }
+
+        // DOM 元素
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
+        const userProfileSection = document.getElementById('userProfileSection');
+        const licenseInput = document.getElementById('licenseInput');
+        const memberIdInput = document.getElementById('memberIdInput');
+        const specialistIdInput = document.getElementById('specialistIdInput');
+        const neuroInput = document.getElementById('neuroInput');
+        const interventionalInput = document.getElementById('interventionalInput');
+        const otherLicenseInput = document.getElementById('otherLicenseInput');
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+        let currentUser = null;
+
+        if (isConfigValid) {
+            // 監聽登入狀態
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    loginBtn.style.display = 'none';
+                    userInfo.style.display = 'block';
+                    userName.textContent = user.displayName;
+                    userProfileSection.style.display = 'block';
+                    await loadUserData(user.uid);
+                } else {
+                    currentUser = null;
+                    loginBtn.style.display = 'inline-block';
+                    userInfo.style.display = 'none';
+                    userProfileSection.style.display = 'none';
+                    clearProfileInputs();
+                    localStorage.removeItem('radiology_user_profile');
+                }
+            });
+
+            // 登入
+            loginBtn.addEventListener('click', async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.error("登入失敗:", error);
+                    alert("登入失敗：" + error.message);
+                }
+            });
+
+            // 登出
+            logoutBtn.addEventListener('click', () => {
+                signOut(auth);
+            });
+
+            // 儲存資料到 Firestore
+            saveProfileBtn.addEventListener('click', async () => {
+                if (!currentUser) return;
+                
+                const userData = {
+                    license: licenseInput.value,
+                    memberId: memberIdInput.value,
+                    specialistId: specialistIdInput.value,
+                    neuro: neuroInput.value,
+                    interventional: interventionalInput.value,
+                    otherLicense: otherLicenseInput.value
+                };
+                
+                try {
+                    saveProfileBtn.textContent = '儲存中...';
+                    await setDoc(doc(db, "users", currentUser.uid), userData);
+                    // 同步寫入 localStorage 給其他頁面使用
+                    localStorage.setItem('radiology_user_profile', JSON.stringify(userData));
+                    alert("資料儲存成功！");
+                } catch (error) {
+                    console.error("儲存失敗:", error);
+                    alert("儲存失敗，請確認 Firebase Firestore 權限設定。");
+                } finally {
+                    saveProfileBtn.textContent = '儲存資料';
+                }
+            });
+        } else {
+            loginBtn.addEventListener('click', () => {
+                alert("請先在 index.html 原始碼中填寫您的 Firebase Config 才能使用登入功能！");
+            });
+        }
+
+        // 從 Firestore 讀取資料
+        async function loadUserData(uid) {
+            try {
+                const docSnap = await getDoc(doc(db, "users", uid));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    licenseInput.value = data.license || '';
+                    memberIdInput.value = data.memberId || '';
+                    specialistIdInput.value = data.specialistId || '';
+                    neuroInput.value = data.neuro || '';
+                    interventionalInput.value = data.interventional || '';
+                    otherLicenseInput.value = data.otherLicense || '';
+                    
+                    // 寫入 localStorage 供其他報告工具讀取
+                    localStorage.setItem('radiology_user_profile', JSON.stringify(data));
+                } else {
+                    clearProfileInputs();
+                    localStorage.removeItem('radiology_user_profile');
+                }
+            } catch (error) {
+                console.error("讀取資料失敗:", error);
+            }
+        }
+
+        function clearProfileInputs() {
+            licenseInput.value = '';
+            memberIdInput.value = '';
+            specialistIdInput.value = '';
+            neuroInput.value = '';
+            interventionalInput.value = '';
+            otherLicenseInput.value = '';
+        }
+    </script>
 </body>
 </html>
