@@ -162,6 +162,33 @@
         #saveProfileBtn:hover {
             opacity: 0.9;
         }
+
+        .profile-group {
+            border: 1px solid #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+        }
+
+        .profile-group h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.05rem;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -180,31 +207,43 @@
 
     <main>
         <div class="user-profile-section" id="userProfileSection" style="display: none;">
-            <h3>個人資料設定 (自動帶入報告)</h3>
-            <div class="form-group">
-                <label>放射線科專科執照</label>
-                <input type="text" id="licenseInput" placeholder="例如: 放射字第XXXX號">
+            <h3>個人專業認證 (自動帶入報告)</h3>
+            
+            <div class="profile-group">
+                <h4>放射線專科證書</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>會員編號</label>
+                        <input type="text" id="radMemberId" placeholder="例如: 1631">
+                    </div>
+                    <div class="form-group">
+                        <label>專科證號</label>
+                        <input type="text" id="radSpecialistId" placeholder="例如: 1321">
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>會員編號</label>
-                <input type="text" id="memberIdInput" placeholder="輸入會員編號">
+
+            <div class="profile-group">
+                <h4>神經放射線專科證書</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>會員編號</label>
+                        <input type="text" id="neuroMemberId" placeholder="例如: 597">
+                    </div>
+                    <div class="form-group">
+                        <label>專科證號</label>
+                        <input type="text" id="neuroSpecialistId" placeholder="例如: 518">
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>專科證號</label>
-                <input type="text" id="specialistIdInput" placeholder="輸入專科證號">
+
+            <div class="profile-group">
+                <h4>其他認證 / 備註</h4>
+                <div class="form-group">
+                    <input type="text" id="otherInfo" placeholder="可自行輸入其他證照名稱與字號">
+                </div>
             </div>
-            <div class="form-group">
-                <label>神經放射線專科證號</label>
-                <input type="text" id="neuroInput" placeholder="輸入神經放射線專科證號">
-            </div>
-            <div class="form-group">
-                <label>介入放射線學專科證號</label>
-                <input type="text" id="interventionalInput" placeholder="輸入介入放射線學專科證號">
-            </div>
-            <div class="form-group">
-                <label>其他證照</label>
-                <input type="text" id="otherLicenseInput" placeholder="輸入其他證照名稱與字號">
-            </div>
+
             <button id="saveProfileBtn">儲存資料</button>
         </div>
 
@@ -323,12 +362,18 @@
         const userInfo = document.getElementById('userInfo');
         const userName = document.getElementById('userName');
         const userProfileSection = document.getElementById('userProfileSection');
-        const licenseInput = document.getElementById('licenseInput');
-        const memberIdInput = document.getElementById('memberIdInput');
-        const specialistIdInput = document.getElementById('specialistIdInput');
-        const neuroInput = document.getElementById('neuroInput');
-        const interventionalInput = document.getElementById('interventionalInput');
-        const otherLicenseInput = document.getElementById('otherLicenseInput');
+        
+        // 放射線專科
+        const radMemberId = document.getElementById('radMemberId');
+        const radSpecialistId = document.getElementById('radSpecialistId');
+        
+        // 神經放射線專科
+        const neuroMemberId = document.getElementById('neuroMemberId');
+        const neuroSpecialistId = document.getElementById('neuroSpecialistId');
+        
+        // 其他
+        const otherInfo = document.getElementById('otherInfo');
+        
         const saveProfileBtn = document.getElementById('saveProfileBtn');
 
         let currentUser = null;
@@ -373,12 +418,11 @@
                 if (!currentUser) return;
                 
                 const userData = {
-                    license: licenseInput.value,
-                    memberId: memberIdInput.value,
-                    specialistId: specialistIdInput.value,
-                    neuro: neuroInput.value,
-                    interventional: interventionalInput.value,
-                    otherLicense: otherLicenseInput.value
+                    radMemberId: radMemberId.value,
+                    radSpecialistId: radSpecialistId.value,
+                    neuroMemberId: neuroMemberId.value,
+                    neuroSpecialistId: neuroSpecialistId.value,
+                    otherInfo: otherInfo.value
                 };
                 
                 try {
@@ -406,12 +450,11 @@
                 const docSnap = await getDoc(doc(db, "users", uid));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    licenseInput.value = data.license || '';
-                    memberIdInput.value = data.memberId || '';
-                    specialistIdInput.value = data.specialistId || '';
-                    neuroInput.value = data.neuro || '';
-                    interventionalInput.value = data.interventional || '';
-                    otherLicenseInput.value = data.otherLicense || '';
+                    radMemberId.value = data.radMemberId || '';
+                    radSpecialistId.value = data.radSpecialistId || '';
+                    neuroMemberId.value = data.neuroMemberId || '';
+                    neuroSpecialistId.value = data.neuroSpecialistId || '';
+                    otherInfo.value = data.otherInfo || '';
                     
                     // 寫入 localStorage 供其他報告工具讀取
                     localStorage.setItem('radiology_user_profile', JSON.stringify(data));
@@ -425,12 +468,11 @@
         }
 
         function clearProfileInputs() {
-            licenseInput.value = '';
-            memberIdInput.value = '';
-            specialistIdInput.value = '';
-            neuroInput.value = '';
-            interventionalInput.value = '';
-            otherLicenseInput.value = '';
+            radMemberId.value = '';
+            radSpecialistId.value = '';
+            neuroMemberId.value = '';
+            neuroSpecialistId.value = '';
+            otherInfo.value = '';
         }
     </script>
 </body>
