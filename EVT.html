@@ -47,7 +47,7 @@
         }
         .ctp-item input { width: 60px; text-align: center; }
 
-        input[name="Hypo_index"] {
+        input[name="Hypo_index"], input[name="Mismatch_vol"], input[name="Mismatch_ratio"] {
             background-color: #e8f5e9;
             border-color: #a5d6a7;
             color: #2e7d32;
@@ -75,7 +75,7 @@
 
 <div class="container">
     <a href="index.html" class="back-link">← Back to Home</a>
-    <h1>Endovascular Thrombectomy Reporting Platform <span style="font-size:0.6em; color:#888; font-weight:normal;">(Updated: 2026/05/05)</span></h1>
+    <h1>Endovascular Thrombectomy Reporting Platform <span style="font-size:0.6em; color:#888; font-weight:normal;">(Updated: 2026/05/15)</span></h1>
 
     <form name="form">
         
@@ -102,7 +102,7 @@
                 <div>
                     <b>Anterior Circulation:</b><br>
                     <div class="device-group">
-                        <label><input name="Anterior_ASPECTS" type="checkbox" value="Caudate neucleus">Caudate</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="Caudate nucleus">Caudate</label>
                         <label><input name="Anterior_ASPECTS" type="checkbox" value="Lentiform nucleus">Lentiform</label>
                         <label><input name="Anterior_ASPECTS" type="checkbox" value="Internal capsule">Int. Capsule</label>
                         <label><input name="Anterior_ASPECTS" type="checkbox" value="Insula">Insula</label>
@@ -159,7 +159,7 @@
                 <div class="ctp-item">Tmax &gt; 8s: <input name="Tmax8" type="text"> ml</div>
                 <div class="ctp-item">Tmax &gt; 6s (Penumbra): <input name="Tmax6" type="text"> ml</div>
                 <div class="ctp-item">Tmax &gt; 4s: <input name="Tmax4" type="text"> ml</div>
-                <div class="ctp-item" style="border: 1px solid #a5d6a7; background: #e8f5e9;">
+                <div class="ctp-item">
                     Hypo Index: <input name="Hypo_index" type="text" placeholder="Auto" readonly>
                 </div>
             </div>
@@ -179,6 +179,16 @@
                 <div class="ctp-item">CBV &lt; 42%: <input name="CBV42" type="text"> ml</div>
                 <div class="ctp-item">
                     rCBV Index: <input name="rCBV_index" type="text">
+                </div>
+            </div>
+
+            <div style="font-weight:bold; color:#2c3e50; margin-bottom:5px;">4. Mismatch (Auto-calculated)</div>
+            <div class="ctp-grid">
+                <div class="ctp-item" style="border: 1px solid #bbdefb; background: #e3f2fd;">
+                    Mismatch Vol: <input name="Mismatch_vol" type="text" placeholder="Auto" readonly> ml
+                </div>
+                <div class="ctp-item" style="border: 1px solid #bbdefb; background: #e3f2fd;">
+                    Mismatch Ratio: <input name="Mismatch_ratio" type="text" placeholder="Auto" readonly>
                 </div>
             </div>
         </div>
@@ -236,9 +246,9 @@
             <div class="sub-label">Guiding Catheter</div>
             <div class="device-group">
                 <label><input name="Guiding" type="radio" value="Neuron 088" checked>Neuron 088</label>
-                <label><input name="Guiding" type="radio" value="AXS Infinity LS">AXS Infinity LS</label>
-                <label><input name="Guiding" type="radio" value="AXS Infinity LS Plus">AXS Infinity LS Plus</label>
-                <label><input name="Guiding" type="radio" value="Cerebase DA">Cerebase DA</label>
+                <label><input name="Guiding" type="radio" value="AXS Infinity LS 088">AXS Infinity LS 088</label>
+                <label><input name="Guiding" type="radio" value="AXS Infinity LS 091">AXS Infinity LS 091</label>
+                <label><input name="Guiding" type="radio" value="Cerebase DA 090">Cerebase DA 090</label>
                 <label><input name="Guiding" type="radio" value="Shuttle">Shuttle</label>
                 <label><input name="Guiding" type="radio" value="Cello balloon guiding catheter">Cello Balloon</label>
                 <label><input name="Guiding" type="radio" value="Fullblock balloon guiding catheter">Fullblock Balloon</label>
@@ -272,8 +282,8 @@
 
             <div class="sub-label">Microguidewire</div>
             <div class="device-group">
-                <label><input name="Microguidewire" type="checkbox" value="Transend EX 14 Soft Tip">Transend EX 14 Soft</label>
-                <label><input name="Microguidewire" type="checkbox" value="Transend EX 14 Soft Tip">Transend EX 14 Floppy</label>
+                <label><input name="Microguidewire" type="checkbox" value="Asahi Chikai 10">Chikai 10</label>
+                <label><input name="Microguidewire" type="checkbox" value="X-pedian 10">X-pedian 10</label>
                 <label><input name="Microguidewire" type="checkbox" value="Traxcess 14">Traxcess 14</label>
                 <label><input name="Microguidewire" type="checkbox" value="Asahi Chikai 14">Chikai 14</label>
                 <label><input name="Microguidewire" type="checkbox" value="Synchro">Synchro</label>
@@ -424,26 +434,68 @@
         initAutoCalcs();
     });
     
-    // 自動計算功能
+    // 自動計算功能優化
     function initAutoCalcs() {
-        // Hypoperfusion Index = Tmax10 / Tmax6
-        const tmax10Input = document.getElementsByName('Tmax10')[0];
-        const tmax6Input = document.getElementsByName('Tmax6')[0];
-        const hypoIndexInput = document.getElementsByName('Hypo_index')[0];
+        const f = document.form;
+        const inputs = ['Tmax10', 'Tmax8', 'Tmax6', 'Tmax4', 'CBF20', 'CBF30', 'CBF34', 'CBF38'];
 
-        function calcHI() {
-            const v10 = parseFloat(tmax10Input.value);
-            const v6 = parseFloat(tmax6Input.value);
-            
+        function updateAll() {
+            const v10 = parseFloat(f.Tmax10.value);
+            const v8 = parseFloat(f.Tmax8.value);
+            const v6 = parseFloat(f.Tmax6.value);
+            const v4 = parseFloat(f.Tmax4.value);
+            const cbf30 = parseFloat(f.CBF30.value);
+
+            // 1. Hypo Index
             if (!isNaN(v10) && !isNaN(v6) && v6 !== 0) {
-                // 保留小數點後 1 位 (RAPID 常見格式)
-                hypoIndexInput.value = (v10 / v6).toFixed(1);
+                f.Hypo_index.value = (v10 / v6).toFixed(1);
+            } else {
+                f.Hypo_index.value = "";
+            }
+
+            // 2. Mismatch Vol & Ratio
+            if (!isNaN(v6) && !isNaN(cbf30)) {
+                const vol = v6 - cbf30;
+                if (f.Mismatch_vol) f.Mismatch_vol.value = vol.toFixed(0);
+                
+                if (f.Mismatch_ratio) {
+                    if (cbf30 === 0) {
+                        f.Mismatch_ratio.value = v6 > 0 ? "Infinite" : "0";
+                    } else {
+                        f.Mismatch_ratio.value = (v6 / cbf30).toFixed(2);
+                    }
+                }
+            }
+            
+            // 3. 數據合理性檢查 (Tmax 遞減驗證)
+            const fields = [f.Tmax10, f.Tmax8, f.Tmax6, f.Tmax4];
+            for (let i = 0; i < fields.length - 1; i++) {
+                const cur = parseFloat(fields[i].value);
+                const next = parseFloat(fields[i+1].value);
+                if (!isNaN(cur) && !isNaN(next) && cur > next) {
+                    fields[i].style.backgroundColor = "#ffebee";
+                } else {
+                    fields[i].style.backgroundColor = "";
+                }
             }
         }
 
-        // 當輸入改變時即時觸發
-        tmax10Input.addEventListener('input', calcHI);
-        tmax6Input.addEventListener('input', calcHI);
+        inputs.forEach(name => {
+            if (f[name]) f[name].addEventListener('input', updateAll);
+        });
+        
+        // 4. 智能醫材聯動勾選
+        const syncTechnique = () => {
+            const hasAspiration = Array.from(f.Aspiration_tube).some(cb => cb.checked);
+            const hasStent = Array.from(f.Stent).some(cb => cb.checked);
+            
+            if (hasAspiration && hasStent) f.Technique[2].checked = true;
+            else if (hasAspiration) f.Technique[0].checked = true;
+            else if (hasStent) f.Technique[1].checked = true;
+        };
+        
+        f.Aspiration_tube.forEach(cb => cb.addEventListener('change', syncTechnique));
+        f.Stent.forEach(cb => cb.addEventListener('change', syncTechnique));
     }
 
     function refresh() {
@@ -457,161 +509,151 @@
         navigator.clipboard.writeText(copyText.value);
     }
 
-    // 此函式邏輯完全未更動，確保產出格式與原本一致
     function activeFunction() {
-        var IV_Medication = document.form.IV_Medication;
-        var Report_Anesthesia = "";
-        if (document.form.Anesthesia.value == "IV sedation") {
-            var i;
-            for (i = 0; i < IV_Medication.length; i++) {
-                if (IV_Medication[i].checked) {
-                    Report_Anesthesia += IV_Medication[i].value + ", ";
+        const f = document.form;
+        
+        // Helper to get checked values as a comma-separated string
+        const getCheckedValues = (elements) => {
+            const checked = [];
+            for (let i = 0; i < elements.length; i++) {
+                if (elements[i].checked) checked.push(elements[i].value);
+            }
+            return checked.length > 0 ? checked.join(", ") + ", " : "";
+        };
+
+        // 1. Anesthesia
+        let reportAnesthesia = f.Anesthesia.value;
+        if (f.Anesthesia.value === "IV sedation") {
+            const meds = getCheckedValues(f.IV_Medication);
+            reportAnesthesia = `${f.Anesthesia.value} with medication of (${meds})`;
+        }
+
+        // 2. Thrombus & Occlusion Territory
+        const reportThrombus = getCheckedValues(f.Thrombus);
+        let occlusionTerritory = "";
+        if (reportThrombus.includes("ICA") || reportThrombus.includes("M1") || reportThrombus.includes("M2")) {
+            occlusionTerritory = "Anterior";
+        } else if (reportThrombus.includes("BA") || reportThrombus.includes("VA")) {
+            occlusionTerritory = "Posterior";
+        }
+
+        // 3. ASPECTS & Collateral
+        let reportASPECTS = "";
+        let reportCollateral = "";
+        let score = 10;
+
+        if (occlusionTerritory === "Posterior") {
+            const pAspects = f.Posterior_ASPECTS;
+            let subtracted = [];
+            for (let i = 0; i < pAspects.length; i++) {
+                if (pAspects[i].checked) {
+                    subtracted.push(pAspects[i].value);
+                    score -= (i < 6) ? 1 : 2;
                 }
             }
-            Report_Anesthesia = document.form.Anesthesia.value + "with medication of (" + Report_Anesthesia + ")";
-        } else {
-            Report_Anesthesia = document.form.Anesthesia.value;
-        }
-        var Report_Thrombus = "";
-        var Occlusion_Territory = "";
-        var Thrombus = document.form.Thrombus;
-        var i;
-        var k = 0;
-        for (i = 0; i < Thrombus.length; i++) {
-            if (Thrombus[i].checked) {
-                Report_Thrombus += Thrombus[i].value + ", ";
-            }
-        }
-        if (Report_Thrombus.includes("ICA") || Report_Thrombus.includes("M1") || Report_Thrombus.includes("M2")) {
-            Occlusion_Territory = "Anterior"
-        } else if (Report_Thrombus.includes("BA") || Report_Thrombus.includes("VA")) {
-            Occlusion_Territory = "Posterior";
-        }
-        var Report_ASPECTS = "";
-        var Anterior_ASPECTS = document.form.Anterior_ASPECTS;
-        var Posterior_ASPECTS = document.form.Posterior_ASPECTS;
-        var Report_Collateral = "";
-        var Collateral = "";
-        if (Occlusion_Territory == "Posterior") {
-            var i;
-            var j = 10;
-            for (i = 0; i < Posterior_ASPECTS.length; i++) {
-                if (Posterior_ASPECTS[i].checked) {
-                    Report_ASPECTS += Posterior_ASPECTS[i].value + ", ";
-                    if (i < 6) {
-                        j--;
-                    } else {
-                        j = j - 2;
-                    }
+            reportASPECTS = `For acute thrombus in the posterior circulation:\npc-ASPECTS score in nonenhanced brain CT:${score}\nSubtract (${subtracted.join(", ") + (subtracted.length > 0 ? ", " : "")})\n`;
+        } else if (occlusionTerritory === "Anterior") {
+            const aAspects = f.Anterior_ASPECTS;
+            let subtracted = [];
+            for (let i = 0; i < aAspects.length; i++) {
+                if (aAspects[i].checked) {
+                    subtracted.push(aAspects[i].value);
+                    score--;
                 }
             }
-            Report_ASPECTS = "For acute thrombus in the posterior circulation:\npc-ASPECTS score in nonenhanced brain CT:" + j + "\nSubtract (" + Report_ASPECTS + ")\n";
-        } else if (Occlusion_Territory == "Anterior") {
-            var i;
-            var j = 10;
-            for (i = 0; i < Anterior_ASPECTS.length; i++) {
-                if (Anterior_ASPECTS[i].checked) {
-                    Report_ASPECTS += Anterior_ASPECTS[i].value + ", ";
-                    j--;
-                }
-            }
-            Report_ASPECTS = "For acute thrombus in the anterior circulation:\nASPECTS score in nonenhanced brain CT:" + j + "\nSubtract (" + Report_ASPECTS + ")\n";
-            if (document.form.mCTA_Grading.value == 5) {
-                Collateral = "Good";
-            } else if (document.form.mCTA_Grading.value == 4) {
-                Collateral = "Intermediate";
-            } else {
-                Collateral = "Poor";
-            }
-            Report_Collateral = "Anterior circulation Pial arterial filling evaluation in multiphase CTA suggests " + Collateral + " collaterals and the grading score is " + document.form.mCTA_Grading.value + "\n";
+            reportASPECTS = `For acute thrombus in the anterior circulation:\nASPECTS score in nonenhanced brain CT:${score}\nSubtract (${subtracted.join(", ") + (subtracted.length > 0 ? ", " : "")})\n`;
+            
+            const gradeMap = { "5": "Good", "4": "Intermediate" };
+            const collateral = gradeMap[f.mCTA_Grading.value] || "Poor";
+            reportCollateral = `Anterior circulation Pial arterial filling evaluation in multiphase CTA suggests ${collateral} collaterals and the grading score is ${f.mCTA_Grading.value}\n`;
         } else {
-            Report_ASPECTS = "ASPECTS score: Not applicable.";
+            reportASPECTS = "ASPECTS score: Not applicable.";
         }
-        var Report_CTP = "";
-        if (document.form.CBF20.value != "") {
-            var Mismatch = document.form.Tmax6.value - document.form.CBF30.value;
-            if (document.form.CBF30.value == 0) {
-                Ratio = "Infinite"
-            } else {
-                Ratio = document.form.Tmax6.value / document.form.CBF30.value;
-                Ratio = Ratio.toFixed(2);
-            }
-            Report_CTP = "CT Perfusion Scan Results:\nCBF<20%= " + document.form.CBF20.value + "ml, CBF<30%(Core)= " + document.form.CBF30.value + "ml, CBF<34%= " + document.form.CBF34.value + "ml, CBF<38%= " + document.form.CBF38.value + "ml\nTmax>10s= " + document.form.Tmax10.value + "ml, Tmax>8s= " + document.form.Tmax8.value + "ml, Tmax>6s(Penumbra)= " + document.form.Tmax6.value + "ml, Tmax>4s= " + document.form.Tmax4.value + "ml, Hypoperfusion index: " + document.form.Hypo_index.value + "\nCBV<34%= " + document.form.CBV34.value + "ml, CBV<38%= " + document.form.CBV38.value + "ml, CBV<42%= " + document.form.CBV42.value + "ml, rCBV Index: " + document.form.rCBV_index.value + "\nMismatch volume(Penumbra - Core): " + Mismatch + "ml\nMismatch ratio(Penumbar/Core): " + Ratio;
+
+        // 4. CTP
+        let reportCTP = "";
+        if (f.CBF20.value !== "") {
+            reportCTP = `CT Perfusion Scan Results:
+CBF<20%= ${f.CBF20.value}ml, CBF<30%(Core)= ${f.CBF30.value}ml, CBF<34%= ${f.CBF34.value}ml, CBF<38%= ${f.CBF38.value}ml
+Tmax>10s= ${f.Tmax10.value}ml, Tmax>8s= ${f.Tmax8.value}ml, Tmax>6s(Penumbra)= ${f.Tmax6.value}ml, Tmax>4s= ${f.Tmax4.value}ml, Hypoperfusion index: ${f.Hypo_index.value}
+CBV<34%= ${f.CBV34.value}ml, CBV<38%= ${f.CBV38.value}ml, CBV<42%= ${f.CBV42.value}ml, rCBV Index: ${f.rCBV_index.value}
+Mismatch volume(Penumbra - Core): ${f.Mismatch_vol.value}ml
+Mismatch ratio(Penumbar/Core): ${f.Mismatch_ratio.value}`;
         }
-        var Report_Microcatheter = "";
-        var Microcatheter = document.form.Microcatheter;
-        var i;
-        for (i = 0; i < Microcatheter.length; i++) {
-            if (Microcatheter[i].checked) {
-                Report_Microcatheter += Microcatheter[i].value + ", ";
-            }
-        }
-        if (Report_Microcatheter == "") {
-            Report_Microcatheter = "Not used";
-        }
-        var Report_Microguidewire = "";
-        var Microguidewire = document.form.Microguidewire;
-        var i;
-        for (i = 0; i < Microguidewire.length; i++) {
-            if (Microguidewire[i].checked) {
-                Report_Microguidewire += Microguidewire[i].value + ", ";
-            }
-        }
-        if (Report_Microguidewire == "") {
-            Report_Microguidewire = "Not used";
-        }
-        var Report_Aspiration_tube = "";
-        var Aspiration_tube = document.form.Aspiration_tube;
-        var i;
-        for (i = 0; i < Aspiration_tube.length; i++) {
-            if (Aspiration_tube[i].checked) {
-                Report_Aspiration_tube += Aspiration_tube[i].value + ", ";
-            }
-        }
-        if (Report_Aspiration_tube == "") {
-            Report_Aspiration_tube = "Not used";
-        }
-        var Report_Stent = "";
-        var Stent = document.form.Stent;
-        var i;
-        for (i = 0; i < Stent.length; i++) {
-            if (Stent[i].checked) {
-                Report_Stent += Stent[i].value + ", ";
-            }
-        }
-        if (Report_Stent == "") {
-            Report_Stent = "Not used";
-        }
-        var Report_Technique = "";
-        var Technique = document.form.Technique;
-        var i;
-        for (i = 0; i < Technique.length; i++) {
-            if (Technique[i].checked) {
-                Report_Technique += Technique[i].value + ", ";
-            }
-        }
-        var Impression = "";
-        if (document.form.mTICI.value == "0") {
-            Impression = "Failure of endovascular thrombectomy for focal thrombus at ";
-        } else if ((document.form.mTICI.value == "1") || (document.form.mTICI.value == "2a")) {
-            Impression = "Mild reperfusion after endovascular thrombectomy for focal thrombus at ";
+
+        // 5. Devices
+        const reportMicrocatheter = getCheckedValues(f.Microcatheter) || "Not used";
+        const reportMicroguidewire = getCheckedValues(f.Microguidewire) || "Not used";
+        const reportAspirationTube = getCheckedValues(f.Aspiration_tube) || "Not used";
+        const reportStent = getCheckedValues(f.Stent) || "Not used";
+        const reportTechnique = getCheckedValues(f.Technique);
+
+        // 6. Impression & Operator
+        let impression = "";
+        const tici = f.mTICI.value;
+        if (tici === "0") {
+            impression = "Failure of endovascular thrombectomy for focal thrombus at ";
+        } else if (tici === "1" || tici === "2a") {
+            impression = "Mild reperfusion after endovascular thrombectomy for focal thrombus at ";
         } else {
-            Impression = "Successful endovascular thrombectomy for focal thrombus at ";
+            impression = "Successful endovascular thrombectomy for focal thrombus at ";
         }
-        if (document.form.Operator.value == "4189") {
-            Operator = "周兆亮 CL Chou\n神經科專科醫師 神專795號\n中華民國神經放射線醫學會 動脈取栓認證 006號";
-        } else if (document.form.Operator.value == "4191") {
-            Operator = "黃勇評 YP Hwang\n神經科專科醫師 神專1060號\n中華民國神經放射線醫學會 動脈取栓認證 022號";
-        } else if (document.form.Operator.value == "5443") {
-            Operator = "黃志凱 CK Wong\n神經科專科醫師 神專1497號\n中華民國神經放射線醫學會 動脈取栓認證 174號";
-        } else {
-            Operator = "";
-        }
-        var Others = document.getElementsByName('Others')[0].value;
-        if (Others == "") {
-            var Others = "Nil"
-        }
-        document.getElementById('Final_Report').innerHTML = "Endovascular thrombectomy was performed under the impression of focal arterial thrombus with acute large vessel occlusion:\n\nThe procedure was performed under: " + Report_Anesthesia + "\n" + Report_ASPECTS + Report_Collateral + "\n\n" + Report_CTP + "\n\nOnset time of acute ischemic stroke: " + "Date:" + document.form.onsettime.value.substring(0, 10) + ", Time:" + document.form.onsettime.value.substring(11, 16) + "\nStart time of the procedure(When patient arrived angiosuite): " + "Date:" + document.form.proceduretime.value.substring(0, 10) + ", Time:" + document.form.proceduretime.value.substring(11, 16) + "\nPuncture time(Performing arterial puncture): " + "Date:" + document.form.puncturetime.value.substring(0, 10) + ", Time:" + document.form.puncturetime.value.substring(11, 16) + "\nThe target thrombus was located at " + Report_Thrombus + "\nThe procedure was performed via " + document.form.Approach.value + " femoral arterial approach" + document.form.Ultrasound.value + " with " + document.form.Sheath.value + " peripheral sheath and " + document.form.Guiding.value + " as guiding catheter. After advancing to the lesion location,\nSuction was conducted for " + document.form.Suction.value + " times.\nStent-retrieving was conducted for " + document.form.Stent_pass.value + " times.\nIn general, the techniques used in this procedure included the following: " + Report_Technique + "\nThe devices used in this procedure included the following:\nAspiration tube: " + Report_Aspiration_tube + "\nStent-retriever: " + Report_Stent + "\nIntermediate catheter: " + document.form.Intermediate.value + "\nMicrocatheters: " + Report_Microcatheter + "\nMicroguidewires: " + Report_Microguidewire + "\n\nThe final result suggested mTICI(modified Treatment in Cerebral Ischemia Scale) grade " + document.form.mTICI.value + ". (Refering to Stroke. 2013;44:2650-2663.)\n\nTime of first thrombus contact by the aspiration tube or stent-retriever: " + "Date:" + document.form.contacttime.value.substring(0, 10) + ", Time:" + document.form.contacttime.value.substring(11, 16) + "\nEnd time of the procedure (last thrombectomy or final reperfusion): " + "Date:" + document.form.endtime.value.substring(0, 10) + ", Time:" + document.form.endtime.value.substring(11, 16) + "\n\nPost thrombectomy on-table CT: " + document.form.CT.value + "\n\nClosure device used at the end of the procedure: " + document.form.Closure.value + "\n\nOther notes:\n" + Others + "\n\nImpression:\n" + Impression + Report_Thrombus + " (mTICI grade " + document.form.mTICI.value + ").\n\n" + Operator;
+
+        const operators = {
+            "4189": "周兆亮 CL Chou\n神經科專科醫師 神專795號\n中華民國神經放射線醫學會 動脈取栓認證 006號",
+            "4191": "黃勇評 YP Hwang\n神經科專科醫師 神專1060號\n中華民國神經放射線醫學會 動脈取栓認證 022號"
+        };
+        const operatorInfo = operators[f.Operator.value] || "";
+
+        const others = f.Others.value || "Nil";
+
+        // 7. Time Helpers
+        const formatDT = (val) => {
+            if (!val) return "Date:, Time:";
+            return `Date:${val.substring(0, 10)}, Time:${val.substring(11, 16)}`;
+        };
+
+        // Assemble Final Report
+        const finalReport = `Endovascular thrombectomy was performed under the impression of focal arterial thrombus with acute large vessel occlusion:
+
+The procedure was performed under: ${reportAnesthesia}
+${reportASPECTS}${reportCollateral}
+
+${reportCTP}
+
+Onset time of acute ischemic stroke: ${formatDT(f.onsettime.value)}
+Start time of the procedure(When patient arrived angiosuite): ${formatDT(f.proceduretime.value)}
+Puncture time(Performing arterial puncture): ${formatDT(f.puncturetime.value)}
+The target thrombus was located at ${reportThrombus}
+The procedure was performed via ${f.Approach.value} femoral arterial approach${f.Ultrasound.value} with ${f.Sheath.value} peripheral sheath and ${f.Guiding.value} as guiding catheter. After advancing to the lesion location,
+Suction was conducted for ${f.Suction.value} times.
+Stent-retrieving was conducted for ${f.Stent_pass.value} times.
+In general, the techniques used in this procedure included the following: ${reportTechnique}
+The devices used in this procedure included the following:
+Aspiration tube: ${reportAspirationTube}
+Stent-retriever: ${reportStent}
+Intermediate catheter: ${f.Intermediate.value}
+Microcatheters: ${reportMicrocatheter}
+Microguidewires: ${reportMicroguidewire}
+
+The final result suggested mTICI(modified Treatment in Cerebral Ischemia Scale) grade ${f.mTICI.value}. (Refering to Stroke. 2013;44:2650-2663.)
+
+Time of first thrombus contact by the aspiration tube or stent-retriever: ${formatDT(f.contacttime.value)}
+End time of the procedure (last thrombectomy or final reperfusion): ${formatDT(f.endtime.value)}
+
+Post thrombectomy on-table CT: ${f.CT.value}
+
+Closure device used at the end of the procedure: ${f.Closure.value}
+
+Other notes:
+${others}
+
+Impression:
+${impression}${reportThrombus} (mTICI grade ${f.mTICI.value}).
+
+${operatorInfo}`;
+
+        document.getElementById('Final_Report').value = finalReport;
     }
 </script>
 </body>
