@@ -268,6 +268,7 @@
 
             <div class="sub-label">Microcatheter</div>
             <div class="device-group">
+                <label><input name="Microcatheter" type="checkbox" value="None">None</label>
                 <label><input name="Microcatheter" type="checkbox" value="Headway 17">Headway 17</label>
                 <label><input name="Microcatheter" type="checkbox" value="Phenom 017">Phenom 017</label>
                 <label><input name="Microcatheter" type="checkbox" value="SL-10">SL-10</label>
@@ -282,6 +283,7 @@
 
             <div class="sub-label">Microguidewire</div>
             <div class="device-group">
+                <label><input name="Microguidewire" type="checkbox" value="None">None</label>
                 <label><input name="Microguidewire" type="checkbox" value="Asahi Chikai 10">Chikai 10</label>
                 <label><input name="Microguidewire" type="checkbox" value="X-pedian 10">X-pedian 10</label>
                 <label><input name="Microguidewire" type="checkbox" value="Traxcess 14">Traxcess 14</label>
@@ -496,6 +498,29 @@
         
         f.Aspiration_tube.forEach(cb => cb.addEventListener('change', syncTechnique));
         f.Stent.forEach(cb => cb.addEventListener('change', syncTechnique));
+
+        // 5. "None" 選項互斥邏輯
+        const handleNone = (name) => {
+            const group = f[name];
+            const noneCb = Array.from(group).find(cb => cb.value === "None");
+            if (!noneCb) return;
+
+            noneCb.addEventListener('change', () => {
+                if (noneCb.checked) {
+                    group.forEach(cb => { if (cb !== noneCb) cb.checked = false; });
+                }
+            });
+
+            group.forEach(cb => {
+                if (cb !== noneCb) {
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) noneCb.checked = false;
+                    });
+                }
+            });
+        };
+        handleNone('Microcatheter');
+        handleNone('Microguidewire');
     }
 
     function refresh() {
@@ -582,8 +607,16 @@ Mismatch ratio(Penumbar/Core): ${f.Mismatch_ratio.value}`;
         }
 
         // 5. Devices
-        const reportMicrocatheter = getCheckedValues(f.Microcatheter) || "Not used";
-        const reportMicroguidewire = getCheckedValues(f.Microguidewire) || "Not used";
+        const reportMicrocatheter = getCheckedValues(f.Microcatheter);
+        const reportMicroguidewire = getCheckedValues(f.Microguidewire);
+
+        if (!reportMicrocatheter || !reportMicroguidewire) {
+            alert("請至少選擇一個 Microcatheter 與 Microguidewire (或選擇 None)！");
+            // 捲動到該位置提醒使用者
+            document.querySelector('.sub-label[innerText="Microcatheter"]').scrollIntoView();
+            return;
+        }
+
         const reportAspirationTube = getCheckedValues(f.Aspiration_tube) || "Not used";
         const reportStent = getCheckedValues(f.Stent) || "Not used";
         const reportTechnique = getCheckedValues(f.Technique);
