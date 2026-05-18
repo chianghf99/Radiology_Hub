@@ -355,6 +355,56 @@
             background: var(--accent-color);
             color: white;
         }
+
+        /* 常用組套按鈕樣式 */
+        .preset-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .preset-btn {
+            background: linear-gradient(135deg, #eef2f5 0%, #e0e8f0 100%);
+            border: 1px solid var(--accent-color);
+            color: var(--primary-color);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .preset-btn:hover {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #1f6391 100%);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .preset-clear-btn {
+            background: #fdf2f2;
+            border: 1px solid #fadbd8;
+            color: #c0392b;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .preset-clear-btn:hover {
+            background: #c0392b;
+            color: white;
+            border-color: #c0392b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -394,6 +444,18 @@
 
         <!-- 右側：健保紀錄與輸出 -->
         <div class="right-col">
+            <div class="card">
+                <h2>常用醫材組套 (Presets)</h2>
+                <div class="preset-group">
+                    <button class="preset-btn" @click="applyPreset('prophylaxis_covered_stent')">
+                        🛡️ prophylaxis covered stent for ICA & CCA
+                    </button>
+                    <button class="preset-clear-btn" @click="resetAllQty">
+                        🔄 清除所有選擇
+                    </button>
+                </div>
+            </div>
+
             <div class="card">
                 <h2 class="collapsible-header" @click="policiesOpen = !policiesOpen">
                     健保給付規定參考 (點擊查看)
@@ -487,6 +549,7 @@
                 {"category": "Other Stents", "name": "Graftmaster coronary stent", "code": "53268", "price": 59400, "qty": 0},
                 {"category": "Other Stents", "name": "Biotronik coronary stent", "code": "532681", "price": 59400, "qty": 0},
                 {"category": "Others", "name": "HISTOACRYL組織粘膠 (Glue)", "code": "54906", "price": 2480, "qty": 0},
+                {"category": "Others", "name": "Lipiodol", "code": "32863", "price": 7326, "qty": 0},
                 {"category": "Others", "name": "Aggrastat", "code": "34866", "price": 8120, "qty": 1}
             ]);
 
@@ -625,6 +688,48 @@
                 });
             };
 
+            // 常用醫材組套定義
+            const presets = {
+                "prophylaxis_covered_stent": {
+                    "509163": 2, // GORE VIABAHN stent 5cm
+                    "509164": 1, // GORE VIABAHN stent 10cm
+                    "509165": 1, // GORE VIABAHN stent 15cm
+                    "54906": 1,  // HISTOACRYL組織粘膠 (Glue)
+                    "34866": 1,  // Aggrastat
+                    "32863": 1,  // Lipiodol
+                    "53462": 2   // Angio-Seal
+                }
+            };
+
+            const applyPreset = (presetKey) => {
+                const target = presets[presetKey];
+                if (!target) return;
+                
+                // 先將所有數量歸零
+                inventory.value.forEach(item => {
+                    item.qty = 0;
+                });
+                
+                // 套用組套數量
+                for (const [code, qty] of Object.entries(target)) {
+                    const item = inventory.value.find(x => x.code === code);
+                    if (item) {
+                        item.qty = qty;
+                    }
+                }
+            };
+
+            const resetAllQty = () => {
+                // 重置回預設狀態 (Angio-Seal x1, Aggrastat x1, 其餘 x0)
+                inventory.value.forEach(item => {
+                    if (item.code === "53462" || item.code === "34866") {
+                        item.qty = 1;
+                    } else {
+                        item.qty = 0;
+                    }
+                });
+            };
+
             const increment = (item) => { item.qty++; };
             const decrement = (item) => { if (item.qty > 0) item.qty--; };
 
@@ -633,7 +738,8 @@
                 showModal, selectedPolicy, contactsOpen, policiesOpen,
                 openModal, closeModal,
                 groupedInventory, totalPrice, generatedOutput,
-                copyOutput, increment, decrement
+                copyOutput, increment, decrement,
+                applyPreset, resetAllQty
             };
         }
     }).mount('#app');
