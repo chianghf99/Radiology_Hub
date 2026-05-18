@@ -458,7 +458,7 @@
 
             <div class="card">
                 <h2 class="collapsible-header" @click="policiesOpen = !policiesOpen">
-                    健保給付規定參考 (點擊查看)
+                    健保特殊材料給付規定 (點擊查看)
                     <span class="toggle-icon">{{ policiesOpen ? '▲' : '▼' }}</span>
                 </h2>
                 <div v-show="policiesOpen">
@@ -524,7 +524,7 @@
             </div>
             <div class="modal-footer">
                 <div>來源文件：{{ selectedPolicy.sourceDoc }}</div>
-                <div>官方更新：{{ selectedPolicy.updateDate }}</div>
+                <div>本地更新：{{ selectedPolicy.updateDate }}</div>
                 <div>官方連結：<a :href="selectedPolicy.url" target="_blank">{{ selectedPolicy.url }}</a></div>
             </div>
         </div>
@@ -649,20 +649,130 @@
                     "title": "33144B｜血管阻塞術-Lipiodol (28591點)",
                     "name": "33144B 血管阻塞術-Lipiodol",
                     "effectiveDate": "支付點數：28,591 點",
-                    "content": "T.A.E.(trans-arterial embolization) –Lipiodol\n\n註：\n1. 適應症：\n (1) HCC conventional TACE。\n (2) Hypervascular tumor TAE。\n (3) Glue embolization for bleeding。\n (4) AVM/AVF embolization。\n\n2. 含一般材料費及 Lipiodol。",
+                    "content": "血管阻塞術-Lipiodol (T.A.E.(trans-arterial embolization) -Lipiodol)\n\n1. 適應症：\n(1) HCC conventional TACE。\n(2) Hypervascular tumor TAE。\n(3) Glue embolization for bleeding。\n(4) AVM/AVF embolization。\n\n2. 支付規範：\n含一般材料費及 Lipiodol。",
                     "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
                     "updateDate": "115-05",
-                    "url": "https://www.nhi.gov.tw/"
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
                 },
                 {
                     "id": "33075B",
                     "title": "33075B｜血管阻塞術 T.A.E. (22000點)",
                     "name": "33075B 血管阻塞術 T.A.E.",
                     "effectiveDate": "支付點數：22,000 點",
-                    "content": "血管阻塞術 T.A.E. (trans-arterial embolization)\n\n註：\n1. 應有血管造影設備並報經保險人同意後實施。\n2. 包括選擇性血管造影、診斷性血管造影及當日血管阻塞術後追蹤造影。\n3. 不得同時申報33097B。",
+                    "content": "血管阻塞術 (T.A.E.(trans-arterial embolization))\n\n1. 支付規範：\n(1) 應有血管造影設備並報經保險人同意後實施。\n(2) 包括選擇性血管造影、診斷性血管造影及當日血管阻塞術後追蹤造影。\n(3) 不得同時申報33097B。",
                     "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
                     "updateDate": "115-05",
-                    "url": "https://www.nhi.gov.tw/"
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "83106B",
+                    "title": "83106B｜急性缺血性腦中風機械取栓術 (42730點)",
+                    "name": "83106B 急性缺血性腦中風機械取栓術",
+                    "effectiveDate": "支付點數：42,730 點",
+                    "content": "急性缺血性腦中風機械取栓術 (Fee for neurovascular mechanical endovascular thrombectomy in acute ischemic stroke)\n\n1. 適用範圍：\n急性腦血管缺血性中風病人符合顱內血管支架取栓裝置使用條件，並使用該裝置進行機械性血管內血栓移除術治療，且同時符合下列條件：\n(1) 發作後二十四小時內。\n(2) 影像診斷為顱內大動脈阻塞，包括內頸動脈(ICA)、大腦中動脈之第一段(MCA M1)及第二段(MCA M2)、大腦前動脈(ACA)、基底動脈(BA)及脊椎動脈(VA)。\n(3) 美國國衛院腦中風評估表(NIH Stroke Scale)評分6分至30分。\n\n2. 禁忌症：\n(1) 蜘蛛網膜下腔出血。\n(2) 腦內出血。\n(3) 硬腦膜下出血/顱內出血。\n\n3. 支付規範：\n(1) 限經下列任一學會之相關腦神經血管內介入治療專長訓練與認證之醫師施行：\n  A. 中華民國放射線醫學會授權之中華民國神經放射線醫學會。\n  B. 台灣神經外科醫學會授權之台灣神經血管外科與介入治療醫學會。\n  C. 台灣神經學會授權之台灣腦中風學會。\n(2) 不得同時申報69001B、69002B、69003B。\n(3) 一般材料費，得另加計百分之七。\n\n4. 其他：\n前循環若於發作後八小時至二十四小時執行，申報時應於病歷檢附影像報告(CTP、MR或CTA collaterals)。",
+                    "sourceDoc": "全民健康保險醫療服務給給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33074B",
+                    "title": "33074B｜單純性血管整形術 PTA-Simple (10800點)",
+                    "name": "33074B 單純性血管整形術 PTA - Simple",
+                    "effectiveDate": "支付點數：10,800 點",
+                    "content": "單純性血管整形術 (P.T.A. (percutaneous transluminal angioplasty): simple)\n\n1. 支付規範：\n(1) 應有血管造影設備並報經保險人同意後實施。\n(2) 本項費用已包括選擇性血管造影(Including selective angiography)。\n(3) 施行33074B或33115B「單純性/複雜性血管整形術」原則上應已含括33048B「四肢血管造影」及33062B「鎖骨下血管造影」（不得同時併報），惟如因病情需要屬不同側時，得分別申報，其他特殊案例，則由專業審查認定。\n(4) 提升兒童加成項目。\n(5) 施行本項原則上含括33048B及33062B，相同部位不得同時申報33097B、33133B、33147B。\n\n2. 血管數計算方式：\n(1) 動脈：\n  A. 上肢分為五部分（鎖骨下動脈、腋臂動脈、橈動脈、尺動脈、手部動脈），每部分算同一條血管。\n  B. 下肢分六部分（腸骨動脈、股膕動脈、前脛動脈、後脛動脈、腓腸骨動脈、足部動脈），每部分算同一條血管。\n  C. 動脈同一條血管內多處病灶，仍算同一條血管。\n  D. 33074B係指一條動脈血管之治療，33115B係指二條動脈血管（含）以上之治療。\n(2) 靜脈：\n  A. 上肢分為二部位（前臂上臂靜脈、鎖骨下及頭臂靜脈）。\n  B. 下肢分為二部位（小腿大腿靜脈、腸骨靜脈）。\n  C. 33074B係指一部位靜脈血管之治療，33115B係指二部位靜脈血管之治療。\n(3) 血管吻合處同動脈段或靜脈段（如動靜脈瘻管），仍算同一條血管。\n(4) 若同時執行一條動脈及同一部位靜脈之血管整形術（非血管吻合處同動脈段或靜脈段），以33115B申報。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33115B",
+                    "title": "33115B｜複雜性血管整形術 PTA-Complex (20250點)",
+                    "name": "33115B 複雜性血管整形術 PTA - Complex",
+                    "effectiveDate": "支付點數：20,250 點",
+                    "content": "複雜性血管整形術 (P.T.A. (percutaneous transluminal angioplasty): complex)\n\n1. 支付規範：\n(1) 應有血管造影設備並報經保險人同意後實施。\n(2) 本項費用已包括選擇性血管造影(Including selective angiography)。\n(3) 施行33074B或33115B「單純性/複雜性血管整形術」原則上應已含括33048B「四肢血管造影」及33062B「鎖骨下血管造影」（不得同時併報），惟如因病情需要屬不同側時，得分別申報，其他特殊案例，則由專業審查認定。\n(4) 提升兒童加成項目。\n(5) 施行本項原則上含括33048B及33062B，相同部位不得同時申報33097B、33133B、33147B。\n\n2. 血管數計算方式：\n(1) 動脈：\n  A. 上肢分為五部分（鎖骨下動脈、腋臂動脈、橈動脈、尺動脈、手部動脈），每部分算同一條血管。\n  B. 下肢分六部分（腸骨動脈、股膕動脈、前脛動脈、後脛動脈、腓腸骨動脈、足部動脈），每部分算同一條血管。\n  C. 動脈同一條血管內多處病灶，仍算同一條血管。\n  D. 33074B係指一條動脈血管之治療，33115B係指二條動脈血管（含）以上之治療。\n(2) 靜脈：\n  A. 上肢分為二部位（前臂上臂靜脈、鎖骨下及頭臂靜脈）。\n  B. 下肢分為二部位（小腿大腿靜脈、腸骨靜脈）。\n  C. 33074B係指一部位靜脈血管之治療，33115B係指二部位靜脈血管之治療。\n(3) 血管吻合處同動脈段或靜脈段（如動靜脈瘻管），仍算同一條血管。\n(4) 若同時執行一條動脈及同一部位靜脈之血管整形術（非血管吻合處同動脈段或靜脈段），以33115B申報。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "47101B",
+                    "title": "47101B｜急性缺血性腦中風處置費 (14559點)",
+                    "name": "47101B 急性缺血性腦中風處置費",
+                    "effectiveDate": "支付點數：14,559 點",
+                    "content": "急性缺血性腦中風處置費\n\n1. 適用範圍：\n(1) 急性缺血性中風病人符合全民健康保險藥物給付項目及支付標準第六編第八十三條之藥品給付規定第二節心臟血管及腎臟藥物2.1.2血栓溶解劑用於急性缺血性腦中風之使用條件。\n(2) 執行83106B者。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "P8212B",
+                    "title": "P8212B｜自行收治腦中風病人獎勵 (25000點)",
+                    "name": "P8212B 自行收治病人獎勵-腦中風(限有執行83106B者)",
+                    "effectiveDate": "支付點數：25,000 點",
+                    "content": "自行收治病人獎勵-腦中風(限有執行83106B者申報)\n\n1. 說明：\n依據全民健康保險區域聯防-提升急重症照護品質計畫，限有執行83106B「急性缺血性腦中風機械取栓術」者申報。",
+                    "sourceDoc": "全民健康保險區域聯防-提升急重症照護品質計畫",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "P8202B",
+                    "title": "P8202B｜腦中風個案管理費 (3000點)",
+                    "name": "P8202B 急重症疾病照護獎勵-腦中風個案管理費",
+                    "effectiveDate": "支付點數：3,000 點",
+                    "content": "急重症疾病照護獎勵-腦中風個案管理費\n\n1. 適用對象：\n門、急、住診主或次診斷(ICD-10-CM)為I63.-、I67.0-I67.2、I67.4-I67.7、I67.81、I67.82、I67.841-I67.848、I67.850、I67.858、I67.89、I67.9、P91.821、P91.822、P91.823及P91.829，且有執行83106B「急性缺血性腦中風機械取栓術」之病人。\n\n2. 申報規範：\n由負責資源分配及管理調度之醫院申報，同個案每次事件限申報一次。\n\n※ 依據全民健康保險區域聯防-提升急重症照護品質計畫。",
+                    "sourceDoc": "全民健康保險區域聯防-提升急重症照護品質計畫",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33133B",
+                    "title": "33133B｜單純性周邊血管支架置放術 (12948點)",
+                    "name": "33133B 單純性周邊血管支架置放術",
+                    "effectiveDate": "支付點數：12,948 點",
+                    "content": "單純性周邊血管支架置放術 (Stenting for peripheral vessels, artery and vein：simple)\n\n1. 支付規範：\n(1) 應有血管造影設備並報經保險人同意後實施。\n(2) 本項費用已包括選擇性血管造影(Including selective angiography)、診斷性血管造影及當日術後追蹤造影。\n(3) 如因病情需要屬不同側時，或屬同側之特殊案例，得分別申報，須於病歷註明原因，由專業審查認定。\n(4) 排除洗腎瘻管。\n(5) 施行本項原則上含括33048B及33062B，相同部位不得同時申報33097B、33074B、33115B。\n\n2. 血管數計算方式：\n(1) 動脈：\n  A. 上肢分為四部分（鎖骨下動脈、腋臂動脈、橈動脈、尺動脈），每部分算同一條血管。\n  B. 下肢分六部分（腸骨動脈、股膕動脈、前脛動脈、後脛動脈、腓腸骨動脈、足部動脈），每部分算同一條血管。\n  C. 動脈同一條血管內多處病灶，仍算同一條血管。\n  D. 33133B係指一條動脈血管之治療，33147B係指二條動脈血管以上之治療。\n(2) 靜脈：\n  A. 上肢分為三部位(上腔靜脈、鎖骨下靜脈、頭臂靜脈)。\n  B. 下肢分為三部位（大腿靜脈、腸骨靜脈、下腔靜脈）。\n  C. 33133B係指一條靜脈血管之治療，33147B係指二條靜脈血管以上之治療。\n(3) 若同時執行一條動脈及同一部位靜脈之血管支架置放術（非血管吻合處同動脈段或靜脈段），以「複雜性周邊血管支架置放術」申報。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33147B",
+                    "title": "33147B｜複雜性周邊血管支架置放術 (24278點)",
+                    "name": "33147B 複雜性周邊血管支架置放術",
+                    "effectiveDate": "支付點數：24,278 點",
+                    "content": "複雜性周邊血管支架置放術 (Stenting for peripheral vessels, artery and vein：complex)\n\n1. 支付規範：\n(1) 應有血管造影設備並報經保險人同意後實施。\n(2) 本項費用已包括選擇性血管造影(Including selective angiography)、診斷性血管造影及當日術後追蹤造影。\n(3) 如因病情需要屬不同側時，或屬同側之特殊案例，得分別申報，須於病歷註明原因，由專業審查認定。\n(4) 排除洗腎瘻管。\n(5) 施行本項原則上含括33048B及33062B，相同部位不得同時申報33097B、33074B、33115B。\n\n2. 血管數計算方式：\n(1) 動脈：\n  A. 上肢分為四部分（鎖骨下動脈、腋臂動脈、橈動脈、尺動脈），每部分算同一條血管。\n  B. 下肢分六部分（腸骨動脈、股膕動脈、前脛動脈、後脛動脈、腓腸骨動脈、足部動脈），每部分算同一條血管。\n  C. 動脈同一條血管內多處病灶，仍算同一條血管。\n  D. 33133B係指一條動脈血管之治療，33147B係指二條動脈血管以上之治療。\n(2) 靜脈：\n  A. 上肢分為三部位(上腔靜脈、鎖骨下靜脈、頭臂靜脈)。\n  B. 下肢分為三部位（大腿靜脈、腸骨靜脈、下腔靜脈）。\n  C. 33133B係指一條靜脈血管之治療，33147B係指二條靜脈血管以上之治療。\n(3) 若同時執行一條動脈及同一部位靜脈之血管支架置放術（非血管吻合處同動脈段或靜脈段），以「複雜性周邊血管支架置放術」申報。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33041B",
+                    "title": "33041B｜單側總頸/內外頸動脈造影 (7500點)",
+                    "name": "33041B 單側總頸/內外頸動脈造影",
+                    "effectiveDate": "支付點數：7,500 點",
+                    "content": "頸動脈造影－單側 (Common carotid artery- one side)\n\n1. 說明：\n包括總頸動脈(common carotid)、內頸動脈(internal carotid) 或外頸動脈(external carotid) 均比照申報。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33042B",
+                    "title": "33042B｜雙側總頸/內外頸動脈造影 (11250點)",
+                    "name": "33042B 雙側總頸/內外頸動脈造影",
+                    "effectiveDate": "支付點數：11,250 點",
+                    "content": "頸動脈造影－雙側 (Common carotid artery-both side)\n\n1. 說明：\n包括總頸動脈(common carotid)、內頸動脈(internal carotid) 或外頸動脈(external carotid) 均比照申報。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
+                },
+                {
+                    "id": "33043B",
+                    "title": "33043B｜椎動靜脈造影 (4830點)",
+                    "name": "33043B 椎動靜脈造影",
+                    "effectiveDate": "支付點數：4,830 點",
+                    "content": "椎動靜脈造影 (Vertebral angiography)\n\n1. 說明：\n經椎骨動脈或靜脈注射對比劑進行血管攝影。",
+                    "sourceDoc": "全民健康保險醫療服務給付項目及支付標準",
+                    "updateDate": "115-05",
+                    "url": "https://www.nhi.gov.tw/ch/lp-3778-1.html"
                 }
             ]);
 
