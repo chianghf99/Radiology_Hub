@@ -77,8 +77,8 @@
             <div class="section-title">🎯 Target Stenosis</div>
 
             <div class="field-row">
-                <span class="field-label">Side:</span>
-                <label><input name="Side" type="radio" value="right" checked> Right</label>
+                <span class="field-label">Side <span style="color: red;">*</span>:</span>
+                <label><input name="Side" type="radio" value="right"> Right</label>
                 <label><input name="Side" type="radio" value="left"> Left</label>
             </div>
 
@@ -323,7 +323,12 @@
         const ultrasound = f.Ultrasound.value;
 
         // Target
-        const side     = f.Side.value;
+        const sideChecked = document.querySelector('input[name="Side"]:checked');
+        if (!sideChecked) {
+            alert('請選擇 Target Stenosis 左右側 (Side is required)!');
+            return;
+        }
+        const side     = sideChecked.value;
         const location = f.Location.value;
         const stenosis = f.Stenosis.value;
 
