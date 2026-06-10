@@ -75,11 +75,19 @@
 
 <div class="container">
     <a href="index.html" class="back-link">← Back to Home</a>
-    <h1>Endovascular Thrombectomy Reporting Platform <span style="font-size:0.6em; color:#888; font-weight:normal;">(Updated: 2026/05/15)</span></h1>
+    <h1>Endovascular Thrombectomy Reporting Platform <span style="font-size:0.6em; color:#888; font-weight:normal;">(Updated: 2026/06/10)</span></h1>
 
     <form name="form">
         
         <div class="section-card">
+            <div class="section-title">🪪 Patient</div>
+            <div>
+                病歷號：<input type="text" name="patient_id" placeholder="e.g. 12345678"
+                    style="width:180px; font-size:1rem; letter-spacing:0.05em;">
+                <span style="color:#999; font-size:0.85em; margin-left:8px;">（僅用於統計，不會出現在報告中）</span>
+            </div>
+        </div>
+
             <div class="section-title">🧴 Anesthesia</div>
             <div>
                 <label><input name="Anesthesia" type="radio" value="Local anesthesia" checked> Local anesthesia</label>
@@ -716,6 +724,7 @@ ${operatorInfo}`;
         const getChecked = (els) =>
             Array.from(els).filter(c => c.checked).map(c => c.value).join(', ');
         return {
+            patient_id:         f.patient_id.value.trim(),
             thrombus:           getChecked(f.Thrombus),
             territory:          territory || '',
             aspects_score:      aspectsScore,
