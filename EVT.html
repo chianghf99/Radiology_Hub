@@ -389,6 +389,7 @@
                 <label><input name="CT" type="radio" value="Likely Hemorrhage">Likely Hemorrhage</label>
                 <label><input name="CT" type="radio" value="Likely Contrast parenchymal enhancement">Likely Contrast parenchymal enhancement</label>
                 <label><input name="CT" type="radio" value="Both hemorrhage and contrast parenchymal enhancement">Both hemorrhage and contrast parenchymal enhancement</label>
+                <label><input name="CT" type="radio" value="Contrast enhancement with blood contents">Contrast enhancement with blood contents</label>
                 <label><input name="CT" type="radio" value="Uncertain hyperdensities">Uncertain hyperdensities</label>
             </div>
             <div style="margin-top:15px;">
@@ -414,13 +415,21 @@
 
     <div style="margin-top: 30px;">
         <button class="btn-success" onclick="copyFunction()">📋 Copy Final Report</button>
-        <p style="font-weight:bold; margin-bottom:5px;">Final Report:</p>
+        <button id="btn-submit-stats" class="btn-primary" onclick="submitStats()" disabled
+                style="margin-left:10px; opacity:0.45; transition: opacity 0.3s;"
+                onmouseenter="if(!this.disabled) this.style.opacity=1"
+                onmouseleave="if(!this.disabled) this.style.opacity=''">
+            📊 Submit to Stats
+        </button>
+        <p style="font-weight:bold; margin-bottom:5px; margin-top:15px;">Final Report:</p>
         <textarea rows="20" id="Final_Report" name="Final_Report"></textarea>
     </div>
 
 </div>
 
 <script>
+    // ★ 部署 GAS Web App 後，把 URL 貼在這裡
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx2cA4Bes5vHK8U3nE3ZtIPjZzscwb14NZppL_H_crwzh2eqEZunoLPVdZddcrXKch5/exec';
     // 初始化 Flatpickr 24小時制選擇器
     document.addEventListener('DOMContentLoaded', function() {
         flatpickr(".datetime-picker", {
@@ -566,10 +575,10 @@
         let reportASPECTS = "";
         let reportCollateral = "";
         let score = 10;
+        let subtracted = [];
 
         if (occlusionTerritory === "Posterior") {
             const pAspects = f.Posterior_ASPECTS;
-            let subtracted = [];
             for (let i = 0; i < pAspects.length; i++) {
                 if (pAspects[i].checked) {
                     subtracted.push(pAspects[i].value);
@@ -579,7 +588,6 @@
             reportASPECTS = `For acute thrombus in the posterior circulation:\npc-ASPECTS score in nonenhanced brain CT:${score}\nSubtract (${subtracted.join(", ") + (subtracted.length > 0 ? ", " : "")})\n`;
         } else if (occlusionTerritory === "Anterior") {
             const aAspects = f.Anterior_ASPECTS;
-            let subtracted = [];
             for (let i = 0; i < aAspects.length; i++) {
                 if (aAspects[i].checked) {
                     subtracted.push(aAspects[i].value);
@@ -687,6 +695,64 @@ ${impression}${reportThrombus} (mTICI grade ${f.mTICI.value}).
 ${operatorInfo}`;
 
         document.getElementById('Final_Report').value = finalReport;
+
+        // 報告產生後，啟用統計上傳按鈕，並儲存當前資料備用
+        window._lastStatsPayload = buildStatsPayload(f, occlusionTerritory, score, subtracted);
+        const statsBtn = document.getElementById('btn-submit-stats');
+        statsBtn.disabled = false;
+        statsBtn.textContent = '📊 Submit to Stats';
+    }
+
+    function subtractedList(f, territory) {
+        if (territory === 'Anterior') {
+            return Array.from(f.Anterior_ASPECTS).filter(c => c.checked).map(c => c.value);
+        } else if (territory === 'Posterior') {
+            return Array.from(f.Posterior_ASPECTS).filter(c => c.checked).map(c => c.value);
+        }
+        return [];
+    }
+
+    function buildStatsPayload(f, territory, aspectsScore, subtracted) {
+        const getChecked = (els) =>
+            Array.from(els).filter(c => c.checked).map(c => c.value).join(', ');
+        return {
+            thrombus:           getChecked(f.Thrombus),
+            territory:          territory || '',
+            aspects_score:      aspectsScore,
+            aspects_subtracted: (subtracted || []).join(', '),
+            collateral_grading: f.mCTA_Grading.value,
+            onsettime:          f.onsettime.value,
+            proceduretime:      f.proceduretime.value,
+            puncturetime:       f.puncturetime.value,
+            contacttime:        f.contacttime.value,
+            endtime:            f.endtime.value,
+            aspiration_tube:    getChecked(f.Aspiration_tube),
+            stent:              getChecked(f.Stent),
+            guiding:            f.Guiding.value,
+            intermediate:       f.Intermediate.value,
+            mtici:              f.mTICI.value,
+        };
+    }
+
+    function submitStats() {
+        const payload = window._lastStatsPayload;
+        if (!payload) return;
+        const btn = document.getElementById('btn-submit-stats');
+        btn.disabled = true;
+        btn.textContent = '⏳ Submitting...';
+        fetch(GAS_URL, {
+            method:  'POST',
+            mode:    'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload),
+        })
+        .then(() => {
+            btn.textContent = '✅ Submitted';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '❌ Failed – Retry';
+        });
     }
 </script>
 </body>
