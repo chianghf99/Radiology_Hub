@@ -36,7 +36,7 @@
     <div class="report-container">
         <a href="index.html" class="back-link">← Back to Hub</a>
         <h1>Peripherally Inserted Central Catheter (PICC)
-            <span style="font-size:0.55em; color:#888; font-weight:normal;">(Updated: 2026/05/31)</span>
+            <span style="font-size:0.55em; color:#888; font-weight:normal;">(Updated: 2026/06/11)</span>
         </h1>
 
         <div class="section-card">
@@ -112,12 +112,12 @@
             const device = document.querySelector('input[name="device"]:checked').value;
             const indication = nhiSelect.value;
 
-            let indicationClause = "";
+            let indicationLine = "";
             if (indication && indication !== "self-pay (does not meet NHI criteria)") {
-                indicationClause = ` The procedure is indicated for ${indication}.`;
+                indicationLine = `Indication: ${indication}\n\n`;
             }
 
-            const reportText = `Peripherally inserted central catheter(PICC) is done under assistance of echo-guided procedure.${indicationClause} After skin preparation and local anesthesia, a puncture needle is used to achieve ${side} ${vein} and subsequent upper limb venogram is performed for confirming insertion route. Then insertion of the PICC tube with the tip at cavoatrial junction is performed smoothly. Post-procedure venogram shows good function of the tube.
+            const reportText = `${indicationLine}Peripherally inserted central catheter(PICC) is done under assistance of echo-guided procedure. After skin preparation and local anesthesia, a puncture needle is used to achieve ${side} ${vein} and subsequent upper limb venogram is performed for confirming insertion route. Then insertion of the PICC tube with the tip at cavoatrial junction is performed smoothly. Post-procedure venogram shows good function of the tube.
 
 IMP: Successful echo-guided insertion of the ${device} PICC tube via ${side} ${vein} with the tip at cavoatrial junction.`;
 
