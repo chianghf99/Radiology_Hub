@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026-06 班表｜姜信帆</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a3a5c;
+            --accent:  #2980b9;
+            --accent2: #16a085;
+            --bg:      #f0f4f8;
+            --card:    #ffffff;
+            --border:  #e2e8f0;
+            --text:    #1e293b;
+            --sub:     #64748b;
+
+            /* Category colors */
+            --evt-color:   #2980b9;
+            --angio-color: #8e44ad;
+            --mri-color:   #16a085;
+            --ct-color:    #e67e22;
+            --picc-color:  #c0392b;
+            --note-color:  #f39c12;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', 'Microsoft JhengHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        header {
+            background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 60%, #2980b9 100%);
+            padding: 36px 24px 32px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.07) 0%, transparent 60%);
+        }
+        header h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+        header .sub {
+            margin-top: 6px;
+            font-size: 0.95rem;
+            opacity: 0.75;
+            position: relative;
+        }
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: white; }
+
+        /* ── Main Layout ── */
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+
+        /* ── Legend ── */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 28px;
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--sub);
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Calendar Grid ── */
+        .section-label {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 36px;
+        }
+
+        .day-header {
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--sub);
+            padding: 6px 0;
+            letter-spacing: 0.5px;
+        }
+        .day-header.weekend { color: #c0392b; }
+
+        .day-cell {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px;
+            min-height: 90px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative;
+        }
+        .day-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+        .day-cell.empty {
+            background: #f8fafc;
+            border-style: dashed;
+            pointer-events: none;
+        }
+        .day-cell.today {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(41,128,185,0.25);
+        }
+        .day-cell.weekend-cell .day-num {
+            color: #c0392b;
+        }
+        .day-cell.has-duty {
+            background: linear-gradient(145deg, #fff 60%, #f0f8ff);
+        }
+
+        .day-num {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+        .day-num .weekday-mini {
+            font-size: 0.68rem;
+            font-weight: 500;
+            color: var(--sub);
+            margin-left: 4px;
+        }
+
+        .duty-tags {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .duty-tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tag-evt   { background: #dbeafe; color: #1e40af; }
+        .tag-angio { background: #ede9fe; color: #5b21b6; }
+        .tag-mri   { background: #d1fae5; color: #065f46; }
+        .tag-ct    { background: #ffedd5; color: #92400e; }
+        .tag-picc  { background: #fee2e2; color: #991b1b; }
+        .tag-note  { background: #fef3c7; color: #78350f; font-style: italic; }
+
+        /* ── Detail Section ── */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+
+        .detail-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            transition: box-shadow 0.2s;
+        }
+        .detail-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        .detail-card-header {
+            padding: 12px 16px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hdr-evt   { background: linear-gradient(90deg, #1e40af, #2563eb); }
+        .hdr-angio { background: linear-gradient(90deg, #5b21b6, #7c3aed); }
+        .hdr-mri   { background: linear-gradient(90deg, #065f46, #059669); }
+        .hdr-ct    { background: linear-gradient(90deg, #92400e, #d97706); }
+        .hdr-picc  { background: linear-gradient(90deg, #991b1b, #dc2626); }
+
+        .detail-card-body {
+            padding: 14px 16px;
+        }
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.85rem;
+        }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-key {
+            font-weight: 600;
+            color: var(--sub);
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+        .detail-val {
+            color: var(--text);
+            flex: 1;
+            line-height: 1.5;
+        }
+        .badge {
+            display: inline-block;
+            font-size: 0.68rem;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+        .badge-tp { background: #dbeafe; color: #1e40af; }
+        .badge-ds { background: #d1fae5; color: #065f46; }
+        .badge-sub { background: #fef3c7; color: #78350f; }
+
+        /* ── Notes ── */
+        .notes-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 36px;
+        }
+        .notes-box h3 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #78350f;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .notes-box ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .notes-box li {
+            font-size: 0.84rem;
+            color: #92400e;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+        .notes-box li::before {
+            content: '•';
+            color: #f59e0b;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .calendar-grid { gap: 4px; }
+            .day-cell { padding: 5px; min-height: 70px; }
+            .duty-tag { font-size: 0.62rem; padding: 1px 4px; }
+            .day-num { font-size: 0.8rem; }
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="../index.html" class="back-link">← 返回首頁</a>
+    <h1>📅 2026 年 6 月班表</h1>
+    <p class="sub">姜信帆 · NI Team · EVT班 + 神經放射分工</p>
+</header>
+
+<main>
+
+    <!-- Legend -->
+    <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#2563eb"></span>EVT 班</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span>Brain Angio</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#059669"></span>Neuro MRI</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#d97706"></span>Neuro CT</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#dc2626"></span>PICC</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>備注</span>
+    </div>
+
+    <!-- Calendar -->
+    <div class="section-label">月曆總覽</div>
+    <div class="calendar-grid" id="calGrid"></div>
+
+    <!-- EVT Detail -->
+    <div class="section-label">EVT 班 值班分配</div>
+    <div class="detail-grid">
+        <div class="detail-card">
+            <div class="detail-card-header hdr-evt">🧠 EVT 班（週班輪值）</div>
+            <div class="detail-card-body">
+                <div class="detail-row">
+                    <span class="detail-key">W1</span>
+                    <span class="detail-val">6/1(一)、6/2(二) — 週班</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">W2</span>
+                    <span class="detail-val">6/8(一)起、接班至W2結束</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">6/4-8</span>
+                    <span class="detail-val">休假（PF 週由 俊肇 & 棖智 代理）</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">加班日</span>
+                    <span class="detail-val">6/13-14 <span class="badge badge-sub">週末</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NI Breakdown -->
+    <div class="section-label">神經放射分工（週固定）</div>
+    <div class="detail-grid">
+
+        <!-- Brain Angio -->
+        <div class="detail-card">
+            <div class="detail-card-header hdr-angio">🩺 Brain Angiography</div>
+            <div class="detail-card-body">
+                <div class="detail-row">
+                    <span class="detail-key">週四</span>
+                    <span class="detail-val">
+                        台北 診斷/IA <span class="badge badge-tp">台北</span><br>
+                        <small style="color:#64748b">6/4 由 棖智 代班</small>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">週五</span>
+                    <span class="detail-val">
+                        台北 診斷/IA <span class="badge badge-tp">台北</span><br>
+                        淡水 TAE <span class="badge badge-ds">淡水</span><br>
+                        <small style="color:#64748b">6/5 由 棖智 & 俊肇 代班</small>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">週四</span>
+                    <span class="detail-val">
+                        淡水 TAE <span class="badge badge-ds">淡水</span><br>
+                        <small style="color:#64748b">6/4 改由 棖智 代班</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Neuro MRI -->
+        <div class="detail-card">
+            <div class="detail-card-header hdr-mri">🧲 Neuro MRI（週六班）</div>
+            <div class="detail-card-body">
+                <div class="detail-row">
+                    <span class="detail-key">6/20</span>
+                    <span class="detail-val">
+                        北淡 Neuro MRI + ERCT <span class="badge badge-sub">假日</span><br>
+                        <small style="color:#64748b">6/20 假日 — 僅 MRI 項目</small>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">6/27</span>
+                    <span class="detail-val">
+                        北淡 Neuro MRI + ERCT <span class="badge badge-tp">台北</span><span class="badge badge-ds">淡水</span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">週六MRI</span>
+                    <span class="detail-val">W3 台北，固定值班</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Neuro CT -->
+        <div class="detail-card">
+            <div class="detail-card-header hdr-ct">🩻 Neuro CT</div>
+            <div class="detail-card-body">
+                <div class="detail-row">
+                    <span class="detail-key">ER CT 週五</span>
+                    <span class="detail-val">
+                        台北 &amp; 淡水 Neuro ER CT <span class="badge badge-sub">代班</span><br>
+                        <small style="color:#64748b">6/5 由 俊肇 代班</small>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">Routine</span>
+                    <span class="detail-val">週五 Routine Neuro CT<br>台北 40-59 / 淡水 80-99<br><small>6/4-6 由 俊肇 代</small></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-key">週四ER</span>
+                    <span class="detail-val">
+                        台北 ER CT <span class="badge badge-sub">代班</span><br>
+                        <small style="color:#64748b">6/11 由 信帆 代替棖智</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Neuro MRI 淡水 週固定 -->
+        <div class="detail-card">
+            <div class="detail-card-header hdr-mri">🧲 淡水神經 MRI 解釋</div>
+            <div class="detail-card-body">
+                <div class="detail-row">
+                    <span class="detail-key">週四</span>
+                    <span class="detail-val">
+                        淡水神經相關 MRI 解釋 <span class="badge badge-ds">淡水</span><br>
+                        <small style="color:#64748b">6/4 由 棖智 代班</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PICC -->
+        <div class="detail-card">
+            <div class="detail-card-header hdr-picc">💉 PICC</div>
+            <div class="detail-card-body">
+                <div class="detail-row">
+                    <span class="detail-key">週四</span>
+                    <span class="detail-val">
+                        淡水 PICC <span class="badge badge-ds">淡水</span><br>
+                        <small style="color:#64748b">6/4 由 棖智 代班</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-box">
+        <h3>⚠️ 本月備注</h3>
+        <ul>
+            <li>6/4–6/8 休假（PF週 由 俊肇 & 棖智 代理所有項目）</li>
+            <li>6/13–14 EVT 班休假時段（週末）</li>
+            <li>週三 ER CT：6/10 由 魏士揚 代班（信帆→士揚）</li>
+            <li>週四 ER CT：6/11 信帆 代棖智</li>
+            <li>6/20 週六 MRI 為假日，僅MRI項目（無ERCT）</li>
+            <li>線上會議：神內放射討論會 06/??(五) 15:30 — 由士揚負責</li>
+        </ul>
+    </div>
+
+</main>
+
+<script>
+// ── 2026-06 Calendar Data ──
+// 6/1 is Monday (weekday index 1)
+const MONTH = 6;
+const YEAR = 2026;
+const FIRST_DOW = 1; // Monday = index 1 (0=Sun)
+
+// Duty data: day -> array of tags
+// tag: { type, label }
+const duties = {
+    1:  [{ type: 'evt', label: 'EVT 週班' }],
+    2:  [{ type: 'evt', label: 'EVT 週班' }],
+    4:  [{ type: 'note', label: '休假 (PF)' }],
+    5:  [{ type: 'note', label: '休假 (PF)' }],
+    6:  [{ type: 'note', label: '休假 (PF)' }],
+    7:  [{ type: 'note', label: '休假 (PF)' }],
+    8:  [{ type: 'note', label: '休假 (PF)' }],
+    10: [{ type: 'evt', label: 'EVT 週班' }],
+    11: [{ type: 'ct',  label: 'ER CT (代)' }],
+    13: [{ type: 'evt', label: 'EVT 班 (週末)' }],
+    14: [{ type: 'evt', label: 'EVT 班 (週末)' }],
+    20: [{ type: 'mri', label: 'MRI+ERCT 假日' }],
+    22: [{ type: 'evt', label: 'EVT 週班' }],
+    23: [{ type: 'evt', label: 'EVT 週班' }],
+    24: [{ type: 'evt', label: 'EVT 週班' }],
+    25: [{ type: 'evt', label: 'EVT 週班' }],
+    27: [{ type: 'mri', label: 'MRI+ERCT 週六' }],
+};
+
+// Weekly recurring duties by DOW (1=Mon...7=Sun)
+// Will be applied on all non-holiday weeks unless overridden
+const weeklyDuties = {
+    4: [ // 週四
+        { type: 'angio', label: 'Brain Angio 台北' },
+        { type: 'angio', label: 'Brain Angio 淡水' },
+        { type: 'mri',   label: '淡水 MRI 解釋' },
+        { type: 'picc',  label: 'PICC 淡水' },
+    ],
+    5: [ // 週五
+        { type: 'angio', label: 'Brain Angio 台北' },
+        { type: 'angio', label: '淡水 TAE' },
+        { type: 'ct',    label: 'ER CT + Routine' },
+    ],
+};
+
+const tagClass = {
+    evt: 'tag-evt',
+    angio: 'tag-angio',
+    mri: 'tag-mri',
+    ct: 'tag-ct',
+    picc: 'tag-picc',
+    note: 'tag-note',
+};
+
+const weekdays = ['日','一','二','三','四','五','六'];
+const daysInMonth = new Date(YEAR, MONTH, 0).getDate();
+const today = new Date();
+const todayDay = (today.getFullYear() === YEAR && today.getMonth() + 1 === MONTH) ? today.getDate() : -1;
+
+const grid = document.getElementById('calGrid');
+
+// Headers
+const headers = ['週一','週二','週三','週四','週五','週六','週日'];
+headers.forEach((h, i) => {
+    const d = document.createElement('div');
+    d.className = 'day-header' + (i >= 5 ? ' weekend' : '');
+    d.textContent = h;
+    grid.appendChild(d);
+});
+
+// Empty cells before 6/1 (Monday = 0 offset)
+for (let i = 0; i < (FIRST_DOW - 1 + 7) % 7; i++) {
+    const e = document.createElement('div');
+    e.className = 'day-cell empty';
+    grid.appendChild(e);
+}
+
+// holiday set (休假)
+const holidayDays = new Set([4, 5, 6, 7, 8]);
+
+for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(YEAR, MONTH - 1, day);
+    const dow = date.getDay(); // 0=Sun, 6=Sat
+    const isWeekend = (dow === 0 || dow === 6);
+
+    const cell = document.createElement('div');
+    let cellClass = 'day-cell';
+    if (isWeekend) cellClass += ' weekend-cell';
+    if (day === todayDay) cellClass += ' today';
+
+    // Collect tags for this day
+    let tags = [];
+
+    // If holiday, skip weekly duties
+    if (!holidayDays.has(day)) {
+        // Convert getDay (0=Sun) to 1=Mon..7=Sun
+        const dowMon = dow === 0 ? 7 : dow;
+        if (weeklyDuties[dowMon]) {
+            tags = tags.concat(weeklyDuties[dowMon]);
+        }
+    }
+
+    // Merge with explicit duty overrides
+    if (duties[day]) {
+        // If it's a note (holiday), replace weekly duties
+        if (duties[day].some(d => d.type === 'note')) {
+            tags = duties[day];
+        } else {
+            tags = duties[day].concat(tags);
+        }
+    }
+
+    if (tags.length > 0) cellClass += ' has-duty';
+    cell.className = cellClass;
+
+    // Day number
+    const num = document.createElement('div');
+    num.className = 'day-num';
+    num.innerHTML = `${day}<span class="weekday-mini">${weekdays[dow]}</span>`;
+    cell.appendChild(num);
+
+    // Tags
+    if (tags.length > 0) {
+        const tagsEl = document.createElement('div');
+        tagsEl.className = 'duty-tags';
+        tags.slice(0, 4).forEach(t => {
+            const tag = document.createElement('div');
+            tag.className = `duty-tag ${tagClass[t.type] || ''}`;
+            tag.textContent = t.label;
+            tagsEl.appendChild(tag);
+        });
+        if (tags.length > 4) {
+            const more = document.createElement('div');
+            more.className = 'duty-tag tag-note';
+            more.textContent = `+${tags.length - 4} more`;
+            tagsEl.appendChild(more);
+        }
+        cell.appendChild(tagsEl);
+    }
+
+    grid.appendChild(cell);
+}
+</script>
+</body>
+</html>
