@@ -3,111 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EVT 班表 2026-06</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>中風取栓班表 2026-06</title>
+  <link rel="stylesheet" href="shared.css">
   <style>
-    :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface2: #263044;
-      --border: #334155;
-      --text: #f1f5f9;
-      --sub: #94a3b8;
-      --accent: #38bdf8;
+    body { padding: 0; }
 
-      /* Person colors — vibrant on dark bg */
-      --c-jiang:   #34d399; /* 姜信帆  emerald */
-      --c-huang-jz:#f59e0b; /* 黃俊肇  amber */
-      --c-zhou:    #818cf8; /* 周兆亮  indigo */
-      --c-huang-yp:#fb923c; /* 黃勇評  orange */
-      --c-xie:     #f472b6; /* 謝棖智  pink */
-      --c-wei:     #67e8f9; /* 魏士揚  cyan */
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', 'Microsoft JhengHei', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ── Header ── */
+    /* ── Header（跟 index.html 一致） */
     header {
-      padding: 32px 24px 28px;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      position: relative;
     }
-    .header-left { display: flex; flex-direction: column; gap: 4px; }
-    header h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    header h1 .badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: var(--accent);
-      color: #0f172a;
-      padding: 2px 8px;
-      border-radius: 99px;
-    }
-    header p { font-size: 0.88rem; color: var(--sub); }
+    header h1 { margin: 0; font-size: 2rem; font-weight: 800; }
+    header p  { margin-top: 8px; font-size: 1rem; opacity: 0.8; }
+
     .back-link {
-      color: var(--sub);
-      text-decoration: none;
-      font-size: 0.82rem;
-      display: flex;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: rgba(255,255,255,0.85);
+      font-size: 0.88rem;
+      display: inline-flex;
       align-items: center;
       gap: 5px;
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 6px;
-      transition: all 0.2s;
     }
-    .back-link:hover { color: var(--text); border-color: var(--sub); }
+    .back-link:hover { color: white; text-decoration: underline; }
 
     /* ── Main ── */
-    main { max-width: 980px; margin: 0 auto; padding: 28px 16px 60px; }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    /* ── Today banner ── */
+    .today-banner {
+      background: #e8f4fd;
+      border: 1px solid #b3d9f5;
+      border-left: 4px solid var(--accent-color);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .tb-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .tb-date {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+    .tb-people { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tb-chip {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 99px;
+      border: 1px solid transparent;
+    }
 
     /* ── Legend ── */
     .legend {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     .legend-pill {
       display: flex;
       align-items: center;
       gap: 7px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: white;
+      border: 1px solid var(--border-color);
       border-radius: 99px;
-      padding: 5px 12px;
+      padding: 5px 14px;
       font-size: 0.8rem;
       font-weight: 600;
+      color: var(--text-main);
       cursor: pointer;
       transition: all 0.15s;
       user-select: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .legend-pill:hover { border-color: var(--sub); }
+    .legend-pill:hover { border-color: var(--accent-color); }
     .legend-pill.dimmed { opacity: 0.3; }
-    .legend-dot {
-      width: 9px; height: 9px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
     /* ── Calendar ── */
     .cal-header-row {
@@ -120,11 +112,11 @@
       text-align: center;
       font-size: 0.72rem;
       font-weight: 700;
-      color: var(--sub);
+      color: var(--text-sub);
       letter-spacing: 0.5px;
       padding: 4px 0;
     }
-    .cal-dow.weekend { color: #f87171; }
+    .cal-dow.weekend { color: #c0392b; }
 
     .cal-grid {
       display: grid;
@@ -133,18 +125,17 @@
     }
 
     .day-cell {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
       padding: 8px 7px;
-      min-height: 88px;
+      min-height: 84px;
       transition: transform 0.12s, box-shadow 0.12s;
-      position: relative;
     }
     .day-cell:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      border-color: var(--sub);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      border-color: var(--accent-color);
       z-index: 2;
     }
     .day-cell.empty {
@@ -153,116 +144,69 @@
       pointer-events: none;
     }
     .day-cell.today {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent);
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(41,128,185,0.2);
     }
-    .day-cell.today .day-num { color: var(--accent); }
-    .day-cell.weekend-cell { background: #1a2234; }
+    .day-cell.today .day-num { color: var(--accent-color); }
+    .day-cell.weekend-cell { background: #fafafa; }
 
     .day-num {
       font-size: 0.82rem;
       font-weight: 700;
-      color: #cbd5e1;
-      margin-bottom: 6px;
+      color: var(--text-main);
+      margin-bottom: 5px;
       display: flex;
       align-items: baseline;
       gap: 4px;
     }
     .day-num .dow-mini {
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       font-weight: 500;
-      color: var(--sub);
+      color: var(--text-sub);
     }
     .today-dot {
       width: 5px; height: 5px;
-      background: var(--accent);
+      background: var(--accent-color);
       border-radius: 50%;
       display: inline-block;
       margin-left: auto;
       align-self: center;
     }
 
-    .oncall-list {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
+    .oncall-list { display: flex; flex-direction: column; gap: 3px; }
     .oncall-chip {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       font-weight: 700;
       padding: 2px 7px;
-      border-radius: 5px;
+      border-radius: 4px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       transition: opacity 0.2s;
     }
-    .oncall-chip.primary { opacity: 1; }
-    .oncall-chip.secondary { opacity: 0.75; }
-    .oncall-chip.dimmed { opacity: 0.08 !important; }
+    .oncall-chip.dimmed { opacity: 0.1 !important; }
 
-    /* Person color pairs: bg at 20% + text */
-    .chip-jiang   { background: rgba(52,211,153,0.18); color: #34d399; }
-    .chip-huang-jz{ background: rgba(245,158,11,0.18); color: #f59e0b; }
-    .chip-zhou    { background: rgba(129,140,248,0.18); color: #818cf8; }
-    .chip-huang-yp{ background: rgba(251,146,60,0.18);  color: #fb923c; }
-    .chip-xie     { background: rgba(244,114,182,0.18); color: #f472b6; }
-    .chip-wei     { background: rgba(103,232,249,0.18); color: #67e8f9; }
+    /* Person chips — solid enough to read on white bg */
+    .chip-jiang   { background: #d1fae5; color: #065f46; }
+    .chip-huang-jz{ background: #fef3c7; color: #78350f; }
+    .chip-zhou    { background: #ede9fe; color: #4c1d95; }
+    .chip-huang-yp{ background: #ffedd5; color: #7c2d12; }
+    .chip-xie     { background: #fce7f3; color: #831843; }
+    .chip-wei     { background: #cffafe; color: #164e63; }
 
-    /* ── Today's oncall banner ── */
-    .today-banner {
-      background: linear-gradient(135deg, #0c4a6e, #075985);
-      border: 1px solid #0369a1;
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .today-banner .tb-label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #7dd3fc;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      white-space: nowrap;
-    }
-    .today-banner .tb-date {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #bae6fd;
-    }
-    .today-banner .tb-people {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .tb-chip {
-      font-size: 0.85rem;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 99px;
-    }
-
-    /* ── Responsive ── */
     @media (max-width: 600px) {
-      .day-cell { padding: 5px; min-height: 70px; }
-      .oncall-chip { font-size: 0.62rem; padding: 2px 4px; }
+      .day-cell { padding: 5px; min-height: 68px; }
+      .oncall-chip { font-size: 0.62rem; padding: 1px 4px; }
       .day-num { font-size: 0.75rem; }
-      header { padding: 20px 16px; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="header-left">
-    <h1>🧠 EVT 班表 <span class="badge">2026 / 06</span></h1>
-    <p>Endovascular Therapy On-Call Schedule · 神經放射科</p>
-  </div>
   <a href="index.html" class="back-link">← 返回首頁</a>
+  <h1>🧠 中風取栓班表</h1>
+  <p>EVT On-Call Schedule · 2026 年 6 月</p>
 </header>
 
 <main>
@@ -296,65 +240,39 @@
 </main>
 
 <script>
-// ─── Data ────────────────────────────────────────────
 const YEAR = 2026, MONTH = 6;
 
-// Person metadata: key, display name, chip class, dot color
 const PEOPLE = [
-  { key: 'jiang',    name: '姜信帆', cls: 'chip-jiang',    color: '#34d399' },
-  { key: 'huang_jz', name: '黃俊肇', cls: 'chip-huang-jz', color: '#f59e0b' },
-  { key: 'zhou',     name: '周兆亮', cls: 'chip-zhou',     color: '#818cf8' },
-  { key: 'huang_yp', name: '黃勇評', cls: 'chip-huang-yp', color: '#fb923c' },
-  { key: 'xie',      name: '謝棖智', cls: 'chip-xie',      color: '#f472b6' },
-  { key: 'wei',      name: '魏士揚', cls: 'chip-wei',      color: '#67e8f9' },
+  { key: 'jiang',    name: '姜信帆', cls: 'chip-jiang',    color: '#059669' },
+  { key: 'huang_jz', name: '黃俊肇', cls: 'chip-huang-jz', color: '#d97706' },
+  { key: 'zhou',     name: '周兆亮', cls: 'chip-zhou',     color: '#7c3aed' },
+  { key: 'huang_yp', name: '黃勇評', cls: 'chip-huang-yp', color: '#c2410c' },
+  { key: 'xie',      name: '謝棖智', cls: 'chip-xie',      color: '#be185d' },
+  { key: 'wei',      name: '魏士揚', cls: 'chip-wei',      color: '#0e7490' },
 ];
 const personByName = {};
 PEOPLE.forEach(p => { personByName[p.name] = p; });
 
-// Full EVT on-call schedule: day -> primary only
-// Parsed directly from EVT班202606.xlsx (第一列)
 const SCHEDULE = {
-   1: ['姜信帆'],
-   2: ['姜信帆'],
-   3: ['黃俊肇'],
-   4: ['黃勇評'],
-   5: ['黃勇評'],
-   6: ['黃勇評'],
-   7: ['黃勇評'],
-   8: ['黃勇評'],
+   1: ['姜信帆'],  2: ['姜信帆'],  3: ['黃俊肇'],
+   4: ['黃勇評'],  5: ['黃勇評'],  6: ['黃勇評'],  7: ['黃勇評'],  8: ['黃勇評'],
    9: ['黃俊肇'],
-  10: ['魏士揚'],
-  11: ['魏士揚'],
-  12: ['魏士揚'],
-  13: ['魏士揚'],
-  14: ['魏士揚'],
-  15: ['謝棖智'],
-  16: ['謝棖智'],
-  17: ['謝棖智'],
-  18: ['謝棖智'],
-  19: ['謝棖智'],
-  20: ['姜信帆'],
-  21: ['黃俊肇'],
-  22: ['黃俊肇'],
-  23: ['黃俊肇'],
-  24: ['姜信帆'],
-  25: ['姜信帆'],
-  26: ['周兆亮'],
-  27: ['周兆亮'],
-  28: ['周兆亮'],
-  29: ['周兆亮'],
-  30: ['周兆亮'],
+  10: ['魏士揚'], 11: ['魏士揚'], 12: ['魏士揚'], 13: ['魏士揚'], 14: ['魏士揚'],
+  15: ['謝棖智'], 16: ['謝棖智'], 17: ['謝棖智'], 18: ['謝棖智'], 19: ['謝棖智'],
+  20: ['姜信帆'], 21: ['黃俊肇'], 22: ['黃俊肇'], 23: ['黃俊肇'],
+  24: ['姜信帆'], 25: ['姜信帆'],
+  26: ['周兆亮'], 27: ['周兆亮'], 28: ['周兆亮'], 29: ['周兆亮'], 30: ['周兆亮'],
 };
 
-// ─── State ───────────────────────────────────────────
 const hiddenPeople = new Set();
+const DOW_NAMES = ['日','一','二','三','四','五','六'];
+const DAYS_IN_MONTH = new Date(YEAR, MONTH, 0).getDate();
 
-// ─── Legend ──────────────────────────────────────────
+// ── Legend ──
 const legendEl = document.getElementById('legend');
 PEOPLE.forEach(p => {
   const pill = document.createElement('div');
   pill.className = 'legend-pill';
-  pill.dataset.key = p.key;
   pill.innerHTML = `<span class="legend-dot" style="background:${p.color}"></span>${p.name}`;
   pill.addEventListener('click', () => {
     if (hiddenPeople.has(p.key)) {
@@ -369,19 +287,7 @@ PEOPLE.forEach(p => {
   legendEl.appendChild(pill);
 });
 
-// ─── Helpers ─────────────────────────────────────────
-const DOW_NAMES = ['日','一','二','三','四','五','六'];
-const DAYS_IN_MONTH = new Date(YEAR, MONTH, 0).getDate(); // 30
-
-function firstDOW() {
-  // 6/1/2026 is Monday → getDay() = 1
-  return new Date(YEAR, MONTH - 1, 1).getDay(); // 0=Sun
-}
-
-// Convert getDay() 0-Sun to Mon-first offset (0=Mon)
-function monOffset(dow) { return (dow + 6) % 7; }
-
-// ─── Today Banner ────────────────────────────────────
+// ── Today Banner ──
 function renderBanner() {
   const now = new Date();
   if (now.getFullYear() !== YEAR || now.getMonth() + 1 !== MONTH) return;
@@ -389,37 +295,33 @@ function renderBanner() {
   const oncall = SCHEDULE[d];
   if (!oncall) return;
 
-  const banner = document.getElementById('todayBanner');
-  banner.style.display = 'flex';
-
-  const dateStr = `${YEAR}/${String(MONTH).padStart(2,'0')}/${String(d).padStart(2,'0')} (週${DOW_NAMES[now.getDay()]})`;
-  document.getElementById('todayDateStr').textContent = dateStr;
+  document.getElementById('todayBanner').style.display = 'flex';
+  document.getElementById('todayDateStr').textContent =
+    `${YEAR}/${String(MONTH).padStart(2,'0')}/${String(d).padStart(2,'0')} （週${DOW_NAMES[now.getDay()]}）`;
 
   const peopleEl = document.getElementById('todayPeople');
-  oncall.forEach((name, i) => {
+  oncall.forEach(name => {
     const p = personByName[name];
     if (!p) return;
     const chip = document.createElement('div');
     chip.className = 'tb-chip';
-    chip.style.background = p.color + '28';
+    chip.style.background = p.color + '20';
     chip.style.color = p.color;
-    chip.style.border = `1px solid ${p.color}55`;
+    chip.style.borderColor = p.color + '60';
     chip.textContent = name;
     peopleEl.appendChild(chip);
   });
 }
 
-// ─── Grid ────────────────────────────────────────────
+// ── Grid ──
 function renderGrid() {
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
 
   const now = new Date();
-  const todayDay = (now.getFullYear() === YEAR && now.getMonth() + 1 === MONTH)
-    ? now.getDate() : -1;
+  const todayDay = (now.getFullYear() === YEAR && now.getMonth() + 1 === MONTH) ? now.getDate() : -1;
+  const startOffset = ((new Date(YEAR, MONTH - 1, 1).getDay()) + 6) % 7; // Mon=0
 
-  // Empty padding cells
-  const startOffset = monOffset(firstDOW()); // Mon=0
   for (let i = 0; i < startOffset; i++) {
     const e = document.createElement('div');
     e.className = 'day-cell empty';
@@ -427,8 +329,7 @@ function renderGrid() {
   }
 
   for (let day = 1; day <= DAYS_IN_MONTH; day++) {
-    const date = new Date(YEAR, MONTH - 1, day);
-    const dow = date.getDay(); // 0=Sun, 6=Sat
+    const dow = new Date(YEAR, MONTH - 1, day).getDay();
     const isWeekend = (dow === 0 || dow === 6);
     const isToday = (day === todayDay);
 
@@ -438,7 +339,6 @@ function renderGrid() {
     if (isToday)   cls += ' today';
     cell.className = cls;
 
-    // Day number
     const numEl = document.createElement('div');
     numEl.className = 'day-num';
     numEl.innerHTML = `${day}<span class="dow-mini">週${DOW_NAMES[dow]}</span>`;
@@ -449,22 +349,19 @@ function renderGrid() {
     }
     cell.appendChild(numEl);
 
-    // On-call chips
     const oncall = SCHEDULE[day];
     if (oncall && oncall.length) {
       const list = document.createElement('div');
       list.className = 'oncall-list';
-
       oncall.forEach((name, i) => {
         const p = personByName[name];
         if (!p) return;
         const chip = document.createElement('div');
-        chip.className = `oncall-chip ${p.cls} ${i === 0 ? 'primary' : 'secondary'}`;
+        chip.className = `oncall-chip ${p.cls}`;
         if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
         chip.textContent = name;
         list.appendChild(chip);
       });
-
       cell.appendChild(list);
     }
 
@@ -472,7 +369,6 @@ function renderGrid() {
   }
 }
 
-// ─── Init ─────────────────────────────────────────────
 renderBanner();
 renderGrid();
 </script>
