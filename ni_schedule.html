@@ -659,12 +659,10 @@ function renderTodayCard(key) {
   card.className = 'today-card';
 
   // ── Header ──
-  const weekNum = !a.isSat && a.weekLabel ? a.weekLabel.substring(1) : '';
   let headerHtml = `
     <div class="today-card-header">
       <h2>📅 今日分配</h2>
       <span class="today-date-badge">${a.dateStr}</span>
-      ${weekNum ? `<span class="today-week-badge">當月第 ${weekNum} 週 (${a.weekLabel})</span>` : ''}
     </div>`;
   card.innerHTML = headerHtml;
 
