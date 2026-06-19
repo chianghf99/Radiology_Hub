@@ -207,6 +207,47 @@
       border-radius: 99px; padding: 2px 10px;
       white-space: nowrap;
     }
+    /* ── Today Doctors Task Grid ── */
+    .today-doctors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 5px;
+    }
+    .today-doctor-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .today-doctor-name {
+      font-size: 0.88rem;
+      font-weight: 800;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 4px;
+    }
+    .today-doctor-task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .today-doctor-task-item {
+      font-size: 0.74rem;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+      border-left: 3px solid var(--accent-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     /* ── Notes banner ── */
     .notes-banner {
@@ -346,7 +387,7 @@ const NI_DATA = {
 
     // 門住 CT 號碼分配
     routine_ct: [
-      { person: '黃俊肇', tp: '00–23', ds: '00–23', note: '7/17–20 →信帆(台北) / →棖智(淡水)' },
+      { person: '黃俊肇', tp: '00–23', ds: '00–23', note: '7/17–20 台北→棖智 / 淡水→信帆' },
       { person: '謝棖智', tp: '24–47', ds: '24–47', note: '' },
       { person: '魏士揚', tp: '48–71', ds: '48–71', note: '' },
       { person: '鄭宇凡', tp: '72–75', ds: '72–75', note: '' },
@@ -420,7 +461,7 @@ function personCls(name) {
 }
 
 // Render a person name with colour. Handles '/' separator for trainee pairs.
-function renderPerson(raw) {
+function renderPerson(raw, showTraineeTag = true) {
   if (!raw) return '—';
 
   // AM/PM 分時段優先判斷（e.g. 'AM 黃主任 / PM 魏士揚'）
@@ -439,14 +480,20 @@ function renderPerson(raw) {
       .join('<span style="color:#cbd5e1;margin:0 4px">/</span>');
   }
 
-  // 師徒制（e.g. '魏士揚/謝棖智'）
+  // 師徒制 or AM/PM 分時段
   const parts = raw.split('/');
   if (parts.length >= 2) {
-    const supervisor = parts[0].trim();
-    const trainee    = parts[1].trim();
-    return `<span class="person ${personCls(supervisor)}">${supervisor}</span>`
-         + `<span class="trainee-tag">帶</span>`
-         + `<span class="person ${personCls(trainee)}"> ${trainee}</span>`;
+    const p1 = parts[0].trim();
+    const p2 = parts[1].trim();
+    if (showTraineeTag) {
+      return `<span class="person ${personCls(p1)}">${p1}</span>`
+           + `<span class="trainee-tag">帶</span>`
+           + `<span class="person ${personCls(p2)}"> ${p2}</span>`;
+    } else {
+      return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">AM</span> <span class="person ${personCls(p1)}">${p1}</span>`
+           + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
+           + `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">PM</span> <span class="person ${personCls(p2)}">${p2}</span>`;
+    }
   }
 
   return `<span class="person ${personCls(raw)}">${raw}</span>`;
@@ -518,6 +565,90 @@ function getTodayAssignments(key) {
   };
 }
 
+function getDoctorTasksForToday(a) {
+  if (!a) return {};
+  const doctorTasks = {};
+
+  function addTask(name, task) {
+    if (!name) return;
+    name = name.trim();
+    if (!name || name === '—') return;
+    
+    const ampmMatch = name.match(/^(AM|PM)\s+(.+)$/);
+    let displayName = name;
+    let suffix = '';
+    if (ampmMatch) {
+      displayName = ampmMatch[2].trim();
+      suffix = ` (${ampmMatch[1]})`;
+    }
+    
+    if (!doctorTasks[displayName]) {
+      doctorTasks[displayName] = [];
+    }
+    doctorTasks[displayName].push(task + suffix);
+  }
+
+  function processField(raw, taskName) {
+    if (!raw) return;
+    if (raw.includes('AM') || raw.includes('PM')) {
+      raw.split('/').forEach(seg => {
+        seg = seg.trim();
+        const m = seg.match(/^(AM|PM)\s+(.+)$/);
+        if (m) {
+          addTask(m[2].trim(), `${taskName} (${m[1]})`);
+        } else {
+          addTask(seg, taskName);
+        }
+      });
+      return;
+    }
+    if (raw.includes('/')) {
+      const parts = raw.split('/');
+      addTask(parts[0].trim(), `${taskName} (帶)`);
+      addTask(parts[1].trim(), `${taskName} (學習)`);
+      return;
+    }
+    addTask(raw, taskName);
+  }
+
+  if (a.isSat) {
+    if (a.sat) {
+      processField(a.sat.person, '週六班 (北淡 MRI + 急 CT)');
+    }
+  } else {
+    if (a.angio) {
+      processField(a.angio.tp_dsa, '台北 DSA');
+      processField(a.angio.tp_tae, '台北 TAE');
+      processField(a.angio.ds_dsa, '淡水 DSA');
+      processField(a.angio.ds_tae, '淡水 TAE');
+    }
+    if (a.erct) {
+      processField(a.erct.tp, '台北急 CT');
+      processField(a.erct.ds, '淡水急 CT');
+    }
+    if (a.mri_tp) {
+      processField(a.mri_tp.person, '台北 MRI');
+    }
+    if (a.mri_ds) {
+      processField(a.mri_ds.person, '淡水 MRI');
+    }
+    if (a.ds_mri) {
+      processField(a.ds_mri.person, '淡水神經 MRI 解釋');
+    }
+    if (a.picc) {
+      processField(a.picc.tp, '台北 PICC');
+      processField(a.picc.ds, '淡水 PICC');
+    }
+    if (a.routine_ct && a.routine_ct.length) {
+      a.routine_ct.forEach(r => {
+        processField(r.person, `門住 CT (北:${r.tp}/淡:${r.ds})`);
+      });
+    }
+  }
+
+  return doctorTasks;
+}
+
 function renderTodayCard(key) {
   const a = getTodayAssignments(key);
   if (!a) return null;
@@ -526,11 +657,12 @@ function renderTodayCard(key) {
   card.className = 'today-card';
 
   // ── Header ──
+  const weekNum = !a.isSat && a.weekLabel ? a.weekLabel.substring(1) : '';
   let headerHtml = `
     <div class="today-card-header">
       <h2>📅 今日分配</h2>
       <span class="today-date-badge">${a.dateStr}</span>
-      ${!a.isSat && a.weekLabel ? `` : ''}
+      ${weekNum ? `<span class="today-week-badge">當月第 ${weekNum} 週 (${a.weekLabel})</span>` : ''}
     </div>`;
   card.innerHTML = headerHtml;
 
@@ -550,6 +682,33 @@ function renderTodayCard(key) {
     return card;
   }
 
+  // ── Today's Doctor Tasks Overview ──
+  const doctorTasks = getDoctorTasksForToday(a);
+  let overviewHtml = '';
+  const docNames = Object.keys(doctorTasks);
+  if (docNames.length > 0) {
+    overviewHtml += `<div style="margin-bottom: 20px;">
+      <div style="font-size: 0.82rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px;">👤 今日醫師任務總覽 (Task Overview)</div>
+      <div class="today-doctors-grid">`;
+    docNames.forEach(name => {
+      const tasks = doctorTasks[name];
+      const pc = personCls(name);
+      overviewHtml += `
+        <div class="today-doctor-card">
+          <div class="today-doctor-name">
+            <span class="person ${pc}">${name}</span>
+          </div>
+          <div class="today-doctor-task-list">`;
+      tasks.forEach(task => {
+        overviewHtml += `<div class="today-doctor-task-item">${task}</div>`;
+      });
+      overviewHtml += `</div>
+        </div>`;
+    });
+    overviewHtml += `</div></div>`;
+  }
+  card.innerHTML += overviewHtml;
+
   // ── Weekday grid ──
   const rows = [];
 
@@ -563,8 +722,8 @@ function renderTodayCard(key) {
   if (a.mri_tp || a.mri_ds) {
     rows.push({
       label: `門住急 MRI`,
-      tp: a.mri_tp ? renderPerson(a.mri_tp.person) + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
-      ds: a.mri_ds ? renderPerson(a.mri_ds.person) + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
+      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false) + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
+      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false) + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
     });
   }
   if (a.ds_mri) {
@@ -759,7 +918,7 @@ function renderMri(data) {
       : `<span class="loc loc-ds">淡水</span>`;
     let cells = `<td class="dow">${label}</td>`;
     data[side].forEach(r => {
-      cells += `<td>${renderPerson(r.person)}${r.note ? noteHtml(r.note) : ''}</td>`;
+      cells += `<td>${renderPerson(r.person, false)}${r.note ? noteHtml(r.note) : ''}</td>`;
     });
     tr.innerHTML = cells;
     tbody.appendChild(tr);

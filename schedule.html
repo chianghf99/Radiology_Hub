@@ -271,24 +271,69 @@
 // ═══════════════════════════════════════════════
 const ALL_SCHEDULES = {
   '2026-06': {
-     1: '姜信帆',  2: '姜信帆',  3: '黃俊肇',
-     4: '黃勇評',  5: '黃勇評',  6: '黃勇評',  7: '黃勇評',  8: '黃勇評',
-     9: '黃俊肇',
-    10: '魏士揚', 11: '魏士揚', 12: '魏士揚', 13: '魏士揚', 14: '魏士揚',
-    15: '謝棖智', 16: '謝棖智', 17: '謝棖智', 18: '謝棖智', 19: '謝棖智',
-    20: '姜信帆', 21: '黃俊肇', 22: '黃俊肇', 23: '黃俊肇',
-    24: '姜信帆', 25: '姜信帆',
-    26: '周兆亮', 27: '周兆亮', 28: '周兆亮', 29: '周兆亮', 30: '周兆亮',
+     1: { tp: '姜信帆', ds: '謝棖智' },
+     2: { tp: '姜信帆', ds: '謝棖智' },
+     3: { tp: '黃俊肇', ds: '周兆亮' },
+     4: { tp: '黃勇評', ds: '姜信帆' },
+     5: { tp: '黃勇評', ds: '姜信帆' },
+     6: { tp: '黃勇評', ds: '姜信帆' },
+     7: { tp: '黃勇評', ds: '姜信帆' },
+     8: { tp: '黃勇評', ds: '姜信帆' },
+     9: { tp: '黃俊肇', ds: '周兆亮' },
+    10: { tp: '魏士揚', ds: '黃俊肇' },
+    11: { tp: '魏士揚', ds: '黃俊肇' },
+    12: { tp: '魏士揚', ds: '黃俊肇' },
+    13: { tp: '魏士揚', ds: '黃俊肇' },
+    14: { tp: '魏士揚', ds: '黃俊肇' },
+    15: { tp: '謝棖智', ds: '魏士揚' },
+    16: { tp: '謝棖智', ds: '魏士揚' },
+    17: { tp: '謝棖智', ds: '魏士揚' },
+    18: { tp: '謝棖智', ds: '魏士揚' },
+    19: { tp: '謝棖智', ds: '魏士揚' },
+    20: { tp: '姜信帆', ds: '謝棖智' },
+    21: { tp: '黃俊肇', ds: '周兆亮' },
+    22: { tp: '黃俊肇', ds: '周兆亮' },
+    23: { tp: '黃俊肇', ds: '周兆亮' },
+    24: { tp: '姜信帆', ds: '謝棖智' },
+    25: { tp: '姜信帆', ds: '謝棖智' },
+    26: { tp: '周兆亮', ds: '黃勇評' },
+    27: { tp: '周兆亮', ds: '黃勇評' },
+    28: { tp: '周兆亮', ds: '黃勇評' },
+    29: { tp: '周兆亮', ds: '黃勇評' },
+    30: { tp: '周兆亮', ds: '黃勇評' },
   },
   '2026-07': {
-     1: '黃俊肇',  2: '黃俊肇',  3: '黃俊肇',  4: '周兆亮',  5: '周兆亮',
-     6: '周兆亮',  7: '周兆亮',  8: '魏士揚',  9: '魏士揚', 10: '魏士揚',
-    11: '魏士揚', 12: '魏士揚',
-    13: '姜信帆', 14: '姜信帆', 15: '姜信帆',
-    16: '黃勇評', 17: '黃勇評', 18: '黃勇評', 19: '黃勇評', 20: '黃勇評',
-    21: '姜信帆', 22: '姜信帆', 23: '姜信帆',
-    24: '謝棖智', 25: '謝棖智', 26: '謝棖智', 27: '謝棖智', 28: '謝棖智',
-    29: '黃俊肇', 30: '黃俊肇', 31: '黃俊肇',
+     1: { tp: '黃俊肇', ds: '周兆亮' },
+     2: { tp: '黃俊肇', ds: '周兆亮' },
+     3: { tp: '黃俊肇', ds: '周兆亮' },
+     4: { tp: '周兆亮', ds: '黃勇評' },
+     5: { tp: '周兆亮', ds: '黃勇評' },
+     6: { tp: '周兆亮', ds: '黃勇評' },
+     7: { tp: '周兆亮', ds: '黃勇評' },
+     8: { tp: '魏士揚', ds: '黃俊肇' },
+     9: { tp: '魏士揚', ds: '黃俊肇' },
+    10: { tp: '魏士揚', ds: '黃俊肇' },
+    11: { tp: '魏士揚', ds: '黃俊肇' },
+    12: { tp: '魏士揚', ds: '黃俊肇' },
+    13: { tp: '姜信帆', ds: '謝棖智' },
+    14: { tp: '姜信帆', ds: '謝棖智' },
+    15: { tp: '姜信帆', ds: '謝棖智' },
+    16: { tp: '黃勇評', ds: '姜信帆' },
+    17: { tp: '黃勇評', ds: '姜信帆' },
+    18: { tp: '黃勇評', ds: '姜信帆' },
+    19: { tp: '黃勇評', ds: '姜信帆' },
+    20: { tp: '黃勇評', ds: '姜信帆' },
+    21: { tp: '姜信帆', ds: '謝棖智' },
+    22: { tp: '姜信帆', ds: '謝棖智' },
+    23: { tp: '姜信帆', ds: '謝棖智' },
+    24: { tp: '謝棖智', ds: '魏士揚' },
+    25: { tp: '謝棖智', ds: '魏士揚' },
+    26: { tp: '謝棖智', ds: '魏士揚' },
+    27: { tp: '謝棖智', ds: '魏士揚' },
+    28: { tp: '謝棖智', ds: '魏士揚' },
+    29: { tp: '黃俊肇', ds: '周兆亮' },
+    30: { tp: '黃俊肇', ds: '周兆亮' },
+    31: { tp: '黃俊肇', ds: '周兆亮' },
   },
 };
 
@@ -352,23 +397,34 @@ function renderBanner(year, month, schedule) {
   if (!isCurrentMonth) { banner.style.display = 'none'; return; }
 
   const d = now.getDate();
-  const name = schedule[d];
-  if (!name) { banner.style.display = 'none'; return; }
+  const duty = schedule[d];
+  if (!duty) { banner.style.display = 'none'; return; }
 
   banner.style.display = 'flex';
   dateEl.textContent = `${year}/${String(month).padStart(2,'0')}/${String(d).padStart(2,'0')} （週${DOW_NAMES[now.getDay()]}）`;
 
   peopleEl.innerHTML = '';
-  const p = personByName[name];
-  if (p) {
-    const chip = document.createElement('div');
-    chip.className = 'tb-chip';
-    chip.style.background = p.color + '20';
-    chip.style.color = p.color;
-    chip.style.borderColor = p.color + '60';
-    chip.textContent = name;
-    peopleEl.appendChild(chip);
+  
+  const parts = [];
+  if (typeof duty === 'string') {
+    parts.push({ loc: '', name: duty });
+  } else {
+    if (duty.tp) parts.push({ loc: '台北', name: duty.tp });
+    if (duty.ds) parts.push({ loc: '淡水', name: duty.ds });
   }
+
+  parts.forEach(part => {
+    const p = personByName[part.name];
+    if (p) {
+      const chip = document.createElement('div');
+      chip.className = 'tb-chip';
+      chip.style.background = p.color + '20';
+      chip.style.color = p.color;
+      chip.style.borderColor = p.color + '60';
+      chip.textContent = part.loc ? `${part.loc}: ${part.name}` : part.name;
+      peopleEl.appendChild(chip);
+    }
+  });
 }
 
 // ── Calendar Grid ──
@@ -423,17 +479,31 @@ function renderCalendar() {
     cell.appendChild(numEl);
 
     // On-call chip
-    const name = schedule[day];
-    if (name) {
-      const p = personByName[name];
-      if (p) {
-        const list = document.createElement('div');
-        list.className = 'oncall-list';
-        const chip = document.createElement('div');
-        chip.className = `oncall-chip ${p.cls}`;
-        if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
-        chip.textContent = name;
-        list.appendChild(chip);
+    const duty = schedule[day];
+    if (duty) {
+      const list = document.createElement('div');
+      list.className = 'oncall-list';
+      
+      const parts = [];
+      if (typeof duty === 'string') {
+        parts.push({ loc: '', name: duty });
+      } else {
+        if (duty.tp) parts.push({ loc: '北', name: duty.tp });
+        if (duty.ds) parts.push({ loc: '淡', name: duty.ds });
+      }
+
+      parts.forEach(part => {
+        const p = personByName[part.name];
+        if (p) {
+          const chip = document.createElement('div');
+          chip.className = `oncall-chip ${p.cls}`;
+          if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
+          chip.textContent = part.loc ? `${part.loc}: ${part.name}` : part.name;
+          list.appendChild(chip);
+        }
+      });
+      
+      if (list.childElementCount > 0) {
         cell.appendChild(list);
       }
     }
