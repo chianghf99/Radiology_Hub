@@ -219,6 +219,23 @@
     .chip-xie     { background: #fce7f3; color: #831843; }
     .chip-wei     { background: #cffafe; color: #164e63; }
 
+    .filter-btn {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background: #f8fbff;
+    }
+
     @media (max-width: 600px) {
       .day-cell { padding: 5px; min-height: 68px; }
       .oncall-chip { font-size: 0.62rem; padding: 1px 4px; }
@@ -249,7 +266,13 @@
     <div class="tb-people" id="todayPeople"></div>
   </div>
 
-  <div class="legend" id="legend"></div>
+  <div style="display:flex; gap:12px; align-items:center; margin-bottom:18px; flex-wrap:wrap;">
+    <div class="legend" id="legend" style="margin-bottom:0;"></div>
+    <div style="display:flex; gap:6px;">
+      <button class="filter-btn" onclick="toggleAllFilters(true)">全選</button>
+      <button class="filter-btn" onclick="toggleAllFilters(false)">全取消</button>
+    </div>
+  </div>
 
   <div class="cal-header-row">
     <div class="cal-dow">週一</div>
@@ -381,6 +404,21 @@ PEOPLE.forEach(p => {
   legendEl.appendChild(pill);
 });
 
+function toggleAllFilters(showAll) {
+  const pills = legendEl.querySelectorAll('.legend-pill');
+  PEOPLE.forEach((p, idx) => {
+    const pill = pills[idx];
+    if (showAll) {
+      hiddenPeople.delete(p.key);
+      if (pill) pill.classList.remove('dimmed');
+    } else {
+      hiddenPeople.add(p.key);
+      if (pill) pill.classList.add('dimmed');
+    }
+  });
+  renderCalendar();
+}
+
 // ── 換月 ──
 function changeMonth(dir) {
   currentIdx = Math.max(0, Math.min(MONTH_KEYS.length - 1, currentIdx + dir));
@@ -405,26 +443,19 @@ function renderBanner(year, month, schedule) {
 
   peopleEl.innerHTML = '';
   
-  const parts = [];
-  if (typeof duty === 'string') {
-    parts.push({ loc: '', name: duty });
-  } else {
-    if (duty.tp) parts.push({ loc: '台北', name: duty.tp });
-    if (duty.ds) parts.push({ loc: '淡水', name: duty.ds });
-  }
-
-  parts.forEach(part => {
-    const p = personByName[part.name];
+  const name = (typeof duty === 'string') ? duty : duty.tp;
+  if (name) {
+    const p = personByName[name];
     if (p) {
       const chip = document.createElement('div');
       chip.className = 'tb-chip';
       chip.style.background = p.color + '20';
       chip.style.color = p.color;
       chip.style.borderColor = p.color + '60';
-      chip.textContent = part.loc ? `${part.loc}: ${part.name}` : part.name;
+      chip.textContent = name;
       peopleEl.appendChild(chip);
     }
-  });
+  }
 }
 
 // ── Calendar Grid ──
@@ -481,30 +512,19 @@ function renderCalendar() {
     // On-call chip
     const duty = schedule[day];
     if (duty) {
-      const list = document.createElement('div');
-      list.className = 'oncall-list';
-      
-      const parts = [];
-      if (typeof duty === 'string') {
-        parts.push({ loc: '', name: duty });
-      } else {
-        if (duty.tp) parts.push({ loc: '北', name: duty.tp });
-        if (duty.ds) parts.push({ loc: '淡', name: duty.ds });
-      }
-
-      parts.forEach(part => {
-        const p = personByName[part.name];
+      const name = (typeof duty === 'string') ? duty : duty.tp;
+      if (name) {
+        const p = personByName[name];
         if (p) {
+          const list = document.createElement('div');
+          list.className = 'oncall-list';
           const chip = document.createElement('div');
           chip.className = `oncall-chip ${p.cls}`;
           if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
-          chip.textContent = part.loc ? `${part.loc}: ${part.name}` : part.name;
+          chip.textContent = name;
           list.appendChild(chip);
+          cell.appendChild(list);
         }
-      });
-      
-      if (list.childElementCount > 0) {
-        cell.appendChild(list);
       }
     }
 
