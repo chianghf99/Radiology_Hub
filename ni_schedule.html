@@ -487,8 +487,10 @@ function renderPerson(raw, showTraineeTag = true) {
     const p2 = parts[1].trim();
     if (showTraineeTag) {
       return `<span class="person ${personCls(p1)}">${p1}</span>`
-           + `<span class="trainee-tag">帶</span>`
-           + `<span class="person ${personCls(p2)}"> ${p2}</span>`;
+           + `<span class="trainee-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; margin-left:4px;">學</span>`
+           + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
+           + `<span class="person ${personCls(p2)}">${p2}</span>`
+           + `<span class="trainee-tag" style="background:#fef3c7; color:#78350f; border-color:#fcd34d; margin-left:4px;">Cover</span>`;
     } else {
       return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">AM</span> <span class="person ${personCls(p1)}">${p1}</span>`
            + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
@@ -604,8 +606,8 @@ function getDoctorTasksForToday(a) {
     }
     if (raw.includes('/')) {
       const parts = raw.split('/');
-      addTask(parts[0].trim(), `${taskName} (帶)`);
-      addTask(parts[1].trim(), `${taskName} (學習)`);
+      addTask(parts[0].trim(), `${taskName} (學習)`);
+      addTask(parts[1].trim(), `${taskName} (Cover)`);
       return;
     }
     addTask(raw, taskName);
