@@ -521,6 +521,12 @@ function changeMonth(dir) {
   render();
 }
 
+let todayCardTab = 'today';
+function setTodayTab(tab) {
+  todayCardTab = tab;
+  render();
+}
+
 // ════════════════════════════════════════════════════
 //  Today logic
 // ════════════════════════════════════════════════════
@@ -533,18 +539,23 @@ function getWeekNum(year, month, day) {
   return Math.ceil((day + monOffset) / 7);
 }
 
-function getTodayAssignments(key) {
+function getTodayAssignments(key, targetDate = new Date()) {
   const [y, m] = key.split('-').map(Number);
-  if (now.getFullYear() !== y || now.getMonth() + 1 !== m) return null;
-
-  const day    = now.getDate();
-  const dowNum = now.getDay(); // 0=Sun
+  
+  const day    = targetDate.getDate();
+  const dowNum = targetDate.getDay(); // 0=Sun
   const dowLabel = DOW_LABEL[dowNum];
-  if (!dowLabel) return null; // Sunday
+  const dateStr = `${y}/${String(m).padStart(2,'0')}/${String(day).padStart(2,'0')} （週${DOW_NAMES_TW[dowNum]}）`;
+
+  if (dowNum === 0) {
+    // Sunday
+    return { dateStr, isSunday: true };
+  }
 
   const d = NI_DATA[key];
+  if (!d) return null; // Month data not available yet
+  
   const weekLabel = `W${getWeekNum(y, m, day)}`;
-  const dateStr = `${y}/${String(m).padStart(2,'0')}/${String(day).padStart(2,'0')} （週${DOW_NAMES_TW[dowNum]}）`;
 
   if (dowNum === 6) {
     // Saturday — match specific date like '6/06'
@@ -652,19 +663,48 @@ function getDoctorTasksForToday(a) {
 }
 
 function renderTodayCard(key) {
-  const a = getTodayAssignments(key);
+  const targetDate = new Date();
+  let titleText = '今日分配';
+  if (todayCardTab === 'tomorrow') {
+    targetDate.setDate(targetDate.getDate() + 1);
+    titleText = '明日預覽';
+  }
+  
+  const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}`;
+  const a = getTodayAssignments(targetKey, targetDate);
   if (!a) return null;
 
   const card = document.createElement('div');
   card.className = 'today-card';
 
+  // Toggle button styles based on state
+  const bgToday = todayCardTab === 'today' ? '#ffffff' : 'transparent';
+  const colorToday = todayCardTab === 'today' ? 'var(--primary-color)' : '#64748b';
+  const shadowToday = todayCardTab === 'today' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+  
+  const bgTomorrow = todayCardTab === 'tomorrow' ? '#ffffff' : 'transparent';
+  const colorTomorrow = todayCardTab === 'tomorrow' ? 'var(--primary-color)' : '#64748b';
+  const shadowTomorrow = todayCardTab === 'tomorrow' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+
   // ── Header ──
   let headerHtml = `
-    <div class="today-card-header">
-      <h2>📅 今日分配</h2>
-      <span class="today-date-badge">${a.dateStr}</span>
+    <div class="today-card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <h2>📅 ${titleText}</h2>
+        <span class="today-date-badge">${a.dateStr}</span>
+      </div>
+      <div style="display:flex; gap:2px; background:#f1f5f9; padding:2px; border-radius:6px; border:1px solid #e2e8f0;">
+        <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday};">今日任務</button>
+        <button onclick="setTodayTab('tomorrow')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgTomorrow}; color:${colorTomorrow}; box-shadow:${shadowTomorrow};">明日預覽</button>
+      </div>
     </div>`;
   card.innerHTML = headerHtml;
+
+  // ── Sunday ──
+  if (a.isSunday) {
+    card.innerHTML += `<div style="padding:20px 0; text-align:center; color:var(--text-sub); font-size:0.88rem; font-weight:600;">☕ 週日常規日班休假</div>`;
+    return card;
+  }
 
   // ── Saturday ──
   if (a.isSat) {
@@ -677,7 +717,7 @@ function renderTodayCard(key) {
           ${a.sat.note ? `<div style="font-size:0.72rem;color:var(--text-sub)">※ ${a.sat.note}</div>` : ''}
         </div>`;
     } else {
-      card.innerHTML += `<div style="color:var(--text-sub);font-size:0.88rem">今日無週六班資料</div>`;
+      card.innerHTML += `<div style="color:var(--text-sub);font-size:0.88rem;padding:10px 0;">今日無週六班資料</div>`;
     }
     return card;
   }
