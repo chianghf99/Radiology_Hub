@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PICC Report Generator</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        .nhi-info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+        .nhi-info strong { color: #1565c0; }
+        
+        .copy-success {
+            color: #2e7d32;
+            font-size: 0.85rem;
+            margin-left: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* 讓手機版更好點選 */
+        @media (max-width: 600px) {
+            .field-label { min-width: 100%; margin-bottom: 5px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="report-container">
+        <a href="index.html" class="back-link">← 返回首頁</a>
+        <h1>Peripherally Inserted Central Catheter (PICC)
+            <span style="font-size:0.55em; color:#888; font-weight:normal;">(Updated: 2026/06/11)</span>
+        </h1>
+
+        <div class="section-card">
+            <div class="section-title">1. 基本資訊 (Basic Info)</div>
+            
+            <div class="field-row">
+                <span class="field-label">側性 (Side):</span>
+                <div class="device-group" id="side_options">
+                    <label><input type="radio" name="side" value="right" checked> Right</label>
+                    <label><input type="radio" name="side" value="left"> Left</label>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <span class="field-label">血管 (Vein):</span>
+                <div class="device-group" id="vein_options">
+                    <label><input type="radio" name="vein" value="brachial vein"> Brachial vein</label>
+                    <label><input type="radio" name="vein" value="cephalic vein"> Cephalic vein</label>
+                    <label><input type="radio" name="vein" value="basilic vein" checked> Basilic vein</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">2. 導管型號 (Device Model)</div>
+            <div class="device-group" id="device_options">
+                <label><input type="radio" name="device" value="5Fr. Arrow (Pressure injectable)" checked> 5Fr. Arrow (Pressure injectable)</label>
+                <label><input type="radio" name="device" value="5Fr. Power (Pressure injectable)"> 5Fr. Power (Pressure injectable)</label>
+                <label><input type="radio" name="device" value="4Fr. single lumen Groshong"> 4Fr. single lumen Groshong</label>
+                <label><input type="radio" name="device" value="4Fr. single lumen Arrow (Pressure injectable)"> 4Fr. single lumen Arrow (Pressure injectable)</label>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">3. 健保給付適應症 (NHI Indication)</div>
+            <div class="nhi-info">
+                <strong>💡 健保小提醒：</strong> 若預期治療未達二週（或新生兒未達一週），通常不符合給付標準。
+            </div>
+            <select id="nhi_indication" class="hl" style="width: 100%;">
+                <option value="">-- 請選擇適應症 --</option>
+                <option value="cancer chemotherapy or end-stage pain treatment">癌症化學治療及癌症末期之疼痛治療</option>
+                <option value="total parenteral nutrition (TPN) with expected treatment over 2 weeks">全靜脈營養輸液 (TPN) (預期需置放2週以上)</option>
+                <option value="immunocompromised state or use of immunosuppressants with expected treatment over 2 weeks">免疫不全或使用免疫抑制劑患者 (預期需置放2週以上)</option>
+                <option value="requirement of central venous catheter (CVC) with expected treatment over 2 weeks">須接受中心靜脈導管 (CVC) 置入之患者 (預期需置放2週以上)</option>
+                <option value="parenteral nutrition for infant under 1 year old">1歲以下嬰兒使用靜脈營養輸液</option>
+                <option value="critically ill newborn or extremely low birth weight infant with expected treatment over 1 week">重症新生兒或極低出生體重兒 (預期需置放1週以上)</option>
+                <option value="self-pay (does not meet NHI criteria)">自費 / 不符合上述健保給付標準</option>
+            </select>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">
+                Final Report Preview
+                <span id="copy_status" class="copy-success">已複製！</span>
+            </div>
+            <textarea id="Final_Report" rows="12" readonly></textarea>
+            
+            <div class="btn-group">
+                <button class="btn-secondary" onclick="resetForm()">Reset</button>
+                <button class="btn-primary" style="flex: 1;" onclick="copyReport()">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const finalReport = document.getElementById('Final_Report');
+        const copyStatus = document.getElementById('copy_status');
+        const nhiSelect = document.getElementById('nhi_indication');
+
+        function updateReport() {
+            const side = document.querySelector('input[name="side"]:checked').value;
+            const vein = document.querySelector('input[name="vein"]:checked').value;
+            const device = document.querySelector('input[name="device"]:checked').value;
+            const indication = nhiSelect.value;
+
+            let indicationLine = "";
+            if (indication && indication !== "self-pay (does not meet NHI criteria)") {
+                indicationLine = `Indication: ${indication}\n\n`;
+            }
+
+            const reportText = `${indicationLine}Peripherally inserted central catheter(PICC) is done under assistance of echo-guided procedure. After skin preparation and local anesthesia, a puncture needle is used to achieve ${side} ${vein} and subsequent upper limb venogram is performed for confirming insertion route. Then insertion of the PICC tube with the tip at cavoatrial junction is performed smoothly. Post-procedure venogram shows good function of the tube.
+
+IMP: Successful echo-guided insertion of the ${device} PICC tube via ${side} ${vein} with the tip at cavoatrial junction.`;
+
+            finalReport.value = reportText;
+        }
+
+        function copyReport() {
+            finalReport.select();
+            document.execCommand('copy');
+            
+            copyStatus.style.display = 'inline';
+            setTimeout(() => {
+                copyStatus.style.display = 'none';
+            }, 2000);
+        }
+
+        function resetForm() {
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                if (radio.value === 'right' || radio.value === 'basilic vein' || radio.value === '5Fr. Arrow (Pressure injectable)') {
+                    radio.checked = true;
+                }
+            });
+            nhiSelect.value = "";
+            updateReport();
+        }
+
+        // Add event listeners
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('change', updateReport);
+        });
+        nhiSelect.addEventListener('change', updateReport);
+
+        // Initial call
+        updateReport();
+    </script>
+</body>
+</html>

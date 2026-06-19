@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endovascular Thrombectomy Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        body { padding: 20px; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        /* CTP 數據專用佈局 */
+        .ctp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .ctp-item {
+            background: #fafafa;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ctp-item input { width: 60px; text-align: center; }
+
+        input[name="Hypo_index"], input[name="Mismatch_vol"], input[name="Mismatch_ratio"] {
+            background-color: #e8f5e9;
+            border-color: #a5d6a7;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        .helper-link { color: var(--accent-color); text-decoration: none; font-size: 0.9rem; }
+        .helper-link:hover { text-decoration: underline; }
+
+        .datetime-picker { width: 160px; text-align: center; }
+
+        textarea[name="Others"] { width: 100%; box-sizing: border-box; resize: vertical; }
+
+        .info-list {
+            margin: 5px 0 0 0;
+            padding-left: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .info-list li { margin-bottom: 2px; }
+    </style>
+
+<body>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <a href="index.html" class="back-link" style="margin-bottom: 0;">← 返回首頁</a>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <a href="evt_import.html" class="helper-link" style="font-weight: bold; font-size: 0.95rem;">📥 匯入舊報告</a>
+            <a href="https://docs.google.com/spreadsheets/d/1sq8-khng-EF7nKLvBJnKLmCEMIsA0-BdqlcsFXA_Au4/edit?gid=0#gid=0" target="_blank" class="helper-link" style="font-weight: bold; font-size: 0.95rem;">📊 View Stats Sheet</a>
+        </div>
+    </div>
+    <h1>Endovascular Thrombectomy Reporting Platform <span style="font-size:0.6em; color:#888; font-weight:normal;">(Updated: 2026/06/10)</span></h1>
+
+    <form name="form">
+        
+        <div class="section-card">
+            <div class="section-title">🪪 Patient</div>
+            <div class="field-row">
+                <span class="field-label" style="min-width: 80px;">病歷號：</span>
+                <input type="text" name="patient_id" placeholder="e.g. 12345678"
+                    style="width:180px; font-size:1rem; letter-spacing:0.05em;">
+                <span style="color:#999; font-size:0.85em; margin-left:8px;">（僅用於統計，不會出現在報告中）</span>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">🧴 Anesthesia</div>
+            <div>
+                <label><input name="Anesthesia" type="radio" value="Local anesthesia" checked> Local anesthesia</label>
+                <label><input name="Anesthesia" type="radio" value="General anesthesia"> General anesthesia</label>
+                <label><input name="Anesthesia" type="radio" value="IV sedation"> IV sedation</label>
+                <span style="color:#666; font-size:0.9em;">[ 
+                    <label><input name="IV_Medication" type="checkbox" value="Midazolam">Midazolam</label>
+                    <label><input name="IV_Medication" type="checkbox" value="Fentanyl">Fentanyl</label>
+                    <label><input name="IV_Medication" type="checkbox" value="Propofol">Propofol</label>
+                    <label><input name="IV_Medication" type="checkbox" value="Morphine">Morphine</label> 
+                ]</span>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">🧠 Imaging Assessment</div>
+            
+            <div class="sub-label">Nonenhanced Brain CT (ASPECTS)</div>
+            <div class="grid-2">
+                <div>
+                    <b>Anterior Circulation:</b><br>
+                    <div class="device-group">
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="Caudate nucleus">Caudate</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="Lentiform nucleus">Lentiform</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="Internal capsule">Int. Capsule</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="Insula">Insula</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="M1">M1</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="M2">M2</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="M3">M3</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="M4">M4</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="M5">M5</label>
+                        <label><input name="Anterior_ASPECTS" type="checkbox" value="M6">M6</label>
+                    </div>
+                </div>
+                <div>
+                    <b>Posterior Circulation:</b><br>
+                    <div class="device-group">
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Right thalamus">R-Thalamus</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Left thalamus">L-Thalamus</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Right occipital lobe">R-Occipital</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Left occipital lobe">L-Occipital</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Right cerebellar hemisphere">R-Cerebellum</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Left cerebellar hemisphere">L-Cerebellum</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Midbrain">Midbrain</label>
+                        <label><input name="Posterior_ASPECTS" type="checkbox" value="Pons">Pons</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 20px 0; border:0; border-top:1px dashed #ddd;">
+
+            <div class="sub-label">Multiphase Brain CTA</div>
+            <div>
+                Collateral Grading Score (0-5): 
+                <select name="mCTA_Grading">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                </select>
+                <ul class="info-list">
+                    <li>(Grade 5 Good collateral: Similar vessel enhancement pattern)</li>
+                    <li>(Grade 4 Intermediate collateral: A2 phase similar to Normal side A1 phase vessels)</li>
+                    <li>(Grade 3 Poor collateral: One phase delay with decreased vessel prominence or A3 phase similar to Normal side A1 phase vessels)</li>
+                    <li>(Grade 2 Poor collateral: Two phase delay with decreased vessel prominence or focal regions without vessels)</li>
+                    <li>(Grade 1 Poor collateral: A few vessels in A1-A3)</li>
+                    <li>(Grade 0 Poor collateral: No vessel in A1-A3)</li>
+                </ul>
+                <p style="font-size:0.85em; color:#999; margin-top:5px;">Referring to Radiology. 2015;275:510-520</p>
+            </div>
+
+            <hr style="margin: 20px 0; border:0; border-top:1px dashed #ddd;">
+
+            <div class="sub-label">CTP Results (RAPID)</div>
+            
+            <div style="font-weight:bold; color:#2c3e50; margin-bottom:5px;">1. Tmax Parameters (Time)</div>
+            <div class="ctp-grid">
+                <div class="ctp-item">Tmax &gt; 10s: <input name="Tmax10" type="text"> ml</div>
+                <div class="ctp-item">Tmax &gt; 8s: <input name="Tmax8" type="text"> ml</div>
+                <div class="ctp-item">Tmax &gt; 6s (Penumbra): <input name="Tmax6" type="text"> ml</div>
+                <div class="ctp-item">Tmax &gt; 4s: <input name="Tmax4" type="text"> ml</div>
+                <div class="ctp-item">
+                    Hypo Index: <input name="Hypo_index" type="text" placeholder="Auto" readonly>
+                </div>
+            </div>
+
+            <div style="font-weight:bold; color:#2c3e50; margin-bottom:5px;">2. CBF Parameters (Flow)</div>
+            <div class="ctp-grid">
+                <div class="ctp-item">CBF &lt; 20%: <input name="CBF20" type="text"> ml</div>
+                <div class="ctp-item">CBF &lt; 30% (Core): <input name="CBF30" type="text"> ml</div>
+                <div class="ctp-item">CBF &lt; 34%: <input name="CBF34" type="text"> ml</div>
+                <div class="ctp-item">CBF &lt; 38%: <input name="CBF38" type="text"> ml</div>
+            </div>
+
+            <div style="font-weight:bold; color:#2c3e50; margin-bottom:5px;">3. CBV Parameters (Volume)</div>
+            <div class="ctp-grid">
+                <div class="ctp-item">CBV &lt; 34%: <input name="CBV34" type="text"> ml</div>
+                <div class="ctp-item">CBV &lt; 38%: <input name="CBV38" type="text"> ml</div>
+                <div class="ctp-item">CBV &lt; 42%: <input name="CBV42" type="text"> ml</div>
+                <div class="ctp-item">
+                    rCBV Index: <input name="rCBV_index" type="text">
+                </div>
+            </div>
+
+            <div style="font-weight:bold; color:#2c3e50; margin-bottom:5px;">4. Mismatch (Auto-calculated)</div>
+            <div class="ctp-grid">
+                <div class="ctp-item" style="border: 1px solid #bbdefb; background: #e3f2fd;">
+                    Mismatch Vol: <input name="Mismatch_vol" type="text" placeholder="Auto" readonly> ml
+                </div>
+                <div class="ctp-item" style="border: 1px solid #bbdefb; background: #e3f2fd;">
+                    Mismatch Ratio: <input name="Mismatch_ratio" type="text" placeholder="Auto" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">⏱️ Time & Approach</div>
+            <div class="grid-2">
+                <div>
+                    <p>Onset Time: <br><input type="text" class="datetime-picker" name="onsettime" placeholder="Select Time"></p>
+                    <p>Procedure Start (Angio Arrival): <br><input type="text" class="datetime-picker" name="proceduretime" placeholder="Select Time"> <a href="https://docs.google.com/spreadsheets/d/1GjMWXXcdLpB4wgIknmTDIVkyW2-DUCT8Vpn0oFQpkdk/edit?gid=1317938315#gid=1317938315" target="_blank" class="helper-link">Check Schedule</a></p>
+                    <p>Puncture Time: <br><input type="text" class="datetime-picker" name="puncturetime" placeholder="Select Time"></p>
+                </div>
+                <div>
+                    <p class="sub-label">Approach & Sheath</p>
+                    <div>
+                        <label><input name="Approach" type="radio" value="Right" checked>Right femoral</label>
+                        <label><input name="Approach" type="radio" value="Left">Left femoral</label>
+                    </div>
+                    <div style="margin-top:10px;">
+                        Sheath: 
+                        <label><input name="Sheath" type="radio" value="6Fr">6Fr</label>
+                        <label><input name="Sheath" type="radio" value="7Fr">7Fr</label>
+                        <label><input name="Sheath" type="radio" value="8Fr" checked>8Fr</label>
+                        <label><input name="Sheath" type="radio" value="9Fr">9Fr</label>
+                    </div>
+                    <div style="margin-top:10px;">
+                        Ultrasound guidance:
+                        <label><input name="Ultrasound" type="radio" value="" checked>No</label>
+                        <label><input name="Ultrasound" type="radio" value=" under ultrasound guidance">Yes</label>
+                    </div>
+                </div>
+            </div>
+            
+            <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+            
+            <p class="sub-label">Thrombus Location</p>
+            <div class="device-group">
+                <label><input name="Thrombus" type="checkbox" value="Right ICA">Right ICA</label>
+                <label><input name="Thrombus" type="checkbox" value="Right M1">Right M1</label>
+                <label><input name="Thrombus" type="checkbox" value="Right M2">Right M2</label>
+                <label><input name="Thrombus" type="checkbox" value="Right ACA">Right ACA</label>
+                <label style="border-left: 2px solid #ccc;"><input name="Thrombus" type="checkbox" value="Left ICA">Left ICA</label>
+                <label><input name="Thrombus" type="checkbox" value="Left M1">Left M1</label>
+                <label><input name="Thrombus" type="checkbox" value="Left M2">Left M2</label>
+                <label><input name="Thrombus" type="checkbox" value="Left ACA">Left ACA</label>
+                <label style="border-left: 2px solid #ccc;"><input name="Thrombus" type="checkbox" value="Right VA">Right VA</label>
+                <label><input name="Thrombus" type="checkbox" value="Left VA">Left VA</label>
+                <label><input name="Thrombus" type="checkbox" value="BA">BA</label>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">🔧 Devices & Technique</div>
+            
+            <div class="sub-label">Guiding Catheter</div>
+            <div class="device-group">
+                <label><input name="Guiding" type="radio" value="Neuron 088">Neuron 088</label>
+                <label><input name="Guiding" type="radio" value="AXS Infinity LS 088" checked>AXS Infinity LS 088</label>
+                <label><input name="Guiding" type="radio" value="AXS Infinity LS 091">AXS Infinity LS 091</label>
+                <label><input name="Guiding" type="radio" value="Cerebase DA 090">Cerebase DA 090</label>
+                <label><input name="Guiding" type="radio" value="Shuttle">Shuttle</label>
+                <label><input name="Guiding" type="radio" value="Cello balloon guiding catheter">Cello Balloon</label>
+                <label><input name="Guiding" type="radio" value="Fullblock balloon guiding catheter">Fullblock Balloon</label>
+                <label><input name="Guiding" type="radio" value="Neuron 070">Neuron 070</label>
+                <label><input name="Guiding" type="radio" value="Envoy 6Fr">Envoy 6Fr</label>
+                <label><input name="Guiding" type="radio" value="Diagnostic catheter">Diagnostic</label>
+            </div>
+
+            <div class="sub-label">Intermediate Catheter</div>
+            <div class="device-group">
+                <label><input name="Intermediate" type="radio" value="Not used" checked>None</label>
+                <label><input name="Intermediate" type="radio" value="Navien 058">Navien 058</label>
+                <label><input name="Intermediate" type="radio" value="Navien 072">Navien 072</label>
+                <label><input name="Intermediate" type="radio" value="Extraflex 5Fr.">Extraflex 5Fr</label>
+                <label><input name="Intermediate" type="radio" value="Extraflex 6Fr.">Extraflex 6Fr</label>
+            </div>
+
+            <div class="sub-label">Microcatheter</div>
+            <div class="device-group">
+                <label><input name="Microcatheter" type="checkbox" value="None">None</label>
+                <label><input name="Microcatheter" type="checkbox" value="Headway 17">Headway 17</label>
+                <label><input name="Microcatheter" type="checkbox" value="Phenom 017">Phenom 017</label>
+                <label><input name="Microcatheter" type="checkbox" value="SL-10">SL-10</label>
+                <label><input name="Microcatheter" type="checkbox" value="Echelon 10">Echelon 10</label>
+                <label><input name="Microcatheter" type="checkbox" value="Headway 21">Headway 21</label>
+                <label><input name="Microcatheter" type="checkbox" value="Phenom 021">Phenom 021</label>
+                <label><input name="Microcatheter" type="checkbox" value="Prowler Select Plus">Prowler Select Plus</label>
+                <label><input name="Microcatheter" type="checkbox" value="Headway 27">Headway 27</label>
+                <label><input name="Microcatheter" type="checkbox" value="Phenom 027">Phenom 027</label>
+                <label><input name="Microcatheter" type="checkbox" value="Marksman">Marksman</label>
+            </div>
+
+            <div class="sub-label">Microguidewire</div>
+            <div class="device-group">
+                <label><input name="Microguidewire" type="checkbox" value="None">None</label>
+                <label><input name="Microguidewire" type="checkbox" value="Asahi Chikai 10">Chikai 10</label>
+                <label><input name="Microguidewire" type="checkbox" value="X-pedian 10">X-pedian 10</label>
+                <label><input name="Microguidewire" type="checkbox" value="Traxcess 14">Traxcess 14</label>
+                <label><input name="Microguidewire" type="checkbox" value="Asahi Chikai 14">Chikai 14</label>
+                <label><input name="Microguidewire" type="checkbox" value="Synchro">Synchro</label>
+            </div>
+
+            <div class="sub-label">Aspiration Tube</div>
+            <div class="device-group">
+                <label><input name="Aspiration_tube" type="checkbox" value="Sofia 5Fr.">Sofia 5</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Sofia plus 6Fr.">Sofia Plus 6</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Flowplus 5Fr.">Flowplus 5</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Flowplus 6Fr.">Flowplus 6</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="React 68">React 68</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="React 71">React 71</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Catalyst 5">Catalyst 5</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Catalyst 7">Catalyst 7</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Red 43">Red 43</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Red 62">Red 62</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Red 68">Red 68</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Red 72">Red 72</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Cereglide 57">Cereglide 57</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="Cereglide 71">Cereglide 71</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="AXS Vecta 46">Vecta 46</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="AXS Vecta 71">Vecta 71</label>
+                <label><input name="Aspiration_tube" type="checkbox" value="AXS Vecta 74">Vecta 74</label>
+            </div>
+            
+            <div style="margin-top:10px;">
+                <b>Suction conducted:</b> 
+                <select name="Suction" style="width:60px;">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                    <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                    <option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                </select> pass
+            </div>
+
+            <div class="sub-label">Stent-retriever</div>
+            <div class="device-group">
+                <label><input name="Stent" type="checkbox" value="Solitaire 3x20mm">Solitaire 3x20</label>
+                <label><input name="Stent" type="checkbox" value="Solitaire 4x20mm">Solitaire 4x20</label>
+                <label><input name="Stent" type="checkbox" value="Solitaire 4x40mm">Solitaire 4x40</label>
+                <label><input name="Stent" type="checkbox" value="Solitaire 6x40mm">Solitaire 6x40</label>
+                <label><input name="Stent" type="checkbox" value="Trevo NXT 4x28mm">Trevo 4x28</label>
+                <label><input name="Stent" type="checkbox" value="Trevo NXT 4x41mm">Trevo 4x41</label>
+                <label><input name="Stent" type="checkbox" value="Embotrap 5x22mm">Embotrap 5x22</label>
+                <label><input name="Stent" type="checkbox" value="Embotrap 5x37mm">Embotrap 5x37</label>
+            </div>
+
+            <div style="margin-top:10px;">
+                <b>Stent retriever conducted:</b>
+                <select name="Stent_pass" style="width:60px;">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                    <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                    <option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                </select> pass
+            </div>
+
+            <div style="margin-top:15px; padding:10px; background:#f0f4f8; border-radius:6px;">
+                <b>Technique used:</b> 
+                <label><input name="Technique" type="checkbox" value="Simple suction">Simple suction</label>
+                <label><input name="Technique" type="checkbox" value="Stent-retrieving">Stent-retrieving</label>
+                <label><input name="Technique" type="checkbox" value="Combined technique">Combined technique</label>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">🏁 Results & Outcome</div>
+            
+            <div class="grid-2">
+                <div>
+                    <label class="sub-label">Final mTICI Grade</label>
+                    <select name="mTICI" required="required" style="width:100%; max-width:200px; padding:10px; font-weight:bold;">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2a">2a</option>
+                        <option value="2b">2b</option>
+                        <option value="2c">2c</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="sub-label">Operator</label>
+                    <div>
+                        <label><input name="Operator" type="radio" value="" checked>Neuroradiologist</label>
+                        <label><input name="Operator" type="radio" value="4189">4189</label>
+                        <label><input name="Operator" type="radio" value="4191">4191</label>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:15px;">
+                <p>Time of First Contact: <input type="text" class="datetime-picker" name="contacttime" placeholder="Select Time"></p>
+                <p>Procedure End Time: <input type="text" class="datetime-picker" name="endtime" placeholder="Select Time"></p>
+            </div>
+
+            <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+
+            <div class="sub-label">On-table CT Findings</div>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <label><input name="CT" type="radio" value="Not performed">Not performed</label>
+                <label><input name="CT" type="radio" value="No Hemorrhage" checked>No Hemorrhage</label>
+                <label><input name="CT" type="radio" value="Likely Hemorrhage">Likely Hemorrhage</label>
+                <label><input name="CT" type="radio" value="Likely Contrast parenchymal enhancement">Likely Contrast parenchymal enhancement</label>
+                <label><input name="CT" type="radio" value="Both hemorrhage and contrast parenchymal enhancement">Both hemorrhage and contrast parenchymal enhancement</label>
+                <label><input name="CT" type="radio" value="Contrast enhancement with blood contents">Contrast enhancement with blood contents</label>
+                <label><input name="CT" type="radio" value="Uncertain hyperdensities">Uncertain hyperdensities</label>
+            </div>
+            <div style="margin-top:15px;">
+                <span class="sub-label">Closure Device:</span>
+                <label><input name="Closure" type="radio" value="Not used" checked>Not used</label>
+                <label><input name="Closure" type="radio" value="Angioseal">Angioseal</label>
+                <label><input name="Closure" type="radio" value="Starclose">Starclose</label>
+                <label><input name="Closure" type="radio" value="Obtura">Obtura</label>
+            </div>
+            
+            <div style="margin-top:15px;">
+                <span class="sub-label">Other Notes:</span>
+                <textarea rows="10" name="Others" placeholder="Optional notes..."></textarea>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="btn-primary" onclick="activeFunction()">📄 Generate Report</button>
+            <button type="button" class="btn-secondary" onclick="refresh()">🗑️ Clear</button>
+        </div>
+
+    </form>
+
+    <div style="margin-top: 30px;">
+        <div style="display: flex; gap: 15px;">
+            <button class="btn-success" onclick="copyFunction()" style="margin-top: 0; flex: 1;">📋 Copy Final Report</button>
+            <button id="btn-submit-stats" class="btn-primary" onclick="submitStats()" disabled
+                    style="flex: 1; opacity:0.45; transition: all 0.3s;">
+                📊 Submit to Stats
+            </button>
+        </div>
+        <p style="font-weight:bold; margin-bottom:5px; margin-top:15px;">Final Report:</p>
+        <textarea rows="20" id="Final_Report" name="Final_Report"></textarea>
+    </div>
+
+</div>
+
+<script>
+    // ★ 部署 GAS Web App 後，把 URL 貼在這裡
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx2cA4Bes5vHK8U3nE3ZtIPjZzscwb14NZppL_H_crwzh2eqEZunoLPVdZddcrXKch5/exec';
+    // 初始化 Flatpickr 24小時制選擇器
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr(".datetime-picker", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i", // 年-月-日 24時:分
+            time_24hr: true,         // 強制 24 小時制
+            defaultHour: 12,
+            defaultMinute: 0,
+            allowInput: true         // 允許手動輸入
+        });
+        
+        // 啟動 CTP 自動計算監聽
+        initAutoCalcs();
+    });
+    
+    // 自動計算功能優化
+    function initAutoCalcs() {
+        const f = document.form;
+        const inputs = ['Tmax10', 'Tmax8', 'Tmax6', 'Tmax4', 'CBF20', 'CBF30', 'CBF34', 'CBF38'];
+
+        function updateAll() {
+            const v10 = parseFloat(f.Tmax10.value);
+            const v8 = parseFloat(f.Tmax8.value);
+            const v6 = parseFloat(f.Tmax6.value);
+            const v4 = parseFloat(f.Tmax4.value);
+            const cbf30 = parseFloat(f.CBF30.value);
+
+            // 1. Hypo Index
+            if (!isNaN(v10) && !isNaN(v6) && v6 !== 0) {
+                f.Hypo_index.value = (v10 / v6).toFixed(1);
+            } else {
+                f.Hypo_index.value = "";
+            }
+
+            // 2. Mismatch Vol & Ratio
+            if (!isNaN(v6) && !isNaN(cbf30)) {
+                const vol = v6 - cbf30;
+                if (f.Mismatch_vol) f.Mismatch_vol.value = vol.toFixed(0);
+                
+                if (f.Mismatch_ratio) {
+                    if (cbf30 === 0) {
+                        f.Mismatch_ratio.value = v6 > 0 ? "Infinite" : "0";
+                    } else {
+                        f.Mismatch_ratio.value = (v6 / cbf30).toFixed(2);
+                    }
+                }
+            }
+            
+            // 3. 數據合理性檢查 (Tmax 遞減驗證)
+            const fields = [f.Tmax10, f.Tmax8, f.Tmax6, f.Tmax4];
+            for (let i = 0; i < fields.length - 1; i++) {
+                const cur = parseFloat(fields[i].value);
+                const next = parseFloat(fields[i+1].value);
+                if (!isNaN(cur) && !isNaN(next) && cur > next) {
+                    fields[i].style.backgroundColor = "#ffebee";
+                } else {
+                    fields[i].style.backgroundColor = "";
+                }
+            }
+        }
+
+        inputs.forEach(name => {
+            if (f[name]) f[name].addEventListener('input', updateAll);
+        });
+        
+        // 4. 智能醫材聯動勾選
+        const syncTechnique = () => {
+            const hasAspiration = Array.from(f.Aspiration_tube).some(cb => cb.checked);
+            const hasStent = Array.from(f.Stent).some(cb => cb.checked);
+            
+            if (hasAspiration && hasStent) f.Technique[2].checked = true;
+            else if (hasAspiration) f.Technique[0].checked = true;
+            else if (hasStent) f.Technique[1].checked = true;
+        };
+        
+        f.Aspiration_tube.forEach(cb => cb.addEventListener('change', syncTechnique));
+        f.Stent.forEach(cb => cb.addEventListener('change', syncTechnique));
+
+        // 5. "None" 選項互斥邏輯
+        const handleNone = (name) => {
+            const group = f[name];
+            const noneCb = Array.from(group).find(cb => cb.value === "None");
+            if (!noneCb) return;
+
+            noneCb.addEventListener('change', () => {
+                if (noneCb.checked) {
+                    group.forEach(cb => { if (cb !== noneCb) cb.checked = false; });
+                }
+            });
+
+            group.forEach(cb => {
+                if (cb !== noneCb) {
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) noneCb.checked = false;
+                    });
+                }
+            });
+        };
+        handleNone('Microcatheter');
+        handleNone('Microguidewire');
+    }
+
+    function refresh() {
+        window.location.reload();
+    }
+
+    function copyFunction() {
+        var copyText = document.getElementById("Final_Report");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+    }
+
+    function activeFunction() {
+        const f = document.form;
+        
+        // Helper to get checked values as a comma-separated string
+        const getCheckedValues = (elements) => {
+            const checked = [];
+            for (let i = 0; i < elements.length; i++) {
+                if (elements[i].checked) checked.push(elements[i].value);
+            }
+            return checked.length > 0 ? checked.join(", ") + ", " : "";
+        };
+
+        // 1. Anesthesia
+        let reportAnesthesia = f.Anesthesia.value;
+        if (f.Anesthesia.value === "IV sedation") {
+            const meds = getCheckedValues(f.IV_Medication);
+            reportAnesthesia = `${f.Anesthesia.value} with medication of (${meds})`;
+        }
+
+        // 2. Thrombus & Occlusion Territory
+        const reportThrombus = getCheckedValues(f.Thrombus);
+        let occlusionTerritory = "";
+        if (reportThrombus.includes("ICA") || reportThrombus.includes("M1") || reportThrombus.includes("M2")) {
+            occlusionTerritory = "Anterior";
+        } else if (reportThrombus.includes("BA") || reportThrombus.includes("VA")) {
+            occlusionTerritory = "Posterior";
+        }
+
+        // 3. ASPECTS & Collateral
+        let reportASPECTS = "";
+        let reportCollateral = "";
+        let score = 10;
+        let subtracted = [];
+
+        if (occlusionTerritory === "Posterior") {
+            const pAspects = f.Posterior_ASPECTS;
+            for (let i = 0; i < pAspects.length; i++) {
+                if (pAspects[i].checked) {
+                    subtracted.push(pAspects[i].value);
+                    score -= (i < 6) ? 1 : 2;
+                }
+            }
+            reportASPECTS = `For acute thrombus in the posterior circulation:\npc-ASPECTS score in nonenhanced brain CT:${score}\nSubtract (${subtracted.join(", ") + (subtracted.length > 0 ? ", " : "")})\n`;
+        } else if (occlusionTerritory === "Anterior") {
+            const aAspects = f.Anterior_ASPECTS;
+            for (let i = 0; i < aAspects.length; i++) {
+                if (aAspects[i].checked) {
+                    subtracted.push(aAspects[i].value);
+                    score--;
+                }
+            }
+            reportASPECTS = `For acute thrombus in the anterior circulation:\nASPECTS score in nonenhanced brain CT:${score}\nSubtract (${subtracted.join(", ") + (subtracted.length > 0 ? ", " : "")})\n`;
+            
+            const gradeMap = { "5": "Good", "4": "Intermediate" };
+            const collateral = gradeMap[f.mCTA_Grading.value] || "Poor";
+            reportCollateral = `Anterior circulation Pial arterial filling evaluation in multiphase CTA suggests ${collateral} collaterals and the grading score is ${f.mCTA_Grading.value}\n`;
+        } else {
+            reportASPECTS = "ASPECTS score: Not applicable.";
+        }
+
+        // 4. CTP
+        let reportCTP = "";
+        if (f.CBF20.value !== "") {
+            reportCTP = `CT Perfusion Scan Results:
+CBF<20%= ${f.CBF20.value}ml, CBF<30%(Core)= ${f.CBF30.value}ml, CBF<34%= ${f.CBF34.value}ml, CBF<38%= ${f.CBF38.value}ml
+Tmax>10s= ${f.Tmax10.value}ml, Tmax>8s= ${f.Tmax8.value}ml, Tmax>6s(Penumbra)= ${f.Tmax6.value}ml, Tmax>4s= ${f.Tmax4.value}ml, Hypoperfusion index: ${f.Hypo_index.value}
+CBV<34%= ${f.CBV34.value}ml, CBV<38%= ${f.CBV38.value}ml, CBV<42%= ${f.CBV42.value}ml, rCBV Index: ${f.rCBV_index.value}
+Mismatch volume(Penumbra - Core): ${f.Mismatch_vol.value}ml
+Mismatch ratio(Penumbar/Core): ${f.Mismatch_ratio.value}`;
+        }
+
+        // 5. Devices
+        const reportMicrocatheter = getCheckedValues(f.Microcatheter);
+        const reportMicroguidewire = getCheckedValues(f.Microguidewire);
+
+        if (!reportMicrocatheter || !reportMicroguidewire) {
+            alert("請至少選擇一個 Microcatheter 與 Microguidewire (或選擇 None)！");
+            // 捲動到該位置提醒使用者
+            document.querySelector('.sub-label[innerText="Microcatheter"]').scrollIntoView();
+            return;
+        }
+
+        const reportAspirationTube = getCheckedValues(f.Aspiration_tube) || "Not used";
+        const reportStent = getCheckedValues(f.Stent) || "Not used";
+        const reportTechnique = getCheckedValues(f.Technique);
+
+        // 6. Impression & Operator
+        let impression = "";
+        const tici = f.mTICI.value;
+        if (tici === "0") {
+            impression = "Failure of endovascular thrombectomy for focal thrombus at ";
+        } else if (tici === "1" || tici === "2a") {
+            impression = "Mild reperfusion after endovascular thrombectomy for focal thrombus at ";
+        } else {
+            impression = "Successful endovascular thrombectomy for focal thrombus at ";
+        }
+
+        const operators = {
+            "4189": "周兆亮 CL Chou\n神經科專科醫師 神專795號\n中華民國神經放射線醫學會 動脈取栓認證 006號",
+            "4191": "黃勇評 YP Hwang\n神經科專科醫師 神專1060號\n中華民國神經放射線醫學會 動脈取栓認證 022號"
+        };
+        const operatorInfo = operators[f.Operator.value] || "";
+
+        const others = f.Others.value || "Nil";
+
+        // 7. Time Helpers
+        const formatDT = (val) => {
+            if (!val) return "Date:, Time:";
+            return `Date:${val.substring(0, 10)}, Time:${val.substring(11, 16)}`;
+        };
+
+        // Assemble Final Report
+        const finalReport = `Endovascular thrombectomy was performed under the impression of focal arterial thrombus with acute large vessel occlusion:
+
+The procedure was performed under: ${reportAnesthesia}
+${reportASPECTS}${reportCollateral}
+
+${reportCTP}
+
+Onset time of acute ischemic stroke: ${formatDT(f.onsettime.value)}
+Start time of the procedure(When patient arrived angiosuite): ${formatDT(f.proceduretime.value)}
+Puncture time(Performing arterial puncture): ${formatDT(f.puncturetime.value)}
+The target thrombus was located at ${reportThrombus}
+The procedure was performed via ${f.Approach.value} femoral arterial approach${f.Ultrasound.value} with ${f.Sheath.value} peripheral sheath and ${f.Guiding.value} as guiding catheter. After advancing to the lesion location,
+Suction was conducted for ${f.Suction.value} times.
+Stent-retrieving was conducted for ${f.Stent_pass.value} times.
+In general, the techniques used in this procedure included the following: ${reportTechnique}
+The devices used in this procedure included the following:
+Aspiration tube: ${reportAspirationTube}
+Stent-retriever: ${reportStent}
+Intermediate catheter: ${f.Intermediate.value}
+Microcatheters: ${reportMicrocatheter}
+Microguidewires: ${reportMicroguidewire}
+
+The final result suggested mTICI(modified Treatment in Cerebral Ischemia Scale) grade ${f.mTICI.value}. (Refering to Stroke. 2013;44:2650-2663.)
+
+Time of first thrombus contact by the aspiration tube or stent-retriever: ${formatDT(f.contacttime.value)}
+End time of the procedure (last thrombectomy or final reperfusion): ${formatDT(f.endtime.value)}
+
+Post thrombectomy on-table CT: ${f.CT.value}
+
+Closure device used at the end of the procedure: ${f.Closure.value}
+
+Other notes:
+${others}
+
+Impression:
+${impression}${reportThrombus} (mTICI grade ${f.mTICI.value}).
+
+${operatorInfo}`;
+
+        document.getElementById('Final_Report').value = finalReport;
+
+        // 報告產生後，啟用統計上傳按鈕，並儲存當前資料備用
+        window._lastStatsPayload = buildStatsPayload(f, occlusionTerritory, score, subtracted);
+        const statsBtn = document.getElementById('btn-submit-stats');
+        statsBtn.disabled = false;
+        statsBtn.textContent = '📊 Submit to Stats';
+    }
+
+    function subtractedList(f, territory) {
+        if (territory === 'Anterior') {
+            return Array.from(f.Anterior_ASPECTS).filter(c => c.checked).map(c => c.value);
+        } else if (territory === 'Posterior') {
+            return Array.from(f.Posterior_ASPECTS).filter(c => c.checked).map(c => c.value);
+        }
+        return [];
+    }
+
+    function buildStatsPayload(f, territory, aspectsScore, subtracted) {
+        const getChecked = (els) =>
+            Array.from(els).filter(c => c.checked).map(c => c.value).join(', ');
+        return {
+            patient_id:         f.patient_id.value.trim(),
+            thrombus:           getChecked(f.Thrombus),
+            territory:          territory || '',
+            aspects_score:      aspectsScore,
+            aspects_subtracted: (subtracted || []).join(', '),
+            collateral_grading: f.mCTA_Grading.value,
+            onsettime:          f.onsettime.value,
+            proceduretime:      f.proceduretime.value,
+            puncturetime:       f.puncturetime.value,
+            contacttime:        f.contacttime.value,
+            endtime:            f.endtime.value,
+            aspiration_tube:    getChecked(f.Aspiration_tube),
+            stent:              getChecked(f.Stent),
+            suction_count:      f.Suction.value,
+            stent_pass_count:   f.Stent_pass.value,
+            guiding:            f.Guiding.value,
+            intermediate:       f.Intermediate.value,
+            mtici:              f.mTICI.value,
+        };
+    }
+
+    function submitStats() {
+        const payload = window._lastStatsPayload;
+        if (!payload) return;
+        const btn = document.getElementById('btn-submit-stats');
+        btn.disabled = true;
+        btn.textContent = '⏳ Submitting...';
+        fetch(GAS_URL, {
+            method:  'POST',
+            mode:    'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload),
+        })
+        .then(() => {
+            btn.textContent = '✅ Submitted';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '❌ Failed – Retry';
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiology Hub</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        body {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: auto;
+            min-height: 120px;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-color: var(--accent-color);
+        }
+
+        .card-icon { font-size: 2.5rem; margin-bottom: 15px; }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .card-desc {
+            display: none;
+        }
+
+        .card-arrow {
+            text-align: right;
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 0.85rem;
+            border-top: 1px solid #eee;
+        }
+
+        .btn {
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .user-profile-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 2px solid var(--primary-color);
+        }
+
+        .user-profile-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        #saveProfileBtn:hover {
+            opacity: 0.9;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        #userName {
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        #userName:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .profile-group {
+            border: 1px solid #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            background-color: #fafafa;
+        }
+
+        .profile-group h4 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: var(--primary-color);
+            font-size: 1rem;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header style="position: relative;">
+        <h1>Radiology Hub <span style="font-size: 0.45em; color: rgba(255, 255, 255, 0.7); font-weight: normal; vertical-align: middle;">(Updated: 2026/05/31)</span></h1>
+        <p>Automated Reporting Tools & Utilities</p>
+        <div id="authContainer" style="position: absolute; top: 20px; right: 20px;">
+            <button id="loginBtn" class="btn">Google 登入</button>
+            <div id="userInfo" style="display: none; text-align: right; color: white;">
+                <span id="userName" style="font-size: 0.9rem; margin-right: 10px; font-weight: bold;"></span>
+                <button id="logoutBtn" class="btn">登出</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- 個人資料 Modal -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeModal">&times;</span>
+                <h3 style="margin-top: 0; color: var(--primary-color); margin-bottom: 20px;">個人資料</h3>
+                
+                <div class="profile-group">
+                    <h4>放射線專科證書</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>會員編號</label>
+                            <input type="text" id="radMemberId" placeholder="請輸入編號">
+                        </div>
+                        <div class="form-group">
+                            <label>專科證號</label>
+                            <input type="text" id="radSpecialistId" placeholder="請輸入證號">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-group">
+                    <h4>神經放射線專科證書</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>會員編號</label>
+                            <input type="text" id="neuroMemberId" placeholder="請輸入編號">
+                        </div>
+                        <div class="form-group">
+                            <label>專科證號</label>
+                            <input type="text" id="neuroSpecialistId" placeholder="請輸入證號">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-group">
+                    <h4>其他認證 / 備註</h4>
+                    <div class="form-group">
+                        <input type="text" id="otherInfo" placeholder="可自行輸入其他備註內容">
+                    </div>
+                </div>
+
+                <button id="saveProfileBtn" style="width: 100%;">儲存資料</button>
+            </div>
+        </div>
+
+        <h2 class="section-title">Reporting Tools</h2>
+        <div class="grid-container">
+            
+            <a href="EVT.html" class="tool-card">
+                <div>
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">Endovascular Thrombectomy</div>
+                </div>
+                <div class="card-arrow">Open Tool →</div>
+            </a>
+
+            <a href="dxa.html" class="tool-card">
+                <div>
+                    <div class="card-icon">🦴</div>
+                    <div class="card-title">Bone Densitometry (DXA)</div>
+                </div>
+                <div class="card-arrow">Open Tool →</div>
+            </a>
+
+            <a href="CAS.html" class="tool-card">
+                <div>
+                    <div class="card-icon">🩸</div>
+                    <div class="card-title">Carotid Artery Stenting (CAS)</div>
+                </div>
+                <div class="card-arrow">Open Tool →</div>
+            </a>
+
+            <a href="spine_mri.html" class="tool-card">
+                <div>
+                    <div class="card-icon">🩻</div>
+                    <div class="card-title">Lumbar Spine MRI Report <span style="font-size: 0.85em; color: #d32f2f; font-weight: normal;">(未完成)</span></div>
+                </div>
+                <div class="card-arrow">Open Tool →</div>
+            </a>
+
+            <a href="PICC.html" class="tool-card">
+                <div>
+                    <div class="card-icon">💉</div>
+                    <div class="card-title">PICC Report Generator</div>
+                </div>
+                <div class="card-arrow">Open Tool →</div>
+            </a>
+
+        </div>
+
+        <h2 class="section-title" style="margin-top: 40px;">臨床輔助與查詢</h2>
+        <div class="grid-container">
+
+            <a href="medical_device.html" class="tool-card">
+                <div>
+                    <div class="card-icon">🏥</div>
+                    <div class="card-title">Medical Device &amp; NHI Tool</div>
+                </div>
+                <div class="card-arrow">Open Tool →</div>
+            </a>
+
+            <a href="https://nhi.showholdings.com/search" class="tool-card" target="_blank">
+                <div>
+                    <div class="card-icon">🔍</div>
+                    <div class="card-title">NHIFind | 健保查詢</div>
+                </div>
+                <div class="card-arrow">Open Site ↗</div>
+            </a>
+
+        </div>
+
+        <h2 class="section-title" style="margin-top: 40px;">班表</h2>
+        <div class="grid-container">
+            <a href="ni_schedule.html" class="tool-card">
+                <div>
+                    <div class="card-icon">📋</div>
+                    <div class="card-title">NI 日班工作分配 <span style="font-size:0.8em; color:#2980b9; font-weight:normal;">日班</span></div>
+                </div>
+                <div class="card-arrow">查看分配 →</div>
+            </a>
+
+            <a href="schedule.html" class="tool-card">
+                <div>
+                    <div class="card-icon">📅</div>
+                    <div class="card-title">中風取栓班表 <span style="font-size:0.8em; color:#2980b9; font-weight:normal;">2026-06</span></div>
+                </div>
+                <div class="card-arrow">查看班表 →</div>
+            </a>
+        </div>
+
+        <h2 class="section-title" style="margin-top: 40px;">常用連結</h2>
+        <div class="grid-container">
+            
+            <a href="https://meet.google.com/pxf-etgp-yuy" class="tool-card" target="_blank">
+                <div>
+                    <div class="card-icon">🌅</div>
+                    <div class="card-title">馬偕放射科晨會</div>
+                </div>
+                <div class="card-arrow">Google Meet ↗</div>
+            </a>
+
+            <a href="https://meet.google.com/yqh-hyhx-whx" class="tool-card" target="_blank">
+                <div>
+                    <div class="card-icon">🤝</div>
+                    <div class="card-title">神經血管介入治療分享會</div>
+                </div>
+                <div class="card-arrow">Google Meet ↗</div>
+            </a>
+
+            <a href="https://chunchao-huang.github.io/RAD_Report/" class="tool-card" target="_blank">
+                <div>
+                    <div class="card-icon">📋</div>
+                    <div class="card-title">RAD Report 報告平台</div>
+                </div>
+                <div class="card-arrow">Open Site ↗</div>
+            </a>
+
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2025 Radiology Hub. Hosted on GitHub Pages.
+    </footer>
+
+    <script type="module">
+        // 匯入 Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+        // ==========================================
+        // TODO: 請在這裡貼上你自己的 Firebase Config
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFKkYhLe_s4R10wuP80T1OHkGLFLn2epE",
+            authDomain: "radiology-hub-80908.firebaseapp.com",
+            projectId: "radiology-hub-80908",
+            storageBucket: "radiology-hub-80908.firebasestorage.app",
+            messagingSenderId: "508499242885",
+            appId: "1:508499242885:web:885a5f469fe30bf32f9eec",
+            measurementId: "G-14TEJRN2LT"
+        };
+
+        // 避免未填寫 Config 時直接報錯，這裡加個簡單的判斷
+        let app, auth, db, provider;
+        const isConfigValid = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+        if (isConfigValid) {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            provider = new GoogleAuthProvider();
+        }
+
+        // DOM 元素
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
+        const profileModal = document.getElementById('profileModal');
+        const closeModal = document.getElementById('closeModal');
+        
+        // 放射線專科
+        const radMemberId = document.getElementById('radMemberId');
+        const radSpecialistId = document.getElementById('radSpecialistId');
+        
+        // 神經放射線專科
+        const neuroMemberId = document.getElementById('neuroMemberId');
+        const neuroSpecialistId = document.getElementById('neuroSpecialistId');
+        
+        // 其他
+        const otherInfo = document.getElementById('otherInfo');
+        
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+        let currentUser = null;
+
+        if (isConfigValid) {
+            // 監聽登入狀態
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    loginBtn.style.display = 'none';
+                    userInfo.style.display = 'block';
+                    userName.textContent = user.displayName;
+                    await loadUserData(user.uid);
+                } else {
+                    currentUser = null;
+                    loginBtn.style.display = 'inline-block';
+                    userInfo.style.display = 'none';
+                    profileModal.style.display = 'none';
+                    clearProfileInputs();
+                    localStorage.removeItem('radiology_user_profile');
+                }
+            });
+
+            // 點擊名字開啟 Modal
+            userName.addEventListener('click', () => {
+                profileModal.style.display = 'block';
+            });
+
+            // 關閉 Modal
+            closeModal.addEventListener('click', () => {
+                profileModal.style.display = 'none';
+            });
+
+            // 點擊 Modal 外部關閉
+            window.addEventListener('click', (event) => {
+                if (event.target == profileModal) {
+                    profileModal.style.display = 'none';
+                }
+            });
+
+            // 登入
+            loginBtn.addEventListener('click', async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.error("登入失敗:", error);
+                    alert("登入失敗：" + error.message);
+                }
+            });
+
+            // 登出
+            logoutBtn.addEventListener('click', () => {
+                signOut(auth);
+            });
+
+            // 儲存資料到 Firestore
+            saveProfileBtn.addEventListener('click', async () => {
+                if (!currentUser) return;
+                
+                const userData = {
+                    radMemberId: radMemberId.value,
+                    radSpecialistId: radSpecialistId.value,
+                    neuroMemberId: neuroMemberId.value,
+                    neuroSpecialistId: neuroSpecialistId.value,
+                    otherInfo: otherInfo.value
+                };
+                
+                try {
+                    saveProfileBtn.textContent = '儲存中...';
+                    await setDoc(doc(db, "users", currentUser.uid), userData);
+                    // 同步寫入 localStorage 給其他頁面使用
+                    localStorage.setItem('radiology_user_profile', JSON.stringify(userData));
+                    alert("資料儲存成功！");
+                } catch (error) {
+                    console.error("儲存失敗:", error);
+                    alert("儲存失敗，請確認 Firebase Firestore 權限設定。");
+                } finally {
+                    saveProfileBtn.textContent = '儲存資料';
+                }
+            });
+        } else {
+            loginBtn.addEventListener('click', () => {
+                alert("請先在 index.html 原始碼中填寫您的 Firebase Config 才能使用登入功能！");
+            });
+        }
+
+        // 從 Firestore 讀取資料
+        async function loadUserData(uid) {
+            try {
+                const docSnap = await getDoc(doc(db, "users", uid));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    radMemberId.value = data.radMemberId || '';
+                    radSpecialistId.value = data.radSpecialistId || '';
+                    neuroMemberId.value = data.neuroMemberId || '';
+                    neuroSpecialistId.value = data.neuroSpecialistId || '';
+                    otherInfo.value = data.otherInfo || '';
+                    
+                    // 寫入 localStorage 供其他報告工具讀取
+                    localStorage.setItem('radiology_user_profile', JSON.stringify(data));
+                } else {
+                    clearProfileInputs();
+                    localStorage.removeItem('radiology_user_profile');
+                }
+            } catch (error) {
+                console.error("讀取資料失敗:", error);
+            }
+        }
+
+        function clearProfileInputs() {
+            radMemberId.value = '';
+            radSpecialistId.value = '';
+            neuroMemberId.value = '';
+            neuroSpecialistId.value = '';
+            otherInfo.value = '';
+        }
+    </script>
+</body>
+</html>

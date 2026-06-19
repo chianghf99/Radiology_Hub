@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NI 日班工作分配</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body { padding: 0; }
+
+    /* ── Header ── */
+    header {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 36px 20px 32px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    header h1 { margin: 0; font-size: 2rem; font-weight: 800; }
+    header p  { margin-top: 6px; font-size: 0.95rem; opacity: 0.8; }
+    .back-link {
+      position: absolute; top: 20px; left: 20px;
+      color: rgba(255,255,255,0.85); font-size: 0.88rem;
+      display: inline-flex; align-items: center; gap: 5px;
+      text-decoration: none;
+    }
+    .back-link:hover { color: white; text-decoration: underline; }
+
+    /* ── Month Switcher ── */
+    .month-switcher {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin: 28px 0 24px;
+    }
+    .month-btn {
+      background: white; border: 1px solid var(--border-color);
+      border-radius: 6px; padding: 6px 14px; font-size: 0.88rem;
+      font-weight: 600; color: var(--primary-color); cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .month-btn:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
+    .month-btn:disabled { opacity: 0.35; cursor: default; }
+    .month-label { font-size: 1.15rem; font-weight: 800; color: var(--primary-color); min-width: 110px; text-align: center; }
+
+    /* ── Main ── */
+    main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
+
+    /* ── Section grid ── */
+    .sections-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .full-width { grid-column: 1 / -1; }
+
+    /* ── NI Table ── */
+    .ni-table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+      margin-top: 12px;
+    }
+    .ni-table th {
+      background: #f0f4f8; color: var(--primary-color);
+      font-weight: 700; font-size: 0.78rem; padding: 7px 10px;
+      text-align: center; border: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+    .ni-table td {
+      padding: 8px 10px; border: 1px solid var(--border-color);
+      vertical-align: top; line-height: 1.5;
+    }
+    .ni-table tr:hover td { background: #f8fbff; }
+    .ni-table td.dow {
+      font-weight: 700; color: var(--primary-color);
+      text-align: center; background: #f7f9fc;
+      white-space: nowrap; font-size: 0.82rem;
+    }
+    .ni-table td.dow.weekend { color: #c0392b; background: #fff5f5; }
+
+    /* ── Location badges ── */
+    .loc {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      padding: 1px 5px; border-radius: 3px; margin-right: 4px;
+      vertical-align: middle; white-space: nowrap;
+    }
+    .loc-tp { background: #dbeafe; color: #1e40af; }
+    .loc-ds { background: #d1fae5; color: #065f46; }
+
+    /* ── Person chips (color-coded per name) ── */
+    .person { display: inline-block; font-weight: 600; }
+    .p-jiang   { color: #059669; }
+    .p-huang-jz{ color: #d97706; }
+    .p-zhou    { color: #7c3aed; }
+    .p-huang-yp{ color: #c2410c; }
+    .p-xie     { color: #be185d; }
+    .p-wei     { color: #0e7490; }
+    .p-zheng   { color: #6d28d9; }
+    .p-other   { color: #4b5563; }
+
+    /* ── Trainee note ── */
+    .trainee-tag {
+      display: inline-block; font-size: 0.62rem; font-weight: 700;
+      background: #fef3c7; color: #78350f; border: 1px solid #fcd34d;
+      padding: 0px 5px; border-radius: 3px; margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* ── Note text ── */
+    .note-cell {
+      font-size: 0.72rem; color: var(--text-sub); font-style: italic;
+    }
+    .note-inline {
+      font-size: 0.7rem; color: #78350f; background: #fffbeb;
+      border-left: 2px solid #fcd34d; padding: 1px 5px;
+      margin-top: 3px; display: block; border-radius: 0 3px 3px 0;
+    }
+
+    /* ── Week badge ── */
+    .week-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 800;
+      background: var(--primary-color); color: white;
+      padding: 1px 7px; border-radius: 4px; margin-right: 5px;
+    }
+
+    /* ── Saturday cards ── */
+    .sat-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .sat-card {
+      background: #f0f4f8; border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 10px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      min-width: 110px;
+    }
+    .sat-date { font-size: 0.78rem; font-weight: 700; color: var(--primary-color); }
+    .sat-person { font-size: 0.95rem; font-weight: 700; }
+    .sat-note { font-size: 0.68rem; color: var(--text-sub); }
+
+    /* ── Today Card ── */
+    .today-card {
+      background: linear-gradient(135deg, #e8f4fd 0%, #f0f9f4 100%);
+      border: 1px solid #b3d9f5;
+      border-left: 5px solid var(--accent-color);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      grid-column: 1 / -1;
+    }
+    .today-card-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .today-card-header h2 {
+      font-size: 1rem; font-weight: 800; color: var(--primary-color); margin: 0;
+    }
+    .today-date-badge {
+      font-size: 0.82rem; font-weight: 700;
+      background: var(--primary-color); color: white;
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .today-week-badge {
+      font-size: 0.78rem; font-weight: 700;
+      background: #059669; color: white;
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .today-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      font-size: 0.84rem;
+    }
+    .today-grid-row {
+      display: contents;
+    }
+    .today-grid-row > div {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border-color);
+      background: white;
+    }
+    .today-grid-row:last-child > div { border-bottom: none; }
+    .today-grid-row > div:nth-child(1) {
+      font-size: 0.75rem; font-weight: 700; color: var(--text-sub);
+      background: #f7f9fc; white-space: nowrap;
+      display: flex; align-items: center;
+    }
+    .today-grid-col-header > div {
+      background: #f0f4f8 !important;
+      font-weight: 800; font-size: 0.75rem; color: var(--primary-color);
+      text-align: center;
+    }
+    .today-sat-card {
+      text-align: center;
+      padding: 12px 20px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: inline-flex; flex-direction: column; gap: 4px;
+    }
+    .today-sat-label { font-size: 0.72rem; font-weight: 700; color: var(--text-sub); }
+    .today-sat-person { font-size: 1.15rem; font-weight: 800; }
+    .today-ct-pills {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+    }
+    .today-ct-pill {
+      font-size: 0.75rem; font-weight: 600;
+      background: #f0f4f8; border: 1px solid var(--border-color);
+      border-radius: 99px; padding: 2px 10px;
+      white-space: nowrap;
+    }
+
+    /* ── Notes banner ── */
+    .notes-banner {
+      background: #fffbeb; border: 1px solid #fcd34d;
+      border-left: 4px solid #f59e0b; border-radius: 8px;
+      padding: 14px 18px; margin-top: 20px; font-size: 0.84rem;
+      color: #78350f; white-space: pre-line; line-height: 1.8;
+    }
+    .notes-banner strong { display: block; margin-bottom: 4px; font-size: 0.8rem; letter-spacing: 0.5px; }
+
+    @media (max-width: 700px) {
+      .sections-grid { grid-template-columns: 1fr; }
+      .full-width { grid-column: 1; }
+      .ni-table { font-size: 0.78rem; }
+      .ni-table td, .ni-table th { padding: 5px 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back-link">← 返回首頁</a>
+  <h1>📋 NI 日班工作分配</h1>
+  <p>Neuro Interventional Daily Schedule · 台北 & 淡水馬偕</p>
+</header>
+
+<main>
+  <div class="month-switcher">
+    <button class="month-btn" id="prevBtn" onclick="changeMonth(-1)">&#8592;</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button class="month-btn" id="nextBtn" onclick="changeMonth(1)">&#8594;</button>
+  </div>
+
+  <div class="sections-grid" id="content"></div>
+</main>
+
+<script>
+// ════════════════════════════════════════════════════
+//  資料庫：每月新增一個 key
+//  資料來源：NI 班表 docx
+// ════════════════════════════════════════════════════
+const NI_DATA = {
+  '2026-06': {
+
+    // 血管攝影室 (Brain Angiography)
+    angio: [
+      { dow: '週一', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '魏士揚',   ds_tae: '魏士揚/黃俊肇', note: '淡水DSA：神外醫師協助；6/8 淡水DSA→俊肇' },
+      { dow: '週二', tp_dsa: '姜信帆',    tp_tae: '姜信帆',              ds_dsa: '黃俊肇',   ds_tae: '黃俊肇',        note: '' },
+      { dow: '週三', tp_dsa: '黃俊肇',    tp_tae: '黃俊肇',              ds_dsa: '謝棖智',   ds_tae: '謝棖智',        note: '' },
+      { dow: '週四', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '姜信帆',   ds_tae: '魏士揚/姜信帆', note: '6/4 台北DSA→俊肇；淡水DSA→棖智' },
+      { dow: '週五', tp_dsa: '魏士揚',    tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',   ds_tae: '姜信帆',        note: '6/5 台北DSA→棖智；淡水DSA→俊肇' },
+    ],
+
+    // 急診 CT
+    erct: [
+      { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+      { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+      { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '6/10 →魏士揚' },
+      { dow: '週四', tp: '謝棖智', ds: '姜信帆', note: '6/4 淡水→棖智；6/11 台北→信帆代棖智' },
+      { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '6/5 →俊肇' },
+    ],
+
+    // 門住 CT 號碼分配
+    routine_ct: [
+      { person: '黃俊肇', tp: '00–19',         ds: '00–19',  note: '' },
+      { person: '謝棖智', tp: '20–39',         ds: '20–39',  note: '' },
+      { person: '姜信帆', tp: '40–59',         ds: '80–99',  note: '6/4–6 →俊肇代' },
+      { person: '魏士揚', tp: '60–67, 89–99',  ds: '40–59',  note: '6/4–6 →俊肇代' },
+      { person: '郭律志', tp: '68–88',         ds: '60–79',  note: '' },
+    ],
+
+    // 門住急 MRI（按週次）
+    mri: {
+      tp: [
+        { week: 'W1', person: '謝棖智',                 note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+        { week: 'W3', person: '姜信帆',                 note: '' },
+        { week: 'W4', person: '黃俊肇',                 note: '' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '6/5 PM→棖智' },
+      ],
+      ds: [
+        { week: 'W1', person: '黃俊肇', note: '' },
+        { week: 'W2', person: '黃俊肇', note: '6/9 →信帆' },
+        { week: 'W3', person: '魏士揚', note: '' },
+        { week: 'W4', person: '謝棖智', note: '6/11 →士揚' },
+        { week: 'W5', person: '姜信帆', note: '6/5 →俊肇' },
+      ],
+    },
+
+    // 淡水健檢 / 神經 MRI 解釋（每天一人）
+    ds_mri_daily: [
+      { dow: '週一', person: '魏士揚', note: '' },
+      { dow: '週二', person: '黃俊肇', note: '' },
+      { dow: '週三', person: '謝棖智', note: '' },
+      { dow: '週四', person: '姜信帆', note: '6/4 →棖智' },
+      { dow: '週五', person: '姜信帆', note: '6/5 →俊肇' },
+    ],
+
+    // 週六班（北淡 MRI + 急 CT，一人包辦）
+    saturday: [
+      { date: '6/06', person: '謝棖智', note: '' },
+      { date: '6/13', person: '魏士揚', note: '' },
+      { date: '6/20', person: '姜信帆', note: '假日 — 僅 MRI' },
+      { date: '6/27', person: '姜信帆', note: '' },
+    ],
+
+    // PICC
+    picc: [
+      { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '' },
+      { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+      { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '6/4 淡水→棖智' },
+      { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+    ],
+
+    notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
+  },
+  '2026-07': {
+
+    // 血管攝影室
+    angio: [
+      { dow: '週一', tp_dsa: '鄭宇凡',  tp_tae: '謝棖智',        ds_dsa: '魏士揚',  ds_tae: '魏士揚/黃俊肇', note: '' },
+      { dow: '週二', tp_dsa: '姜信帆',  tp_tae: '姜信帆',        ds_dsa: '黃俊肇',  ds_tae: '黃俊肇',        note: '7/21 淡水DSA→棖智' },
+      { dow: '週三', tp_dsa: '黃俊肇',  tp_tae: '黃俊肇',        ds_dsa: '謝棖智',  ds_tae: '謝棖智',        note: '' },
+      { dow: '週四', tp_dsa: '謝棖智',  tp_tae: '謝棖智',        ds_dsa: '鄭宇凡',  ds_tae: '魏士揚/姜信帆', note: '' },
+      { dow: '週五', tp_dsa: '魏士揚',  tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆',  ds_tae: '姜信帆',        note: '' },
+    ],
+
+    // 急診 CT
+    erct: [
+      { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+      { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+      { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '' },
+      { dow: '週四', tp: '鄭宇凡', ds: '鄭宇凡', note: '' },
+      { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '' },
+    ],
+
+    // 門住 CT 號碼分配
+    routine_ct: [
+      { person: '黃俊肇', tp: '00–23', ds: '00–23', note: '7/17–20 →信帆(台北) / →棖智(淡水)' },
+      { person: '謝棖智', tp: '24–47', ds: '24–47', note: '' },
+      { person: '魏士揚', tp: '48–71', ds: '48–71', note: '' },
+      { person: '鄭宇凡', tp: '72–75', ds: '72–75', note: '' },
+      { person: '姜信帆', tp: '76–99', ds: '76–99', note: '' },
+    ],
+
+    // 門住急 MRI（按週次）
+    mri: {
+      tp: [
+        { week: 'W1', person: '謝棖智',                 note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+        { week: 'W3', person: '姜信帆',                 note: '' },
+        { week: 'W4', person: '黃俊肇',                 note: '' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+      ],
+      ds: [
+        { week: 'W1', person: '黃俊肇', note: '7/20 →信帆' },
+        { week: 'W2', person: '黃俊肇', note: '7/21 →棖智' },
+        { week: 'W3', person: '魏士揚', note: '' },
+        { week: 'W4', person: '謝棖智', note: '7/23 →俊肇' },
+        { week: 'W5', person: '姜信帆', note: '7/24 →俊肇' },
+      ],
+    },
+
+    // 淡水健檢 / 神經 MRI 解釋
+    ds_mri_daily: [
+      { dow: '週一', person: '魏士揚', note: '' },
+      { dow: '週二', person: '黃俊肇', note: '7/21 →棖智' },
+      { dow: '週三', person: '謝棖智', note: '' },
+      { dow: '週四', person: '姜信帆', note: '' },
+      { dow: '週五', person: '姜信帆', note: '' },
+    ],
+
+    // 週六班
+    saturday: [
+      { date: '7/04', person: '鄭宇凡', note: '' },
+      { date: '7/11', person: '魏士揚', note: '' },
+      { date: '7/18', person: '姜信帆', note: '' },
+      { date: '7/25', person: '謝棖智', note: '' },
+    ],
+
+    // PICC
+    picc: [
+      { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '7/21 淡水→棖智' },
+      { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+      { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '' },
+      { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+    ],
+
+    notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
+  },
+  // ── 下個月貼這裡 ──
+};
+
+// ════════════════════════════════════════════════════
+//  Person color map
+// ════════════════════════════════════════════════════
+const PERSON_CLASS = {
+  '姜信帆': 'p-jiang',
+  '黃俊肇': 'p-huang-jz',
+  '周兆亮': 'p-zhou',
+  '黃勇評': 'p-huang-yp',
+  '謝棖智': 'p-xie',
+  '魏士揚': 'p-wei',
+  '鄭宇凡': 'p-zheng',
+};
+function personCls(name) {
+  // handle compound names like '魏士揚/謝棖智' or 'AM 黃主任 / PM 魏士揚'
+  return PERSON_CLASS[name] || 'p-other';
+}
+
+// Render a person name with colour. Handles '/' separator for trainee pairs.
+function renderPerson(raw) {
+  if (!raw) return '—';
+
+  // AM/PM 分時段優先判斷（e.g. 'AM 黃主任 / PM 魏士揚'）
+  if (raw.includes('AM') || raw.includes('PM')) {
+    return raw
+      .split('/')
+      .map(seg => {
+        seg = seg.trim();
+        const m = seg.match(/^(AM|PM)\s+(.+)$/);
+        if (m) {
+          const cls = personCls(m[2].trim());
+          return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">${m[1]}</span> <span class="person ${cls}">${m[2].trim()}</span>`;
+        }
+        return `<span class="person ${personCls(seg)}">${seg}</span>`;
+      })
+      .join('<span style="color:#cbd5e1;margin:0 4px">/</span>');
+  }
+
+  // 師徒制（e.g. '魏士揚/謝棖智'）
+  const parts = raw.split('/');
+  if (parts.length >= 2) {
+    const supervisor = parts[0].trim();
+    const trainee    = parts[1].trim();
+    return `<span class="person ${personCls(supervisor)}">${supervisor}</span>`
+         + `<span class="trainee-tag">帶</span>`
+         + `<span class="person ${personCls(trainee)}"> ${trainee}</span>`;
+  }
+
+  return `<span class="person ${personCls(raw)}">${raw}</span>`;
+}
+
+function noteHtml(note) {
+  if (!note) return '';
+  return `<span class="note-inline">※ ${note}</span>`;
+}
+
+// ════════════════════════════════════════════════════
+//  Month switching
+// ════════════════════════════════════════════════════
+const MONTH_KEYS = Object.keys(NI_DATA).sort();
+const now = new Date();
+const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+let currentIdx = MONTH_KEYS.includes(todayKey)
+  ? MONTH_KEYS.indexOf(todayKey)
+  : MONTH_KEYS.length - 1;
+
+function changeMonth(dir) {
+  currentIdx = Math.max(0, Math.min(MONTH_KEYS.length - 1, currentIdx + dir));
+  render();
+}
+
+// ════════════════════════════════════════════════════
+//  Today logic
+// ════════════════════════════════════════════════════
+const DOW_NAMES_TW = ['日','一','二','三','四','五','六'];
+const DOW_LABEL    = { 1:'週一', 2:'週二', 3:'週三', 4:'週四', 5:'週五', 6:'週六' };
+
+function getWeekNum(year, month, day) {
+  const firstDow = new Date(year, month - 1, 1).getDay();
+  const monOffset = (firstDow + 6) % 7; // Mon=0
+  return Math.ceil((day + monOffset) / 7);
+}
+
+function getTodayAssignments(key) {
+  const [y, m] = key.split('-').map(Number);
+  if (now.getFullYear() !== y || now.getMonth() + 1 !== m) return null;
+
+  const day    = now.getDate();
+  const dowNum = now.getDay(); // 0=Sun
+  const dowLabel = DOW_LABEL[dowNum];
+  if (!dowLabel) return null; // Sunday
+
+  const d = NI_DATA[key];
+  const weekLabel = `W${getWeekNum(y, m, day)}`;
+  const dateStr = `${y}/${String(m).padStart(2,'0')}/${String(day).padStart(2,'0')} （週${DOW_NAMES_TW[dowNum]}）`;
+
+  if (dowNum === 6) {
+    // Saturday — match specific date like '6/06'
+    const sat = d.saturday && d.saturday.find(r => {
+      const [sm, sd] = r.date.split('/').map(Number);
+      return sm === m && sd === day;
+    });
+    return { dateStr, isSat: true, sat };
+  }
+
+  return {
+    dateStr, isSat: false, weekLabel,
+    angio:       d.angio       && d.angio.find(r => r.dow === dowLabel),
+    erct:        d.erct        && d.erct.find(r => r.dow === dowLabel),
+    routine_ct:  d.routine_ct,
+    mri_tp:      d.mri         && d.mri.tp.find(r => r.week === weekLabel),
+    mri_ds:      d.mri         && d.mri.ds.find(r => r.week === weekLabel),
+    ds_mri:      d.ds_mri_daily && d.ds_mri_daily.find(r => r.dow === dowLabel),
+    picc:        d.picc        && d.picc.find(r => r.dow === dowLabel),
+  };
+}
+
+function renderTodayCard(key) {
+  const a = getTodayAssignments(key);
+  if (!a) return null;
+
+  const card = document.createElement('div');
+  card.className = 'today-card';
+
+  // ── Header ──
+  let headerHtml = `
+    <div class="today-card-header">
+      <h2>📅 今日分配</h2>
+      <span class="today-date-badge">${a.dateStr}</span>
+      ${!a.isSat && a.weekLabel ? `` : ''}
+    </div>`;
+  card.innerHTML = headerHtml;
+
+  // ── Saturday ──
+  if (a.isSat) {
+    if (a.sat) {
+      const pc = personCls(a.sat.person);
+      card.innerHTML += `
+        <div class="today-sat-card">
+          <div class="today-sat-label">週六班（北淡 MRI + 急 CT）</div>
+          <div class="today-sat-person person ${pc}">${a.sat.person}</div>
+          ${a.sat.note ? `<div style="font-size:0.72rem;color:var(--text-sub)">※ ${a.sat.note}</div>` : ''}
+        </div>`;
+    } else {
+      card.innerHTML += `<div style="color:var(--text-sub);font-size:0.88rem">今日無週六班資料</div>`;
+    }
+    return card;
+  }
+
+  // ── Weekday grid ──
+  const rows = [];
+
+  if (a.angio) {
+    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa), ds: renderPerson(a.angio.ds_dsa), note: a.angio.note });
+    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae), ds: renderPerson(a.angio.ds_tae) });
+  }
+  if (a.erct) {
+    rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp), ds: renderPerson(a.erct.ds), note: a.erct.note });
+  }
+  if (a.mri_tp || a.mri_ds) {
+    rows.push({
+      label: `門住急 MRI`,
+      tp: a.mri_tp ? renderPerson(a.mri_tp.person) + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
+      ds: a.mri_ds ? renderPerson(a.mri_ds.person) + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
+    });
+  }
+  if (a.ds_mri) {
+    rows.push({ label: '淡水神經 MRI 解釋', tp: '—', ds: renderPerson(a.ds_mri.person), note: a.ds_mri.note });
+  }
+  if (a.picc) {
+    rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp), ds: renderPerson(a.picc.ds), note: a.picc.note });
+  }
+
+  // Grid table
+  let gridHtml = `<div class="today-grid">`;
+  // column header
+  gridHtml += `<div class="today-grid-row today-grid-col-header">
+    <div></div>
+    <div><span class="loc loc-tp">台北</span></div>
+    <div><span class="loc loc-ds">淡水</span></div>
+  </div>`;
+  rows.forEach(r => {
+    const noteStr = r.note ? `<span class="note-inline">※ ${r.note}</span>` : '';
+    gridHtml += `<div class="today-grid-row">
+      <div>${r.label}${noteStr}</div>
+      <div>${r.tp}</div>
+      <div>${r.ds}</div>
+    </div>`;
+  });
+  gridHtml += `</div>`;
+
+  // CT number pills
+  if (a.routine_ct && a.routine_ct.length) {
+    gridHtml += `<div style="margin-top:10px;">
+      <div style="font-size:0.72rem;font-weight:700;color:var(--text-sub);margin-bottom:5px;">門住 CT 號碼分配</div>
+      <div class="today-ct-pills">`;
+    a.routine_ct.forEach(r => {
+      const pc = personCls(r.person);
+      gridHtml += `<span class="today-ct-pill"><span class="person ${pc}">${r.person}</span> 台北 ${r.tp} / 淡水 ${r.ds}</span>`;
+    });
+    gridHtml += `</div></div>`;
+  }
+
+  card.innerHTML += gridHtml;
+  return card;
+}
+
+// ════════════════════════════════════════════════════
+//  Render
+// ════════════════════════════════════════════════════
+function render() {
+  const key = MONTH_KEYS[currentIdx];
+  const [y, m] = key.split('-');
+  document.getElementById('monthLabel').textContent = `${y} 年 ${parseInt(m)} 月`;
+  document.getElementById('prevBtn').disabled = currentIdx === 0;
+  document.getElementById('nextBtn').disabled = currentIdx === MONTH_KEYS.length - 1;
+
+  const d = NI_DATA[key];
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  // Today card first
+  const todayCard = renderTodayCard(key);
+  if (todayCard) content.appendChild(todayCard);
+
+  content.appendChild(renderAngio(d.angio));
+  content.appendChild(renderErCt(d.erct));
+  content.appendChild(renderRoutineCt(d.routine_ct));
+  content.appendChild(renderMri(d.mri));
+  content.appendChild(renderDsMriDaily(d.ds_mri_daily));
+  content.appendChild(renderSaturday(d.saturday));
+  if (d.picc) content.appendChild(renderPicc(d.picc));
+  if (d.notes) content.appendChild(renderNotes(d.notes));
+}
+
+// ── Section helper ──
+function makeSection(icon, title, cls='') {
+  const div = document.createElement('div');
+  div.className = 'section-card' + (cls ? ' ' + cls : '');
+  const h = document.createElement('div');
+  h.className = 'section-title';
+  h.textContent = `${icon} ${title}`;
+  div.appendChild(h);
+  return div;
+}
+
+// ── 血管攝影室 ──
+function renderAngio(data) {
+  const sec = makeSection('🏥', '血管攝影室（Brain Angiography）', 'full-width');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-tp">台北</span> DSA / IA</th>
+      <th><span class="loc loc-tp">台北</span> TAE</th>
+      <th><span class="loc loc-ds">淡水</span> DSA / IA</th>
+      <th><span class="loc loc-ds">淡水</span> TAE</th>
+      <th>備注</th>
+    </tr></thead>
+    <tbody></tbody>
+  `;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.tp_dsa)}</td>
+      <td>${renderPerson(row.tp_tae)}</td>
+      <td>${renderPerson(row.ds_dsa)}</td>
+      <td>${renderPerson(row.ds_tae)}</td>
+      <td class="note-cell">${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+// ── 急診 CT ──
+function renderErCt(data) {
+  const sec = makeSection('🚨', '急診 CT（Neuro ER CT）');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-tp">台北</span></th>
+      <th><span class="loc loc-ds">淡水</span></th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>
+  `;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.tp)}</td>
+      <td>${renderPerson(row.ds)}</td>
+      <td class="note-cell">${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+// ── 門住 CT 號碼 ──
+function renderRoutineCt(data) {
+  const sec = makeSection('📋', '門住 CT 號碼分配');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>醫師</th>
+      <th><span class="loc loc-tp">台北</span> 號碼</th>
+      <th><span class="loc loc-ds">淡水</span> 號碼</th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>
+  `;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${renderPerson(row.person)}</td>
+      <td style="text-align:center;font-weight:600;">${row.tp}</td>
+      <td style="text-align:center;font-weight:600;">${row.ds}</td>
+      <td class="note-cell">${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+// ── 門住急 MRI（週次）──
+function renderMri(data) {
+  const sec = makeSection('🧲', '門住急 MRI（按週次）', 'full-width');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+
+  // Build header
+  const weekLabels = data.tp.map(r => r.week);
+  t.innerHTML = `
+    <thead><tr>
+      <th>院區</th>
+      ${weekLabels.map(w => `<th><span class="week-badge">${w}</span></th>`).join('')}
+    </tr></thead><tbody></tbody>
+  `;
+  const tbody = t.querySelector('tbody');
+
+  ['tp', 'ds'].forEach(side => {
+    const tr = document.createElement('tr');
+    const label = side === 'tp'
+      ? `<span class="loc loc-tp">台北</span>`
+      : `<span class="loc loc-ds">淡水</span>`;
+    let cells = `<td class="dow">${label}</td>`;
+    data[side].forEach(r => {
+      cells += `<td>${renderPerson(r.person)}${r.note ? noteHtml(r.note) : ''}</td>`;
+    });
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+
+  sec.appendChild(t);
+  return sec;
+}
+
+// ── 淡水健檢 / 神經 MRI 解釋 ──
+function renderDsMriDaily(data) {
+  const sec = makeSection('🏥', '淡水健檢 / 神經 MRI 解釋');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-ds">淡水</span> 負責人</th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>
+  `;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.person)}</td>
+      <td class="note-cell">${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+// ── 週六班 ──
+function renderSaturday(data) {
+  const sec = makeSection('📅', '週六班（北淡 MRI + 急 CT）');
+  const list = document.createElement('div');
+  list.className = 'sat-list';
+  data.forEach(row => {
+    const card = document.createElement('div');
+    card.className = 'sat-card';
+    const pc = personCls(row.person);
+    card.innerHTML = `
+      <div class="sat-date">${row.date}</div>
+      <div class="sat-person person ${pc}">${row.person}</div>
+      ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}
+    `;
+    list.appendChild(card);
+  });
+  sec.appendChild(list);
+  return sec;
+}
+
+// ── PICC ──
+function renderPicc(data) {
+  const sec = makeSection('💉', 'PICC');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-tp">台北</span></th>
+      <th><span class="loc loc-ds">淡水</span></th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>
+  `;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.tp)}</td>
+      <td>${renderPerson(row.ds)}</td>
+      <td class="note-cell">${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+// ── Notes ──
+function renderNotes(text) {
+  const div = document.createElement('div');
+  div.className = 'notes-banner full-width';
+  div.innerHTML = `<strong>⚠️ 本月備注</strong>${text}`;
+  return div;
+}
+
+render();
+</script>
+</body>
+</html>

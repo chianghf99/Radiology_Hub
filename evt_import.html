@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVT Report Importer</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        body { padding: 20px; }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+        #paste-area {
+            width: 100%;
+            min-height: 260px;
+            font-family: monospace;
+            font-size: 0.88rem;
+            padding: 15px;
+            border: 2px dashed #90caf9;
+            border-radius: 8px;
+            background: #f8f9fa;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        #paste-area:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: #fff;
+        }
+        .parsed-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        .parsed-table th {
+            background: #f0f4f8;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-align: left;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            white-space: nowrap;
+        }
+        .parsed-table td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        .parsed-table td input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 2px 4px;
+        }
+        .parsed-table td input:focus {
+            outline: 2px solid var(--accent-color);
+            border-radius: 3px;
+            background: #fff;
+        }
+        .parsed-table tr:nth-child(even) td { background: #fafafa; }
+        .parsed-table tr:hover td { background: #e8f4fd; }
+
+        .status-ok  { color: #27ae60; font-weight: bold; }
+        .status-err { color: #e74c3c; font-weight: bold; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .badge-parsed { background: #e8f5e9; color: #2e7d32; }
+        .badge-empty  { background: #fff3e0; color: #e65100; }
+
+        #submit-status {
+            margin-top: 12px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        .calc-cell { color: #666; font-style: italic; font-size: 0.82rem; }
+
+        .section-card { margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <a href="EVT.html" class="back-link" style="margin-bottom: 0;">← Back to EVT Form</a>
+        <a href="https://docs.google.com/spreadsheets/d/1sq8-khng-EF7nKLvBJnKLmCEMIsA0-BdqlcsFXA_Au4/edit?gid=0#gid=0"
+           target="_blank" class="helper-link" style="font-weight: bold; font-size: 0.95rem;">📊 View Stats Sheet</a>
+    </div>
+    <h1>EVT Report Importer
+        <span style="font-size:0.5em; color:#888; font-weight:normal;">貼上舊報告 → 自動解析 → 送入統計表</span>
+    </h1>
+
+    <!-- Step 1: Paste -->
+    <div class="section-card">
+        <div class="section-title">① 貼上報告文字</div>
+        <div style="margin-bottom: 8px; color: #666; font-size: 0.88rem;">
+            從 EVT 網頁複製的最終報告直接貼入，支援一次貼一筆。
+        </div>
+        <textarea id="paste-area" placeholder="在此貼上報告全文..."></textarea>
+        <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center;">
+            <button class="btn-primary" onclick="parseReport()">🔍 解析報告</button>
+            <button class="btn-secondary" onclick="clearAll()">🗑️ 清除</button>
+            <span id="parse-status" style="font-size:0.9rem;"></span>
+        </div>
+    </div>
+
+    <!-- Step 2: Review -->
+    <div class="section-card" id="preview-section" style="display:none;">
+        <div class="section-title">② 確認解析結果（可直接修改）</div>
+        <p style="color:#666; font-size:0.85rem; margin-bottom: 12px;">
+            黃色標示的欄位未能自動解析，請手動填寫。病歷號不在報告中，如需加入請手動填寫。
+        </p>
+
+        <table class="parsed-table" id="parsed-table">
+            <thead>
+                <tr>
+                    <th style="width: 200px;">欄位</th>
+                    <th>值</th>
+                    <th style="width: 80px;">狀態</th>
+                </tr>
+            </thead>
+            <tbody id="parsed-tbody">
+            </tbody>
+        </table>
+
+        <div style="margin-top: 20px; display: flex; gap: 15px; align-items: center;">
+            <button class="btn-primary" style="flex: 1;" onclick="submitToSheet()">📤 送入 Google Sheet</button>
+            <button class="btn-secondary" onclick="clearAll()">重新開始</button>
+        </div>
+        <div id="submit-status"></div>
+    </div>
+</div>
+
+<script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx2cA4Bes5vHK8U3nE3ZtIPjZzscwb14NZppL_H_crwzh2eqEZunoLPVdZddcrXKch5/exec';
+
+    // 定義所有欄位規格
+    const FIELDS = [
+        { key: 'patient_id',         label: 'Patient ID（病歷號）', regex: null },
+        { key: 'thrombus',           label: 'Thrombus Location',
+          regex: /The target thrombus was located at (.+?)(?:\r?\n|$)/ },
+        { key: 'territory',          label: 'Territory',
+          regex: /For acute thrombus in the (anterior|posterior) circulation/i,
+          transform: m => m.replace(/(^\w)/, c => c.toUpperCase()) },
+        { key: 'aspects_score',      label: 'ASPECTS Score',
+          regex: /(?:pc-)?ASPECTS score in nonenhanced brain CT:(\d+)/ },
+        { key: 'aspects_subtracted', label: 'ASPECTS Subtracted',
+          regex: /Subtract \((.+?)\)/ },
+        { key: 'collateral_grading', label: 'Collateral Grading Score',
+          regex: /grading score is (\d+)/ },
+        { key: 'onsettime',          label: 'Onset Time',
+          regex: /Onset time of acute ischemic stroke: Date:(.+?), Time:(.+?)(?:\r?\n|$)/,
+          dateTime: true },
+        { key: 'proceduretime',      label: 'Procedure Start Time',
+          regex: /Start time of the procedure\(When patient arrived angiosuite\): Date:(.+?), Time:(.+?)(?:\r?\n|$)/,
+          dateTime: true },
+        { key: 'puncturetime',       label: 'Puncture Time',
+          regex: /Puncture time\(Performing arterial puncture\): Date:(.+?), Time:(.+?)(?:\r?\n|$)/,
+          dateTime: true },
+        { key: 'contacttime',        label: 'First Contact Time',
+          regex: /Time of first thrombus contact by the aspiration tube or stent-retriever: Date:(.+?), Time:(.+?)(?:\r?\n|$)/,
+          dateTime: true },
+        { key: 'endtime',            label: 'End Time',
+          regex: /End time of the procedure \(last thrombectomy or final reperfusion\): Date:(.+?), Time:(.+?)(?:\r?\n|$)/,
+          dateTime: true },
+        { key: 'door_to_puncture',   label: 'Door-to-Puncture (min)', regex: null, calc: true },
+        { key: 'puncture_to_contact',label: 'Puncture-to-Contact (min)', regex: null, calc: true },
+        { key: 'puncture_to_end',    label: 'Puncture-to-End (min)', regex: null, calc: true },
+        { key: 'aspiration_tube',    label: 'Aspiration Tube',
+          regex: /Aspiration tube: (.+?)(?:\r?\n|$)/ },
+        { key: 'stent',              label: 'Stent Retriever',
+          regex: /Stent-retriever: (.+?)(?:\r?\n|$)/ },
+        { key: 'suction_count',      label: 'Suction Count',
+          regex: /Suction was conducted for (\d+) times/ },
+        { key: 'stent_pass_count',   label: 'Stent Pass Count',
+          regex: /Stent-retrieving was conducted for (\d+) times/ },
+        { key: 'guiding',            label: 'Guiding Catheter',
+          regex: /with .+? peripheral sheath and (.+?) as guiding catheter/ },
+        { key: 'intermediate',       label: 'Intermediate Catheter',
+          regex: /Intermediate catheter: (.+?)(?:\r?\n|$)/ },
+        { key: 'mtici',              label: 'mTICI Grade',
+          regex: /mTICI\(modified Treatment in Cerebral Ischemia Scale\) grade (.+?)\. \(Refering/ },
+    ];
+
+    let parsedData = {};
+
+    function parseDateTime(dateStr, timeStr) {
+        // dateStr: "2026-06-10", timeStr: "10:30"
+        if (!dateStr || !dateStr.trim() || dateStr.trim() === '') return '';
+        const s = `${dateStr.trim()} ${(timeStr || '').trim()}`;
+        return s.trim() === '' ? '' : s;
+    }
+
+    function timeDiffMin(dtA, dtB) {
+        if (!dtA || !dtB) return '';
+        const a = new Date(dtA.replace(' ', 'T'));
+        const b = new Date(dtB.replace(' ', 'T'));
+        if (isNaN(a) || isNaN(b)) return '';
+        const diff = Math.round((b - a) / 60000);
+        return isNaN(diff) ? '' : String(diff);
+    }
+
+    function parseReport() {
+        const text = document.getElementById('paste-area').value;
+        if (!text.trim()) {
+            document.getElementById('parse-status').innerHTML = '<span class="status-err">請先貼上報告文字</span>';
+            return;
+        }
+
+        parsedData = {};
+        let parsedCount = 0;
+
+        // patient_id 不在報告中
+        parsedData['patient_id'] = '';
+
+        for (const field of FIELDS) {
+            if (field.calc) continue; // 計算欄位後面處理
+            if (!field.regex) continue;
+
+            const m = text.match(field.regex);
+            if (field.dateTime) {
+                if (m && m[1] && m[1].trim() !== '') {
+                    parsedData[field.key] = parseDateTime(m[1], m[2]);
+                    parsedCount++;
+                } else {
+                    parsedData[field.key] = '';
+                }
+            } else {
+                if (m && m[1]) {
+                    parsedData[field.key] = field.transform ? field.transform(m[1].trim()) : m[1].trim();
+                    parsedCount++;
+                } else {
+                    parsedData[field.key] = '';
+                }
+            }
+        }
+
+        // 計算時差
+        parsedData['door_to_puncture']    = timeDiffMin(parsedData['proceduretime'], parsedData['puncturetime']);
+        parsedData['puncture_to_contact'] = timeDiffMin(parsedData['puncturetime'],  parsedData['contacttime']);
+        parsedData['puncture_to_end']     = timeDiffMin(parsedData['puncturetime'],  parsedData['endtime']);
+
+        renderTable();
+        document.getElementById('preview-section').style.display = 'block';
+        document.getElementById('submit-status').textContent = '';
+        document.getElementById('parse-status').innerHTML =
+            `<span class="status-ok">✅ 解析完成，共抓到 ${parsedCount} 個欄位</span>`;
+
+        document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('parsed-tbody');
+        tbody.innerHTML = '';
+
+        for (const field of FIELDS) {
+            const val = parsedData[field.key] ?? '';
+            const isEmpty = val === '' || val === null;
+            const isCalc = !!field.calc;
+            const isCalcEmpty = isCalc && isEmpty;
+
+            const tr = document.createElement('tr');
+
+            // 欄位名稱
+            const tdLabel = document.createElement('td');
+            tdLabel.style.fontWeight = '600';
+            tdLabel.style.color = '#444';
+            tdLabel.textContent = field.label;
+            tr.appendChild(tdLabel);
+
+            // 值（可編輯）
+            const tdVal = document.createElement('td');
+            if (isEmpty && !isCalc) {
+                tdVal.style.background = '#fff8e1';
+            }
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = val;
+            input.dataset.key = field.key;
+            if (isCalcEmpty) {
+                input.placeholder = '（需先填入時間欄位）';
+                input.style.color = '#aaa';
+            }
+            input.addEventListener('input', (e) => {
+                parsedData[e.target.dataset.key] = e.target.value;
+                // 若是時間欄位更動，重算時差
+                const timeKeys = ['proceduretime','puncturetime','contacttime','endtime'];
+                if (timeKeys.includes(e.target.dataset.key)) {
+                    recalcTimings();
+                }
+            });
+            tdVal.appendChild(input);
+            tr.appendChild(tdVal);
+
+            // 狀態 badge
+            const tdStatus = document.createElement('td');
+            tdStatus.style.textAlign = 'center';
+            if (isCalc) {
+                tdStatus.innerHTML = `<span class="badge" style="background:#e3f2fd; color:#1565c0;">計算</span>`;
+            } else if (isEmpty) {
+                tdStatus.innerHTML = `<span class="badge badge-empty">未解析</span>`;
+            } else {
+                tdStatus.innerHTML = `<span class="badge badge-parsed">✓ 已解析</span>`;
+            }
+            tr.appendChild(tdStatus);
+
+            tbody.appendChild(tr);
+        }
+    }
+
+    function recalcTimings() {
+        parsedData['door_to_puncture']    = timeDiffMin(parsedData['proceduretime'], parsedData['puncturetime']);
+        parsedData['puncture_to_contact'] = timeDiffMin(parsedData['puncturetime'],  parsedData['contacttime']);
+        parsedData['puncture_to_end']     = timeDiffMin(parsedData['puncturetime'],  parsedData['endtime']);
+
+        // 更新 table 中計算欄位的 input value
+        const calcKeys = ['door_to_puncture','puncture_to_contact','puncture_to_end'];
+        document.querySelectorAll('#parsed-tbody input').forEach(inp => {
+            if (calcKeys.includes(inp.dataset.key)) {
+                inp.value = parsedData[inp.dataset.key] ?? '';
+            }
+        });
+    }
+
+    function getCurrentParsedData() {
+        // 把 input 當前的值同步回 parsedData
+        document.querySelectorAll('#parsed-tbody input').forEach(inp => {
+            parsedData[inp.dataset.key] = inp.value;
+        });
+        return parsedData;
+    }
+
+    function submitToSheet() {
+        const data = getCurrentParsedData();
+        const btn = document.querySelector('#preview-section .btn-primary');
+        const statusEl = document.getElementById('submit-status');
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Submitting...';
+        statusEl.innerHTML = '';
+
+        const payload = {
+            patient_id:         data.patient_id         || '',
+            thrombus:           data.thrombus            || '',
+            territory:          data.territory           || '',
+            aspects_score:      data.aspects_score       || '',
+            aspects_subtracted: data.aspects_subtracted  || '',
+            collateral_grading: data.collateral_grading  || '',
+            onsettime:          data.onsettime           || '',
+            proceduretime:      data.proceduretime       || '',
+            puncturetime:       data.puncturetime        || '',
+            contacttime:        data.contacttime         || '',
+            endtime:            data.endtime             || '',
+            aspiration_tube:    data.aspiration_tube     || '',
+            stent:              data.stent               || '',
+            suction_count:      data.suction_count       || '',
+            stent_pass_count:   data.stent_pass_count    || '',
+            guiding:            data.guiding             || '',
+            intermediate:       data.intermediate        || '',
+            mtici:              data.mtici               || '',
+        };
+
+        fetch(GAS_URL, {
+            method:  'POST',
+            mode:    'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload),
+        })
+        .then(() => {
+            btn.textContent = '✅ 已送出';
+            statusEl.innerHTML = '<span class="status-ok">✅ 成功送入 Google Sheet！可繼續貼下一筆。</span>';
+            // 3 秒後可重新使用
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '📤 送入 Google Sheet';
+            }, 3000);
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '❌ 失敗 – 重試';
+            statusEl.innerHTML = '<span class="status-err">❌ 送出失敗，請確認網路連線後重試。</span>';
+        });
+    }
+
+    function clearAll() {
+        document.getElementById('paste-area').value = '';
+        document.getElementById('parse-status').textContent = '';
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('submit-status').textContent = '';
+        parsedData = {};
+    }
+</script>
+
+</body>
+</html>

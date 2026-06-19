@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DXA Bone Densitometry Reporter</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        body { padding: 20px; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        .form-grid { display: flex; gap: 15px; flex-wrap: wrap; }
+        .form-card {
+            flex: 1; min-width: 260px;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .form-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .field-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .field-row input { width: 80px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; }
+
+        textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; height: 150px; margin-top: 20px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-link">← 返回首頁</a>
+    <h1>DXA Bone Densitometry Reporter
+        <span style="font-size:0.55em; color:#888; font-weight:normal;">(Updated: 2026/04/28)</span>
+    </h1>
+
+    <form name="form">
+        <div style="background: #fff8e1; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ffecb3;">
+            <b>Patient Info:</b> 
+            Age: <input name="Age" type="text" style="width:50px;">
+            &nbsp; Sex: 
+            <label><input name="Sex" type="radio" value="Male"> M</label>
+            <label><input name="Sex" type="radio" value="Female"> F</label>
+            &nbsp; (Menopause Age: <input name="Menopause" type="text" style="width:40px;">)
+        </div>
+
+        <div class="form-grid">
+            
+            <div class="form-card">
+                <h3>Right Hip (Neck)</h3>
+                <div class="field-row"><label>BMD</label><input name="RH_BMD" type="text"></div>
+                <div class="field-row"><label>T-score</label><input name="RH_T" type="text"></div>
+                <div class="field-row"><label>Z-score</label><input name="RH_Z" type="text"></div>
+            </div>
+
+            <div class="form-card">
+                <h3>Left Hip (Neck)</h3>
+                <div class="field-row"><label>BMD</label><input name="LH_BMD" type="text"></div>
+                <div class="field-row"><label>T-score</label><input name="LH_T" type="text"></div>
+                <div class="field-row"><label>Z-score</label><input name="LH_Z" type="text"></div>
+            </div>
+
+            <div class="form-card">
+                <h3>Lumbar Spine (L1-L4)</h3>
+                <div class="field-row"><label>BMD</label><input name="L_BMD" type="text"></div>
+                <div class="field-row"><label>T-score</label><input name="L_T" type="text"></div>
+                <div class="field-row"><label>Z-score</label><input name="L_Z" type="text"></div>
+            </div>
+
+        </div>
+        
+        <p style="margin-top:15px;"><b>Other Findings:</b></p>
+        <textarea name="Others" rows="2" style="height:50px;" placeholder="Nil"></textarea>
+
+        <div class="btn-group">
+            <button type="button" class="btn-primary" onclick="activeFunction()">📄 Generate Report</button>
+            <button type="button" class="btn-secondary" onclick="clearForm()">🗑️ Clear</button>
+        </div>
+    </form>
+
+    <button class="btn-success" onclick="copyFunction()">📋 Copy Final Report</button>
+    <p style="font-weight:bold; margin-bottom:5px;">Final Report:</p>
+    <textarea id="Final_Report" placeholder="Final report will appear here..."></textarea>
+</div>
+
+<script>
+
+function clearForm() {
+    document.form.reset();
+    document.getElementById('Final_Report').value = "";
+}
+
+
+function copyFunction() {
+  var copyText = document.getElementById("Final_Report");
+  copyText.select();
+  navigator.clipboard.writeText(copyText.value);
+}   
+
+function activeFunction() {
+  var Reference = "T-score";
+  var AgeVal = parseFloat(document.form.Age.value) || 0;
+  if (document.form.Sex.value == "Male" && AgeVal < 50) Reference = "Z-score";
+  if (document.form.Sex.value == "Female" && !document.form.Menopause.value) Reference = "Z-score";
+
+  var SexText = document.form.Sex.value == "Female" ? 
+      (document.form.Menopause.value ? "Female with menopause at age of " + document.form.Menopause.value : "Female without menopause") : "Male";
+
+  function interpret(t, z, ref, region) {
+      if(!t && !z) return "Not performed.";
+      var tVal = parseFloat(t), zVal = parseFloat(z);
+      var text = "";
+      if (ref === "T-score") {
+          if (tVal <= -2.5) text = "Osteoporosis (T-score <= -2.5)";
+          else if (tVal < -1.0) text = "Low bone mass (-2.5 < T-score < -1.0)";
+          else text = "Within normal limit (T-score >= -1.0)";
+      } else {
+          text = zVal <= -2.0 ? "below the expected range for age (Z-score <= -2.0)" : "within the expected range for age (Z-score > -2.0)";
+      }
+      return `BMD: ${document.form[region+'_BMD'].value}g/cm2, T-score: ${t}, Z-score: ${z},\nInterpretation: The BMD of the ${region=='L'?'lumbar spine':(region=='LH'?'left hip':'right hip')} is corresponding to the condition of ${text}`;
+  }
+
+  var resL = interpret(document.form.L_T.value, document.form.L_Z.value, Reference, 'L');
+  var resLH = interpret(document.form.LH_T.value, document.form.LH_Z.value, Reference, 'LH');
+  var resRH = interpret(document.form.RH_T.value, document.form.RH_Z.value, Reference, 'RH');
+
+  var others = document.getElementsByName('Others')[0].value || "Nil";
+
+  document.getElementById('Final_Report').value = 
+`# Imaging Report Form for Bone Mineral Density Scan #
+
+1.Patient Information:
+Age: ${document.form.Age.value},    Sex: ${SexText}
+
+2.Reference: ${Reference}
+
+3.The bone mineral density (BMD) of the following regions was measured using dual-energy X-ray absorptiometry (DXA).
+The BMD values, along with their corresponding standard deviations (SD) for T-scores and Z-scores, are summarized as follows:
+
+Lumbar spine (L1-L4):
+${resL}
+
+Left hip:
+${resLH}
+
+Right hip:
+${resRH}
+
+Other Findings:
+${others}`;
+}
+</script>
+</body>
+</html>
