@@ -823,8 +823,6 @@ function getTodayAssignments(key, targetDate = new Date()) {
   const d = NI_DATA[key];
   if (!d) return null;
 
-  const weekLabel = `W${getWeekNum(y, m, day)}`;
-
   if (dowNum === 6) {
     const sat = d.saturday && d.saturday.find(r => {
       const [sm, sd] = r.date.split('/').map(Number);
@@ -832,6 +830,9 @@ function getTodayAssignments(key, targetDate = new Date()) {
     });
     return { ...baseResult, isSat: true, sat, evtDoctor };
   }
+
+  // 門住急 MRI 班表的 W1 ~ W5 對應週一至週五（dowNum 1 ~ 5）
+  const weekLabel = `W${dowNum}`;
 
   return {
     ...baseResult, isSat: false, weekLabel, evtDoctor,
