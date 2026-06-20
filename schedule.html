@@ -341,14 +341,60 @@
       background: #f8fbff;
     }
 
-    @media (max-width: 700px) {
+    /* ── View Mode Selector ── */
+    .view-mode-selector {
+      display: flex;
+      justify-content: center;
+      margin: 16px auto 24px;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      max-width: 280px;
+    }
+    .view-mode-selector .mode-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+      font-family: inherit;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .view-mode-selector .mode-btn.active {
+      background: white;
+      color: var(--primary-color);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    @media (max-width: 768px) {
       .sections-grid { grid-template-columns: 1fr; }
       .full-width { grid-column: 1; }
       .ni-table { font-size: 0.78rem; }
-      .ni-table td, .ni-table th { padding: 5px 6px; }
+      .ni-table td, .ni-table th { padding: 6px 8px; }
       .day-cell { padding: 5px; min-height: 68px; }
       .oncall-chip { font-size: 0.62rem; padding: 1px 4px; }
       .day-num { font-size: 0.75rem; }
+      
+      .view-mode-selector { margin-bottom: 16px; }
+      .tabs-container { margin: 12px 0 16px; }
+      .today-card { padding: 12px 14px; margin-bottom: 16px; }
+      .today-doctors-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+      .today-doctor-card { padding: 8px 10px; }
+      .today-doctor-name { font-size: 0.8rem; }
+      .today-doctor-task-item { font-size: 0.7rem; padding: 1px 4px; }
+      .today-grid { font-size: 0.78rem; }
+      .today-grid-row > div { padding: 5px 8px; }
+      .today-ct-pill { font-size: 0.7rem; padding: 1px 8px; }
     }
   </style>
 </head>
@@ -369,6 +415,12 @@
 
   <!-- Today card container -->
   <div id="today-card-container"></div>
+
+  <!-- View Mode Switcher -->
+  <div class="view-mode-selector" id="viewModeSelector">
+    <button class="mode-btn active" id="mode-today-btn" onclick="setViewMode('today')">📱 今日精簡</button>
+    <button class="mode-btn" id="mode-month-btn" onclick="setViewMode('month')">📅 完整月曆</button>
+  </div>
 
   <!-- Tab Switcher -->
   <div class="tabs-container">
@@ -662,6 +714,7 @@ let currentIdx = MONTH_KEYS.includes(todayKey)
 let todayCardTab = 'today';
 let activeTab = 'ni'; // 'ni' or 'evt'
 const hiddenPeople = new Set();
+let viewMode = window.innerWidth <= 768 ? 'today' : 'month';
 
 const DOW_NAMES_TW = ['日','一','二','三','四','五','六'];
 const DOW_LABEL    = { 1:'週一', 2:'週二', 3:'週三', 4:'週四', 5:'週五', 6:'週六' };
@@ -679,13 +732,46 @@ function setTodayTab(tab) {
   render();
 }
 
+function setViewMode(mode) {
+  viewMode = mode;
+  document.getElementById('mode-today-btn').classList.toggle('active', mode === 'today');
+  document.getElementById('mode-month-btn').classList.toggle('active', mode === 'month');
+
+  // 控制月份切換與月度班表容器顯示/隱藏
+  document.querySelector('.month-switcher').style.display = mode === 'today' ? 'none' : 'flex';
+  document.querySelector('.tabs-container').style.display = mode === 'today' ? 'none' : '';
+
+  const niContent = document.getElementById('ni-content');
+  const evtContent = document.getElementById('evt-content');
+  if (mode === 'today') {
+    niContent.style.display = 'none';
+    evtContent.style.display = 'none';
+  } else {
+    niContent.classList.toggle('active', activeTab === 'ni');
+    evtContent.classList.toggle('active', activeTab === 'evt');
+    niContent.style.display = activeTab === 'ni' ? 'block' : 'none';
+    evtContent.style.display = activeTab === 'evt' ? 'block' : 'none';
+    renderTabContent();
+  }
+}
+
 function switchTab(tab) {
   activeTab = tab;
   document.getElementById('tab-ni-btn').classList.toggle('active', tab === 'ni');
   document.getElementById('tab-evt-btn').classList.toggle('active', tab === 'evt');
-  document.getElementById('ni-content').classList.toggle('active', tab === 'ni');
-  document.getElementById('evt-content').classList.toggle('active', tab === 'evt');
-  renderTabContent();
+  
+  const niContent = document.getElementById('ni-content');
+  const evtContent = document.getElementById('evt-content');
+  if (viewMode === 'today') {
+    niContent.style.display = 'none';
+    evtContent.style.display = 'none';
+  } else {
+    niContent.classList.toggle('active', tab === 'ni');
+    evtContent.classList.toggle('active', tab === 'evt');
+    niContent.style.display = tab === 'ni' ? 'block' : 'none';
+    evtContent.style.display = tab === 'evt' ? 'block' : 'none';
+    renderTabContent();
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -1177,6 +1263,7 @@ function renderAngio(data) {
   const sec = makeSection('🏥', '血管攝影室（Brain Angiography）', 'full-width');
   const t = document.createElement('table');
   t.className = 'ni-table';
+  t.style.marginTop = '0';
   t.innerHTML = `
     <thead><tr>
       <th>星期</th>
@@ -1199,7 +1286,13 @@ function renderAngio(data) {
       <td class="note-cell">${row.note}</td>`;
     tbody.appendChild(tr);
   });
-  sec.appendChild(t);
+  
+  const wrap = document.createElement('div');
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.style.marginTop = '12px';
+  wrap.appendChild(t);
+  sec.appendChild(wrap);
   return sec;
 }
 
@@ -1207,6 +1300,7 @@ function renderErCt(data) {
   const sec = makeSection('🚨', '急診 CT（Neuro ER CT）');
   const t = document.createElement('table');
   t.className = 'ni-table';
+  t.style.marginTop = '0';
   t.innerHTML = `
     <thead><tr>
       <th>星期</th>
@@ -1224,7 +1318,13 @@ function renderErCt(data) {
       <td class="note-cell">${row.note}</td>`;
     tbody.appendChild(tr);
   });
-  sec.appendChild(t);
+
+  const wrap = document.createElement('div');
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.style.marginTop = '12px';
+  wrap.appendChild(t);
+  sec.appendChild(wrap);
   return sec;
 }
 
@@ -1232,6 +1332,7 @@ function renderRoutineCt(data) {
   const sec = makeSection('📋', '門住 CT 號碼分配');
   const t = document.createElement('table');
   t.className = 'ni-table';
+  t.style.marginTop = '0';
   t.innerHTML = `
     <thead><tr>
       <th>醫師</th>
@@ -1249,7 +1350,13 @@ function renderRoutineCt(data) {
       <td class="note-cell">${row.note}</td>`;
     tbody.appendChild(tr);
   });
-  sec.appendChild(t);
+
+  const wrap = document.createElement('div');
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.style.marginTop = '12px';
+  wrap.appendChild(t);
+  sec.appendChild(wrap);
   return sec;
 }
 
@@ -1257,6 +1364,7 @@ function renderMri(data) {
   const sec = makeSection('🧲', '門住急 MRI（按週次）', 'full-width');
   const t = document.createElement('table');
   t.className = 'ni-table';
+  t.style.marginTop = '0';
 
   const weekLabels = data.tp.map(r => r.week);
   t.innerHTML = `
@@ -1279,7 +1387,12 @@ function renderMri(data) {
     tbody.appendChild(tr);
   });
 
-  sec.appendChild(t);
+  const wrap = document.createElement('div');
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.style.marginTop = '12px';
+  wrap.appendChild(t);
+  sec.appendChild(wrap);
   return sec;
 }
 
@@ -1287,6 +1400,7 @@ function renderDsMriDaily(data) {
   const sec = makeSection('🏥', '淡水健檢 / 神經 MRI 解釋');
   const t = document.createElement('table');
   t.className = 'ni-table';
+  t.style.marginTop = '0';
   t.innerHTML = `
     <thead><tr>
       <th>星期</th>
@@ -1302,7 +1416,13 @@ function renderDsMriDaily(data) {
       <td class="note-cell">${row.note}</td>`;
     tbody.appendChild(tr);
   });
-  sec.appendChild(t);
+
+  const wrap = document.createElement('div');
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.style.marginTop = '12px';
+  wrap.appendChild(t);
+  sec.appendChild(wrap);
   return sec;
 }
 
@@ -1328,6 +1448,7 @@ function renderPicc(data) {
   const sec = makeSection('💉', 'PICC');
   const t = document.createElement('table');
   t.className = 'ni-table';
+  t.style.marginTop = '0';
   t.innerHTML = `
     <thead><tr>
       <th>星期</th>
@@ -1345,7 +1466,13 @@ function renderPicc(data) {
       <td class="note-cell">${row.note}</td>`;
     tbody.appendChild(tr);
   });
-  sec.appendChild(t);
+
+  const wrap = document.createElement('div');
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.style.marginTop = '12px';
+  wrap.appendChild(t);
+  sec.appendChild(wrap);
   return sec;
 }
 
@@ -1488,6 +1615,7 @@ function renderTabContent() {
 //  初始化
 // ════════════════════════════════════════════════════
 render();
+setViewMode(viewMode);
 </script>
 </body>
 </html>
