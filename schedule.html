@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>中風取栓班表</title>
+  <title>神經放射線班表</title>
   <link rel="stylesheet" href="shared.css">
   <style>
     body { padding: 0; }
@@ -19,156 +19,283 @@
     }
     header h1 { margin: 0; font-size: 2rem; font-weight: 800; }
     header p  { margin-top: 6px; font-size: 0.95rem; opacity: 0.8; }
-
     .back-link {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      color: rgba(255,255,255,0.85);
-      font-size: 0.88rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+      position: absolute; top: 20px; left: 20px;
+      color: rgba(255,255,255,0.85); font-size: 0.88rem;
+      display: inline-flex; align-items: center; gap: 5px;
       text-decoration: none;
     }
     .back-link:hover { color: white; text-decoration: underline; }
 
     /* ── Month Switcher ── */
     .month-switcher {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      margin: 28px 0 20px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin: 28px 0 20px;
     }
     .month-btn {
+      background: white; border: 1px solid var(--border-color);
+      border-radius: 6px; padding: 6px 14px; font-size: 0.88rem;
+      font-weight: 600; color: var(--primary-color); cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .month-btn:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
+    .month-btn:disabled { opacity: 0.35; cursor: default; }
+    .month-label { font-size: 1.15rem; font-weight: 800; color: var(--primary-color); min-width: 110px; text-align: center; }
+
+    /* ── Main ── */
+    main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
+
+    /* ── Today Card ── */
+    .today-card {
+      background: linear-gradient(135deg, #e8f4fd 0%, #f0f9f4 100%);
+      border: 1px solid #b3d9f5;
+      border-left: 5px solid var(--accent-color);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+    .today-card-header h2 {
+      font-size: 1rem; font-weight: 800; color: var(--primary-color); margin: 0;
+    }
+    .today-date-badge {
+      font-size: 0.82rem; font-weight: 700;
+      background: var(--primary-color); color: white;
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .today-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      font-size: 0.84rem;
+    }
+    .today-grid-row { display: contents; }
+    .today-grid-row > div {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border-color);
+      background: white;
+    }
+    .today-grid-row:last-child > div { border-bottom: none; }
+    .today-grid-row > div:nth-child(1) {
+      font-size: 0.75rem; font-weight: 700; color: var(--text-sub);
+      background: #f7f9fc; white-space: nowrap;
+      display: flex; align-items: center;
+    }
+    .today-grid-col-header > div {
+      background: #f0f4f8 !important;
+      font-weight: 800; font-size: 0.75rem; color: var(--primary-color);
+      text-align: center;
+    }
+    .today-sat-card {
       background: white;
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 6px 14px;
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      min-width: 130px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .today-sat-label { font-size: 0.72rem; font-weight: 700; color: var(--text-sub); }
+    .today-sat-person { font-size: 1.1rem; font-weight: 800; }
+    .today-ct-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .today-ct-pill {
+      font-size: 0.75rem; font-weight: 600;
+      background: #f0f4f8; border: 1px solid var(--border-color);
+      border-radius: 99px; padding: 2px 10px;
+      white-space: nowrap;
+    }
+
+    /* ── Today Doctors Task Grid ── */
+    .today-doctors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 5px;
+    }
+    .today-doctor-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .today-doctor-name {
       font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--primary-color);
+      font-weight: 800;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 4px;
+    }
+    .today-doctor-task-list { display: flex; flex-direction: column; gap: 4px; }
+    .today-doctor-task-item {
+      font-size: 0.74rem;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+      border-left: 3px solid var(--accent-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Tab Switcher ── */
+    .tabs-container {
+      display: flex;
+      border-bottom: 2px solid var(--border-color);
+      margin: 20px 0 24px;
+      gap: 8px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-sub);
       cursor: pointer;
+      border-bottom: 3px solid transparent;
       transition: all 0.15s;
       font-family: inherit;
     }
-    .month-btn:hover:not(:disabled) {
-      border-color: var(--accent-color);
-      color: var(--accent-color);
-    }
-    .month-btn:disabled { opacity: 0.35; cursor: default; }
-    .month-label {
-      font-size: 1.15rem;
-      font-weight: 800;
+    .tab-btn:hover { color: var(--accent-color); }
+    .tab-btn.active {
       color: var(--primary-color);
-      min-width: 110px;
-      text-align: center;
+      border-bottom-color: var(--accent-color);
     }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
-    /* ── Main ── */
-    main { max-width: 980px; margin: 0 auto; padding: 0 20px 60px; }
-
-    /* ── Today banner ── */
-    .today-banner {
-      background: #e8f4fd;
-      border: 1px solid #b3d9f5;
-      border-left: 4px solid var(--accent-color);
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
+    /* ── Sections grid (NI) ── */
+    .sections-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
-    .tb-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--primary-color);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    .full-width { grid-column: 1 / -1; }
+
+    /* ── NI Tables ── */
+    .ni-table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+      margin-top: 12px;
+    }
+    .ni-table th {
+      background: #f0f4f8; color: var(--primary-color);
+      font-weight: 700; font-size: 0.78rem; padding: 7px 10px;
+      text-align: center; border: 1px solid var(--border-color);
       white-space: nowrap;
     }
-    .tb-date { font-size: 0.88rem; font-weight: 600; color: var(--text-sub); }
-    .tb-people { display: flex; gap: 8px; flex-wrap: wrap; }
-    .tb-chip {
-      font-size: 0.85rem;
-      font-weight: 700;
-      padding: 4px 14px;
-      border-radius: 99px;
-      border: 1px solid transparent;
+    .ni-table td {
+      padding: 8px 10px; border: 1px solid var(--border-color);
+      vertical-align: top; line-height: 1.5;
+    }
+    .ni-table tr:hover td { background: #f8fbff; }
+    .ni-table td.dow {
+      font-weight: 700; color: var(--primary-color);
+      text-align: center; background: #f7f9fc;
+      white-space: nowrap; font-size: 0.82rem;
+    }
+    .ni-table td.dow.weekend { color: #c0392b; background: #fff5f5; }
+
+    /* Location badges */
+    .loc {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      padding: 1px 5px; border-radius: 3px; margin-right: 4px;
+      vertical-align: middle; white-space: nowrap;
+    }
+    .loc-tp { background: #dbeafe; color: #1e40af; }
+    .loc-ds { background: #d1fae5; color: #065f46; }
+
+    /* Person color chips */
+    .person { display: inline-block; font-weight: 600; }
+    .p-jiang   { color: #059669; }
+    .p-huang-jz{ color: #d97706; }
+    .p-zhou    { color: #7c3aed; }
+    .p-huang-yp{ color: #c2410c; }
+    .p-xie     { color: #be185d; }
+    .p-wei     { color: #0e7490; }
+    .p-zheng   { color: #6d28d9; }
+    .p-other   { color: #4b5563; }
+
+    .trainee-tag {
+      display: inline-block; font-size: 0.62rem; font-weight: 700;
+      padding: 0px 5px; border-radius: 3px; margin-left: 4px;
+      vertical-align: middle; border: 1px solid;
+    }
+    .note-cell { font-size: 0.72rem; color: var(--text-sub); font-style: italic; }
+    .note-inline {
+      font-size: 0.7rem; color: #78350f; background: #fffbeb;
+      border-left: 2px solid #fcd34d; padding: 1px 5px;
+      margin-top: 3px; display: block; border-radius: 0 3px 3px 0;
+    }
+    .week-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 800;
+      background: var(--primary-color); color: white;
+      padding: 1px 7px; border-radius: 4px; margin-right: 5px;
     }
 
-    /* ── Legend ── */
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 18px;
+    /* Saturday cards (NI) */
+    .sat-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .sat-card {
+      background: #f0f4f8; border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 10px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      min-width: 110px;
     }
+    .sat-date { font-size: 0.78rem; font-weight: 700; color: var(--primary-color); }
+    .sat-person { font-size: 0.95rem; font-weight: 700; }
+    .sat-note { font-size: 0.68rem; color: var(--text-sub); }
+
+    /* Notes banner */
+    .notes-banner {
+      background: #fffbeb; border: 1px solid #fcd34d;
+      border-left: 4px solid #f59e0b; border-radius: 8px;
+      padding: 14px 18px; margin-top: 20px; font-size: 0.84rem;
+      color: #78350f; white-space: pre-line; line-height: 1.8;
+    }
+    .notes-banner strong { display: block; margin-bottom: 4px; font-size: 0.8rem; letter-spacing: 0.5px; }
+
+    /* ── EVT Calendar Section ── */
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; }
     .legend-pill {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      background: white;
-      border: 1px solid var(--border-color);
-      border-radius: 99px;
-      padding: 5px 14px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-main);
-      cursor: pointer;
-      transition: all 0.15s;
-      user-select: none;
+      display: flex; align-items: center; gap: 7px;
+      background: white; border: 1px solid var(--border-color);
+      border-radius: 99px; padding: 5px 14px; font-size: 0.8rem;
+      font-weight: 600; color: var(--text-main); cursor: pointer;
+      transition: all 0.15s; user-select: none;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .legend-pill:hover { border-color: var(--accent-color); }
     .legend-pill.dimmed { opacity: 0.3; }
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
-    /* ── Calendar ── */
     .cal-header-row {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      margin-bottom: 6px;
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 6px; margin: 15px 0 6px;
     }
     .cal-dow {
-      text-align: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--text-sub);
-      letter-spacing: 0.5px;
-      padding: 4px 0;
+      text-align: center; font-size: 0.72rem; font-weight: 700;
+      color: var(--text-sub); letter-spacing: 0.5px; padding: 4px 0;
     }
     .cal-dow.weekend { color: #c0392b; }
 
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-    }
-
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
     .day-cell {
-      background: white;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 8px 7px;
-      min-height: 84px;
+      background: white; border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 8px 7px; min-height: 84px;
       transition: transform 0.12s, box-shadow 0.12s;
     }
     .day-cell:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-      border-color: var(--accent-color);
-      z-index: 2;
+      transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      border-color: var(--accent-color); z-index: 2;
     }
-    .day-cell.empty {
-      background: transparent;
-      border-color: transparent;
-      pointer-events: none;
-    }
+    .day-cell.empty { background: transparent; border-color: transparent; pointer-events: none; }
     .day-cell.today {
       border-color: var(--accent-color);
       box-shadow: 0 0 0 2px rgba(41,128,185,0.2);
@@ -177,66 +304,48 @@
     .day-cell.weekend-cell { background: #fafafa; }
 
     .day-num {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 5px;
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
+      font-size: 0.82rem; font-weight: 700; color: var(--text-main);
+      margin-bottom: 5px; display: flex; align-items: baseline; gap: 4px;
     }
-    .day-num .dow-mini {
-      font-size: 0.62rem;
-      font-weight: 500;
-      color: var(--text-sub);
-    }
+    .day-num .dow-mini { font-size: 0.62rem; font-weight: 500; color: var(--text-sub); }
     .today-dot {
-      width: 5px; height: 5px;
-      background: var(--accent-color);
-      border-radius: 50%;
-      display: inline-block;
-      margin-left: auto;
-      align-self: center;
+      width: 5px; height: 5px; background: var(--accent-color);
+      border-radius: 50%; display: inline-block; margin-left: auto; align-self: center;
     }
 
     .oncall-list { display: flex; flex-direction: column; gap: 3px; }
     .oncall-chip {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: opacity 0.2s;
+      font-size: 0.72rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 4px; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; transition: opacity 0.2s;
     }
     .oncall-chip.dimmed { opacity: 0.1 !important; }
 
+    /* EVT color classes */
     .chip-jiang   { background: #d1fae5; color: #065f46; }
     .chip-huang-jz{ background: #fef3c7; color: #78350f; }
     .chip-zhou    { background: #ede9fe; color: #4c1d95; }
     .chip-huang-yp{ background: #ffedd5; color: #7c2d12; }
     .chip-xie     { background: #fce7f3; color: #831843; }
     .chip-wei     { background: #cffafe; color: #164e63; }
+    .chip-zheng   { background: #f3e8ff; color: #6b21a8; }
 
     .filter-btn {
-      background: white;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--primary-color);
-      cursor: pointer;
+      background: white; border: 1px solid var(--border-color);
+      border-radius: 6px; padding: 4px 10px; font-size: 0.78rem;
+      font-weight: 600; color: var(--primary-color); cursor: pointer;
       transition: all 0.15s;
     }
     .filter-btn:hover {
-      border-color: var(--accent-color);
-      color: var(--accent-color);
+      border-color: var(--accent-color); color: var(--accent-color);
       background: #f8fbff;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
+      .sections-grid { grid-template-columns: 1fr; }
+      .full-width { grid-column: 1; }
+      .ni-table { font-size: 0.78rem; }
+      .ni-table td, .ni-table th { padding: 5px 6px; }
       .day-cell { padding: 5px; min-height: 68px; }
       .oncall-chip { font-size: 0.62rem; padding: 1px 4px; }
       .day-num { font-size: 0.75rem; }
@@ -247,8 +356,8 @@
 
 <header>
   <a href="index.html" class="back-link">← 返回首頁</a>
-  <h1>🧠 中風取栓班表</h1>
-  <p>EVT On-Call Schedule · 台北馬偕神經放射科</p>
+  <h1>🧠 神經放射線班表</h1>
+  <p>台北 & 淡水馬偕放射線科 · 班表整合平台</p>
 </header>
 
 <main>
@@ -258,40 +367,172 @@
     <button class="month-btn" id="nextBtn" onclick="changeMonth(1)">&#8594;</button>
   </div>
 
-  <div class="today-banner" id="todayBanner" style="display:none">
-    <div>
-      <div class="tb-label">今日 On-Call</div>
-      <div class="tb-date" id="todayDateStr"></div>
+  <!-- Today card container -->
+  <div id="today-card-container"></div>
+
+  <!-- Tab Switcher -->
+  <div class="tabs-container">
+    <button class="tab-btn active" id="tab-ni-btn" onclick="switchTab('ni')">📋 日班工作分配</button>
+    <button class="tab-btn" id="tab-evt-btn" onclick="switchTab('evt')">🧠 中風取栓班表</button>
+  </div>
+
+  <!-- Tab contents -->
+  <div id="ni-content" class="tab-panel active">
+    <div class="sections-grid" id="ni-sections"></div>
+  </div>
+
+  <div id="evt-content" class="tab-panel">
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:18px; flex-wrap:wrap;">
+      <div class="legend" id="legend" style="margin-bottom:0;"></div>
+      <div style="display:flex; gap:6px;">
+        <button class="filter-btn" onclick="toggleAllFilters(true)">全選</button>
+        <button class="filter-btn" onclick="toggleAllFilters(false)">全取消</button>
+      </div>
     </div>
-    <div class="tb-people" id="todayPeople"></div>
-  </div>
 
-  <div style="display:flex; gap:12px; align-items:center; margin-bottom:18px; flex-wrap:wrap;">
-    <div class="legend" id="legend" style="margin-bottom:0;"></div>
-    <div style="display:flex; gap:6px;">
-      <button class="filter-btn" onclick="toggleAllFilters(true)">全選</button>
-      <button class="filter-btn" onclick="toggleAllFilters(false)">全取消</button>
+    <div class="cal-header-row">
+      <div class="cal-dow">週一</div>
+      <div class="cal-dow">週二</div>
+      <div class="cal-dow">週三</div>
+      <div class="cal-dow">週四</div>
+      <div class="cal-dow">週五</div>
+      <div class="cal-dow weekend">週六</div>
+      <div class="cal-dow weekend">週日</div>
     </div>
+    <div class="cal-grid" id="calGrid"></div>
   </div>
-
-  <div class="cal-header-row">
-    <div class="cal-dow">週一</div>
-    <div class="cal-dow">週二</div>
-    <div class="cal-dow">週三</div>
-    <div class="cal-dow">週四</div>
-    <div class="cal-dow">週五</div>
-    <div class="cal-dow weekend">週六</div>
-    <div class="cal-dow weekend">週日</div>
-  </div>
-
-  <div class="cal-grid" id="calGrid"></div>
 </main>
 
 <script>
-// ═══════════════════════════════════════════════
-//  班表資料庫：每月新增一個 key 即可
-//  格式：'YYYY-MM': { day: '姓名', ... }
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+//  資料庫：NI 日班工作分配
+// ════════════════════════════════════════════════════
+const NI_DATA = {
+  '2026-06': {
+    angio: [
+      { dow: '週一', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '魏士揚',   ds_tae: '魏士揚/黃俊肇', note: '淡水DSA：神外醫師協助；6/8 淡水DSA→俊肇' },
+      { dow: '週二', tp_dsa: '姜信帆',    tp_tae: '姜信帆',              ds_dsa: '黃俊肇',   ds_tae: '黃俊肇',        note: '' },
+      { dow: '週三', tp_dsa: '黃俊肇',    tp_tae: '黃俊肇',              ds_dsa: '謝棖智',   ds_tae: '謝棖智',        note: '' },
+      { dow: '週四', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '姜信帆',   ds_tae: '魏士揚/姜信帆', note: '6/4 台北DSA→俊肇；淡水DSA→棖智' },
+      { dow: '週五', tp_dsa: '魏士揚',    tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',   ds_tae: '姜信帆',        note: '6/5 台北DSA→棖智；淡水DSA→俊肇' },
+    ],
+    erct: [
+      { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+      { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+      { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '6/10 →魏士揚' },
+      { dow: '週四', tp: '謝棖智', ds: '姜信帆', note: '6/4 淡水→棖智；6/11 台北→信帆代棖智' },
+      { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '6/5 →俊肇' },
+    ],
+    routine_ct: [
+      { person: '黃俊肇', tp: '00–19',         ds: '00–19',  note: '' },
+      { person: '謝棖智', tp: '20–39',         ds: '20–39',  note: '' },
+      { person: '姜信帆', tp: '40–59',         ds: '80–99',  note: '6/4–6 →俊肇代' },
+      { person: '魏士揚', tp: '60–67, 89–99',  ds: '40–59',  note: '6/4–6 →俊肇代' },
+      { person: '郭律志', tp: '68–88',         ds: '60–79',  note: '' },
+    ],
+    mri: {
+      tp: [
+        { week: 'W1', person: '謝棖智',                 note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+        { week: 'W3', person: '姜信帆',                 note: '' },
+        { week: 'W4', person: '黃俊肇',                 note: '' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '6/5 PM→棖智' },
+      ],
+      ds: [
+        { week: 'W1', person: '黃俊肇', note: '' },
+        { week: 'W2', person: '黃俊肇', note: '6/9 →信帆' },
+        { week: 'W3', person: '魏士揚', note: '' },
+        { week: 'W4', person: '謝棖智', note: '6/11 →士揚' },
+        { week: 'W5', person: '姜信帆', note: '6/5 →俊肇' },
+      ],
+    },
+    ds_mri_daily: [
+      { dow: '週一', person: '魏士揚', note: '' },
+      { dow: '週二', person: '黃俊肇', note: '' },
+      { dow: '週三', person: '謝棖智', note: '' },
+      { dow: '週四', person: '姜信帆', note: '6/4 →棖智' },
+      { dow: '週五', person: '姜信帆', note: '6/5 →俊肇' },
+    ],
+    saturday: [
+      { date: '6/06', person: '謝棖智', note: '' },
+      { date: '6/13', person: '魏士揚', note: '' },
+      { date: '6/20', person: '姜信帆', note: '假日 — 僅 MRI' },
+      { date: '6/27', person: '姜信帆', note: '' },
+    ],
+    picc: [
+      { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '' },
+      { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+      { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '6/4 淡水→棖智' },
+      { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+    ],
+    notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
+  },
+  '2026-07': {
+    angio: [
+      { dow: '週一', tp_dsa: '鄭宇凡',  tp_tae: '謝棖智',        ds_dsa: '魏士揚',  ds_tae: '魏士揚/黃俊肇', note: '' },
+      { dow: '週二', tp_dsa: '姜信帆',  tp_tae: '姜信帆',        ds_dsa: '黃俊肇',  ds_tae: '黃俊肇',        note: '7/21 淡水DSA→棖智' },
+      { dow: '週三', tp_dsa: '黃俊肇',  tp_tae: '黃俊肇',        ds_dsa: '謝棖智',  ds_tae: '謝棖智',        note: '' },
+      { dow: '週四', tp_dsa: '謝棖智',  tp_tae: '謝棖智',        ds_dsa: '鄭宇凡',  ds_tae: '魏士揚/姜信帆', note: '' },
+      { dow: '週五', tp_dsa: '魏士揚',  tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆',  ds_tae: '姜信帆',        note: '' },
+    ],
+    erct: [
+      { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+      { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+      { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '' },
+      { dow: '週四', tp: '鄭宇凡', ds: '鄭宇凡', note: '' },
+      { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '' },
+    ],
+    routine_ct: [
+      { person: '黃俊肇', tp: '00–23', ds: '00–23', note: '7/17–20 台北→棖智 / 淡水→信帆' },
+      { person: '謝棖智', tp: '24–47', ds: '24–47', note: '' },
+      { person: '魏士揚', tp: '48–71', ds: '48–71', note: '' },
+      { person: '鄭宇凡', tp: '72–75', ds: '72–75', note: '' },
+      { person: '姜信帆', tp: '76–99', ds: '76–99', note: '' },
+    ],
+    mri: {
+      tp: [
+        { week: 'W1', person: '謝棖智',                 note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+        { week: 'W3', person: '姜信帆',                 note: '' },
+        { week: 'W4', person: '黃俊肇',                 note: '' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+      ],
+      ds: [
+        { week: 'W1', person: '黃俊肇', note: '7/20 →信帆' },
+        { week: 'W2', person: '黃俊肇', note: '7/21 →棖智' },
+        { week: 'W3', person: '魏士揚', note: '' },
+        { week: 'W4', person: '謝棖智', note: '7/23 →俊肇' },
+        { week: 'W5', person: '姜信帆', note: '7/24 →俊肇' },
+      ],
+    },
+    ds_mri_daily: [
+      { dow: '週一', person: '魏士揚', note: '' },
+      { dow: '週二', person: '黃俊肇', note: '7/21 →棖智' },
+      { dow: '週三', person: '謝棖智', note: '' },
+      { dow: '週四', person: '姜信帆', note: '' },
+      { dow: '週五', person: '姜信帆', note: '' },
+    ],
+    saturday: [
+      { date: '7/04', person: '鄭宇凡', note: '' },
+      { date: '7/11', person: '魏士揚', note: '' },
+      { date: '7/18', person: '姜信帆', note: '' },
+      { date: '7/25', person: '謝棖智', note: '' },
+    ],
+    picc: [
+      { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '7/21 淡水→棖智' },
+      { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+      { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '' },
+      { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+    ],
+    notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
+  },
+};
+
+// ════════════════════════════════════════════════════
+//  資料庫：中風取栓班表 (EVT On-Call)
+// ════════════════════════════════════════════════════
 const ALL_SCHEDULES = {
   '2026-06': {
      1: { tp: '姜信帆', ds: '謝棖智' },
@@ -360,10 +601,9 @@ const ALL_SCHEDULES = {
   },
 };
 
-// 所有月份 key 排序
-const MONTH_KEYS = Object.keys(ALL_SCHEDULES).sort();
-
-// ── 人員設定 ──
+// ════════════════════════════════════════════════════
+//  人員與配色設定
+// ════════════════════════════════════════════════════
 const PEOPLE = [
   { key: 'jiang',    name: '姜信帆', cls: 'chip-jiang',    color: '#059669' },
   { key: 'huang_jz', name: '黃俊肇', cls: 'chip-huang-jz', color: '#d97706' },
@@ -371,21 +611,647 @@ const PEOPLE = [
   { key: 'huang_yp', name: '黃勇評', cls: 'chip-huang-yp', color: '#c2410c' },
   { key: 'xie',      name: '謝棖智', cls: 'chip-xie',      color: '#be185d' },
   { key: 'wei',      name: '魏士揚', cls: 'chip-wei',      color: '#0e7490' },
+  { key: 'zheng',    name: '鄭宇凡', cls: 'chip-zheng',    color: '#6d28d9' },
 ];
+
+const PERSON_CLASS = {
+  '姜信帆': 'p-jiang',
+  '黃俊肇': 'p-huang-jz',
+  '周兆亮': 'p-zhou',
+  '黃勇評': 'p-huang-yp',
+  '謝棖智': 'p-xie',
+  '魏士揚': 'p-wei',
+  '鄭宇凡': 'p-zheng',
+};
+
 const personByName = {};
 PEOPLE.forEach(p => { personByName[p.name] = p; });
 
-const DOW_NAMES = ['日','一','二','三','四','五','六'];
-const hiddenPeople = new Set();
+function personCls(name) {
+  return PERSON_CLASS[name] || 'p-other';
+}
 
-// ── 目前顯示的月份 index ──
+// ════════════════════════════════════════════════════
+//  全域狀態
+// ════════════════════════════════════════════════════
+const MONTH_KEYS = Object.keys(NI_DATA).sort();
 const now = new Date();
 const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 let currentIdx = MONTH_KEYS.includes(todayKey)
   ? MONTH_KEYS.indexOf(todayKey)
   : MONTH_KEYS.length - 1;
 
-// ── Legend（只建一次）──
+let todayCardTab = 'today';
+let activeTab = 'ni'; // 'ni' or 'evt'
+const hiddenPeople = new Set();
+
+const DOW_NAMES_TW = ['日','一','二','三','四','五','六'];
+const DOW_LABEL    = { 1:'週一', 2:'週二', 3:'週三', 4:'週四', 5:'週五', 6:'週六' };
+
+// ════════════════════════════════════════════════════
+//  換月與換 Tab 邏輯
+// ════════════════════════════════════════════════════
+function changeMonth(dir) {
+  currentIdx = Math.max(0, Math.min(MONTH_KEYS.length - 1, currentIdx + dir));
+  render();
+}
+
+function setTodayTab(tab) {
+  todayCardTab = tab;
+  render();
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-ni-btn').classList.toggle('active', tab === 'ni');
+  document.getElementById('tab-evt-btn').classList.toggle('active', tab === 'evt');
+  document.getElementById('ni-content').classList.toggle('active', tab === 'ni');
+  document.getElementById('evt-content').classList.toggle('active', tab === 'evt');
+  renderTabContent();
+}
+
+// ════════════════════════════════════════════════════
+//  今日分配邏輯
+// ════════════════════════════════════════════════════
+function getWeekNum(year, month, day) {
+  const firstDow = new Date(year, month - 1, 1).getDay();
+  const monOffset = (firstDow + 6) % 7;
+  return Math.ceil((day + monOffset) / 7);
+}
+
+function getTodayAssignments(key, targetDate = new Date()) {
+  const [y, m] = key.split('-').map(Number);
+  const day = targetDate.getDate();
+  const dowNum = targetDate.getDay();
+  const dowLabel = DOW_LABEL[dowNum];
+  const dateStr = `${y}/${String(m).padStart(2,'0')}/${String(day).padStart(2,'0')} （週${DOW_NAMES_TW[dowNum]}）`;
+
+  // 取得 EVT On-Call
+  const evtSched = ALL_SCHEDULES[key];
+  const evtDuty = evtSched ? evtSched[day] : null;
+  const evtDoctor = evtDuty ? (typeof evtDuty === 'string' ? evtDuty : evtDuty.tp) : '';
+
+  if (dowNum === 0) {
+    return { dateStr, isSunday: true, evtDoctor };
+  }
+
+  const d = NI_DATA[key];
+  if (!d) return null;
+
+  const weekLabel = `W${getWeekNum(y, m, day)}`;
+
+  if (dowNum === 6) {
+    const sat = d.saturday && d.saturday.find(r => {
+      const [sm, sd] = r.date.split('/').map(Number);
+      return sm === m && sd === day;
+    });
+    return { dateStr, isSat: true, sat, evtDoctor };
+  }
+
+  return {
+    dateStr, isSat: false, weekLabel, evtDoctor,
+    angio:       d.angio       && d.angio.find(r => r.dow === dowLabel),
+    erct:        d.erct        && d.erct.find(r => r.dow === dowLabel),
+    routine_ct:  d.routine_ct,
+    mri_tp:      d.mri         && d.mri.tp.find(r => r.week === weekLabel),
+    mri_ds:      d.mri         && d.mri.ds.find(r => r.week === weekLabel),
+    ds_mri:      d.ds_mri_daily && d.ds_mri_daily.find(r => r.dow === dowLabel),
+    picc:        d.picc        && d.picc.find(r => r.dow === dowLabel),
+  };
+}
+
+function getDoctorTasksForToday(a) {
+  if (!a) return {};
+  const doctorTasks = {};
+
+  function addTask(name, task) {
+    if (!name) return;
+    name = name.trim();
+    if (!name || name === '—') return;
+    
+    const ampmMatch = name.match(/^(AM|PM)\s+(.+)$/);
+    let displayName = name;
+    let suffix = '';
+    if (ampmMatch) {
+      displayName = ampmMatch[2].trim();
+      suffix = ` (${ampmMatch[1]})`;
+    }
+    
+    if (!doctorTasks[displayName]) {
+      doctorTasks[displayName] = [];
+    }
+    doctorTasks[displayName].push(task + suffix);
+  }
+
+  function processField(raw, taskName) {
+    if (!raw) return;
+    if (raw.includes('AM') || raw.includes('PM')) {
+      raw.split('/').forEach(seg => {
+        seg = seg.trim();
+        const m = seg.match(/^(AM|PM)\s+(.+)$/);
+        if (m) {
+          addTask(m[2].trim(), `${taskName} (${m[1]})`);
+        } else {
+          addTask(seg, taskName);
+        }
+      });
+      return;
+    }
+    if (raw.includes('/')) {
+      const parts = raw.split('/');
+      addTask(parts[0].trim(), `${taskName} (學習)`);
+      addTask(parts[1].trim(), `${taskName} (Cover)`);
+      return;
+    }
+    addTask(raw, taskName);
+  }
+
+  if (a.isSunday) {
+    if (a.evtDoctor) processField(a.evtDoctor, '中風取栓 On-Call');
+  } else if (a.isSat) {
+    if (a.sat) processField(a.sat.person, '週六班');
+    if (a.evtDoctor) processField(a.evtDoctor, '中風取栓 On-Call');
+  } else {
+    if (a.angio) {
+      processField(a.angio.tp_dsa, '台北 DSA');
+      processField(a.angio.tp_tae, '台北 TAE');
+      processField(a.angio.ds_dsa, '淡水 DSA');
+      processField(a.angio.ds_tae, '淡水 TAE');
+    }
+    if (a.erct) {
+      processField(a.erct.tp, '台北急 CT');
+      processField(a.erct.ds, '淡水急 CT');
+    }
+    if (a.mri_tp) {
+      processField(a.mri_tp.person, '台北 MRI');
+    }
+    if (a.mri_ds) {
+      processField(a.mri_ds.person, '淡水 MRI');
+    }
+    if (a.ds_mri) {
+      processField(a.ds_mri.person, '淡水神經 MRI 解釋');
+    }
+    if (a.picc) {
+      processField(a.picc.tp, '台北 PICC');
+      processField(a.picc.ds, '淡水 PICC');
+    }
+    if (a.evtDoctor) {
+      processField(a.evtDoctor, '中風取栓 On-Call');
+    }
+    if (a.routine_ct && a.routine_ct.length) {
+      a.routine_ct.forEach(r => {
+        processField(r.person, `門住 CT (北:${r.tp}/淡:${r.ds})`);
+      });
+    }
+  }
+
+  return doctorTasks;
+}
+
+// ════════════════════════════════════════════════════
+//  姓名渲染與小備註 helper
+// ════════════════════════════════════════════════════
+function renderPerson(raw, showTraineeTag = true) {
+  if (!raw) return '—';
+
+  if (raw.includes('AM') || raw.includes('PM')) {
+    return raw
+      .split('/')
+      .map(seg => {
+        seg = seg.trim();
+        const m = seg.match(/^(AM|PM)\s+(.+)$/);
+        if (m) {
+          const cls = personCls(m[2].trim());
+          return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">${m[1]}</span> <span class="person ${cls}">${m[2].trim()}</span>`;
+        }
+        return `<span class="person ${personCls(seg)}">${seg}</span>`;
+      })
+      .join('<span style="color:#cbd5e1;margin:0 4px">/</span>');
+  }
+
+  const parts = raw.split('/');
+  if (parts.length >= 2) {
+    const p1 = parts[0].trim();
+    const p2 = parts[1].trim();
+    if (showTraineeTag) {
+      return `<span class="person ${personCls(p1)}">${p1}</span>`
+           + `<span class="trainee-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; margin-left:4px;">學</span>`
+           + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
+           + `<span class="person ${personCls(p2)}">${p2}</span>`
+           + `<span class="trainee-tag" style="background:#fef3c7; color:#78350f; border-color:#fcd34d; margin-left:4px;">Cover</span>`;
+    } else {
+      return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">AM</span> <span class="person ${personCls(p1)}">${p1}</span>`
+           + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
+           + `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">PM</span> <span class="person ${personCls(p2)}">${p2}</span>`;
+    }
+  }
+
+  return `<span class="person ${personCls(raw)}">${raw}</span>`;
+}
+
+function noteHtml(note) {
+  if (!note) return '';
+  return `<span class="note-inline">※ ${note}</span>`;
+}
+
+// ════════════════════════════════════════════════════
+//  今日卡片渲染
+// ════════════════════════════════════════════════════
+function renderTodayCard(key) {
+  const targetDate = new Date();
+  let titleText = '今日分配';
+  if (todayCardTab === 'tomorrow') {
+    targetDate.setDate(targetDate.getDate() + 1);
+    titleText = '明日預覽';
+  }
+
+  const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}`;
+  const a = getTodayAssignments(targetKey, targetDate);
+  if (!a) return null;
+
+  const card = document.createElement('div');
+  card.className = 'today-card';
+
+  const bgToday = todayCardTab === 'today' ? '#ffffff' : 'transparent';
+  const colorToday = todayCardTab === 'today' ? 'var(--primary-color)' : '#64748b';
+  const shadowToday = todayCardTab === 'today' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+  
+  const bgTomorrow = todayCardTab === 'tomorrow' ? '#ffffff' : 'transparent';
+  const colorTomorrow = todayCardTab === 'tomorrow' ? 'var(--primary-color)' : '#64748b';
+  const shadowTomorrow = todayCardTab === 'tomorrow' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+
+  let headerHtml = `
+    <div class="today-card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <h2>📅 ${titleText}</h2>
+        <span class="today-date-badge">${a.dateStr}</span>
+      </div>
+      <div style="display:flex; gap:2px; background:#f1f5f9; padding:2px; border-radius:6px; border:1px solid #e2e8f0;">
+        <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday};">今日任務</button>
+        <button onclick="setTodayTab('tomorrow')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgTomorrow}; color:${colorTomorrow}; box-shadow:${shadowTomorrow};">明日預覽</button>
+      </div>
+    </div>`;
+  card.innerHTML = headerHtml;
+
+  // ── Sunday ──
+  if (a.isSunday) {
+    let sunHtml = `<div style="padding:10px 0; text-align:center; color:var(--text-sub); font-size:0.88rem; font-weight:600;">☕ 週日常規日班休假</div>`;
+    if (a.evtDoctor) {
+      const pc = personCls(a.evtDoctor);
+      sunHtml += `
+        <div style="display:flex; justify-content:center; margin-top:10px;">
+          <div class="today-sat-card" style="min-width:200px;">
+            <div class="today-sat-label">中風取栓 On-Call (24H)</div>
+            <div class="today-sat-person person ${pc}">${a.evtDoctor}</div>
+          </div>
+        </div>`;
+    }
+    card.innerHTML += sunHtml;
+    return card;
+  }
+
+  // ── Saturday ──
+  if (a.isSat) {
+    let satHtml = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:5px; padding:10px 0;">`;
+    if (a.sat) {
+      const pc = personCls(a.sat.person);
+      satHtml += `
+        <div class="today-sat-card">
+          <div class="today-sat-label">週六班（北淡 MRI + 急 CT）</div>
+          <div class="today-sat-person person ${pc}">${a.sat.person}</div>
+          ${a.sat.note ? `<div style="font-size:0.72rem;color:var(--text-sub)">※ ${a.sat.note}</div>` : ''}
+        </div>`;
+    } else {
+      satHtml += `<div class="today-sat-card"><div class="today-sat-label">週六班</div><div style="color:var(--text-sub);font-size:0.88rem">無資料</div></div>`;
+    }
+    
+    if (a.evtDoctor) {
+      const pc = personCls(a.evtDoctor);
+      satHtml += `
+        <div class="today-sat-card">
+          <div class="today-sat-label">中風取栓 On-Call (24H)</div>
+          <div class="today-sat-person person ${pc}">${a.evtDoctor}</div>
+        </div>`;
+    }
+    satHtml += `</div>`;
+    card.innerHTML += satHtml;
+    return card;
+  }
+
+  // ── Today's Doctor Tasks Overview ──
+  const doctorTasks = getDoctorTasksForToday(a);
+  let overviewHtml = '';
+  const docNames = Object.keys(doctorTasks);
+  if (docNames.length > 0) {
+    overviewHtml += `<div style="margin-bottom: 20px;">
+      <div style="font-size: 0.82rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px;">👤 今日醫師任務總覽 (Task Overview)</div>
+      <div class="today-doctors-grid">`;
+    docNames.forEach(name => {
+      const tasks = doctorTasks[name];
+      const pc = personCls(name);
+      overviewHtml += `
+        <div class="today-doctor-card">
+          <div class="today-doctor-name">
+            <span class="person ${pc}">${name}</span>
+          </div>
+          <div class="today-doctor-task-list">`;
+      tasks.forEach(task => {
+        overviewHtml += `<div class="today-doctor-task-item">${task}</div>`;
+      });
+      overviewHtml += `</div>
+        </div>`;
+    });
+    overviewHtml += `</div></div>`;
+  }
+  card.innerHTML += overviewHtml;
+
+  // ── Weekday grid ──
+  const rows = [];
+
+  if (a.angio) {
+    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa), ds: renderPerson(a.angio.ds_dsa), note: a.angio.note });
+    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae), ds: renderPerson(a.angio.ds_tae) });
+  }
+  if (a.erct) {
+    rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp), ds: renderPerson(a.erct.ds), note: a.erct.note });
+  }
+  if (a.mri_tp || a.mri_ds) {
+    rows.push({
+      label: `門住急 MRI`,
+      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false) + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
+      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false) + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
+    });
+  }
+  if (a.ds_mri) {
+    rows.push({ label: '淡水神經 MRI 解釋', tp: '—', ds: renderPerson(a.ds_mri.person), note: a.ds_mri.note });
+  }
+  if (a.picc) {
+    rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp), ds: renderPerson(a.picc.ds), note: a.picc.note });
+  }
+  if (a.evtDoctor) {
+    rows.push({ label: '中風取栓 On-Call', tp: renderPerson(a.evtDoctor), ds: '—' });
+  }
+
+  let gridHtml = `<div class="today-grid">`;
+  gridHtml += `<div class="today-grid-row today-grid-col-header">
+    <div></div>
+    <div><span class="loc loc-tp">台北</span></div>
+    <div><span class="loc loc-ds">淡水</span></div>
+  </div>`;
+  rows.forEach(r => {
+    const noteStr = r.note ? `<span class="note-inline">※ ${r.note}</span>` : '';
+    gridHtml += `<div class="today-grid-row">
+      <div>${r.label}${noteStr}</div>
+      <div>${r.tp}</div>
+      <div>${r.ds}</div>
+    </div>`;
+  });
+  gridHtml += `</div>`;
+
+  // CT number pills
+  if (a.routine_ct && a.routine_ct.length) {
+    gridHtml += `<div style="margin-top:10px;">
+      <div style="font-size:0.72rem;font-weight:700;color:var(--text-sub);margin-bottom:5px;">門住 CT 號碼分配</div>
+      <div class="today-ct-pills">`;
+    a.routine_ct.forEach(r => {
+      const pc = personCls(r.person);
+      gridHtml += `<span class="today-ct-pill"><span class="person ${pc}">${r.person}</span> 台北 ${r.tp} / 淡水 ${r.ds}</span>`;
+    });
+    gridHtml += `</div></div>`;
+  }
+
+  card.innerHTML += gridHtml;
+  return card;
+}
+
+// ════════════════════════════════════════════════════
+//  日班工作分配 Tab 渲染
+// ════════════════════════════════════════════════════
+function renderNiTab(d) {
+  const root = document.getElementById('ni-sections');
+  root.innerHTML = '';
+
+  root.appendChild(renderAngio(d.angio));
+  root.appendChild(renderErCt(d.erct));
+  root.appendChild(renderRoutineCt(d.routine_ct));
+  root.appendChild(renderMri(d.mri));
+  root.appendChild(renderDsMriDaily(d.ds_mri_daily));
+  root.appendChild(renderSaturday(d.saturday));
+  if (d.picc) root.appendChild(renderPicc(d.picc));
+  if (d.notes) root.appendChild(renderNotes(d.notes));
+}
+
+function makeSection(icon, title, cls='') {
+  const div = document.createElement('div');
+  div.className = 'section-card' + (cls ? ' ' + cls : '');
+  const h = document.createElement('div');
+  h.className = 'section-title';
+  h.textContent = `${icon} ${title}`;
+  div.appendChild(h);
+  return div;
+}
+
+function renderAngio(data) {
+  const sec = makeSection('🏥', '血管攝影室（Brain Angiography）', 'full-width');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-tp">台北</span> DSA / IA</th>
+      <th><span class="loc loc-tp">台北</span> TAE</th>
+      <th><span class="loc loc-ds">淡水</span> DSA / IA</th>
+      <th><span class="loc loc-ds">淡水</span> TAE</th>
+      <th>備注</th>
+    </tr></thead>
+    <tbody></tbody>`;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.tp_dsa)}</td>
+      <td>${renderPerson(row.tp_tae)}</td>
+      <td>${renderPerson(row.ds_dsa)}</td>
+      <td>${renderPerson(row.ds_tae)}</td>
+      <td class="note-cell">${row.note}</td>`;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+function renderErCt(data) {
+  const sec = makeSection('🚨', '急診 CT（Neuro ER CT）');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-tp">台北</span></th>
+      <th><span class="loc loc-ds">淡水</span></th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>`;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.tp)}</td>
+      <td>${renderPerson(row.ds)}</td>
+      <td class="note-cell">${row.note}</td>`;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+function renderRoutineCt(data) {
+  const sec = makeSection('📋', '門住 CT 號碼分配');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>醫師</th>
+      <th><span class="loc loc-tp">台北</span> 號碼</th>
+      <th><span class="loc loc-ds">淡水</span> 號碼</th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>`;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${renderPerson(row.person)}</td>
+      <td style="text-align:center;font-weight:600;">${row.tp}</td>
+      <td style="text-align:center;font-weight:600;">${row.ds}</td>
+      <td class="note-cell">${row.note}</td>`;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+function renderMri(data) {
+  const sec = makeSection('🧲', '門住急 MRI（按週次）', 'full-width');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+
+  const weekLabels = data.tp.map(r => r.week);
+  t.innerHTML = `
+    <thead><tr>
+      <th>院區</th>
+      ${weekLabels.map(w => `<th><span class="week-badge">${w}</span></th>`).join('')}
+    </tr></thead><tbody></tbody>`;
+  const tbody = t.querySelector('tbody');
+
+  ['tp', 'ds'].forEach(side => {
+    const tr = document.createElement('tr');
+    const label = side === 'tp'
+      ? `<span class="loc loc-tp">台北</span>`
+      : `<span class="loc loc-ds">淡水</span>`;
+    let cells = `<td class="dow">${label}</td>`;
+    data[side].forEach(r => {
+      cells += `<td>${renderPerson(r.person, false)}${r.note ? noteHtml(r.note) : ''}</td>`;
+    });
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+
+  sec.appendChild(t);
+  return sec;
+}
+
+function renderDsMriDaily(data) {
+  const sec = makeSection('🏥', '淡水健檢 / 神經 MRI 解釋');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-ds">淡水</span> 負責人</th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>`;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.person)}</td>
+      <td class="note-cell">${row.note}</td>`;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+function renderSaturday(data) {
+  const sec = makeSection('📅', '週六班（北淡 MRI + 急 CT）');
+  const list = document.createElement('div');
+  list.className = 'sat-list';
+  data.forEach(row => {
+    const card = document.createElement('div');
+    card.className = 'sat-card';
+    const pc = personCls(row.person);
+    card.innerHTML = `
+      <div class="sat-date">${row.date}</div>
+      <div class="sat-person person ${pc}">${row.person}</div>
+      ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
+    list.appendChild(card);
+  });
+  sec.appendChild(list);
+  return sec;
+}
+
+function renderPicc(data) {
+  const sec = makeSection('💉', 'PICC');
+  const t = document.createElement('table');
+  t.className = 'ni-table';
+  t.innerHTML = `
+    <thead><tr>
+      <th>星期</th>
+      <th><span class="loc loc-tp">台北</span></th>
+      <th><span class="loc loc-ds">淡水</span></th>
+      <th>備注</th>
+    </tr></thead><tbody></tbody>`;
+  const tbody = t.querySelector('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="dow">${row.dow}</td>
+      <td>${renderPerson(row.tp)}</td>
+      <td>${renderPerson(row.ds)}</td>
+      <td class="note-cell">${row.note}</td>`;
+    tbody.appendChild(tr);
+  });
+  sec.appendChild(t);
+  return sec;
+}
+
+function renderNotes(text) {
+  const div = document.createElement('div');
+  div.className = 'notes-banner full-width';
+  div.innerHTML = `<strong>⚠️ 本月備注</strong>${text}`;
+  return div;
+}
+
+// ════════════════════════════════════════════════════
+//  中風取栓班表 (EVT) Tab 渲染
+// ════════════════════════════════════════════════════
+function toggleAllFilters(showAll) {
+  const pills = legendEl.querySelectorAll('.legend-pill');
+  PEOPLE.forEach((p, idx) => {
+    const pill = pills[idx];
+    if (showAll) {
+      hiddenPeople.delete(p.key);
+      if (pill) pill.classList.remove('dimmed');
+    } else {
+      hiddenPeople.add(p.key);
+      if (pill) pill.classList.add('dimmed');
+    }
+  });
+  renderEvtCalendar();
+}
+
 const legendEl = document.getElementById('legend');
 PEOPLE.forEach(p => {
   const pill = document.createElement('div');
@@ -399,88 +1265,25 @@ PEOPLE.forEach(p => {
       hiddenPeople.add(p.key);
       pill.classList.add('dimmed');
     }
-    renderCalendar();
+    renderEvtCalendar();
   });
   legendEl.appendChild(pill);
 });
 
-function toggleAllFilters(showAll) {
-  const pills = legendEl.querySelectorAll('.legend-pill');
-  PEOPLE.forEach((p, idx) => {
-    const pill = pills[idx];
-    if (showAll) {
-      hiddenPeople.delete(p.key);
-      if (pill) pill.classList.remove('dimmed');
-    } else {
-      hiddenPeople.add(p.key);
-      if (pill) pill.classList.add('dimmed');
-    }
-  });
-  renderCalendar();
-}
-
-// ── 換月 ──
-function changeMonth(dir) {
-  currentIdx = Math.max(0, Math.min(MONTH_KEYS.length - 1, currentIdx + dir));
-  renderAll();
-}
-
-// ── Today Banner ──
-function renderBanner(year, month, schedule) {
-  const banner  = document.getElementById('todayBanner');
-  const dateEl  = document.getElementById('todayDateStr');
-  const peopleEl = document.getElementById('todayPeople');
-
-  const isCurrentMonth = (now.getFullYear() === year && now.getMonth() + 1 === month);
-  if (!isCurrentMonth) { banner.style.display = 'none'; return; }
-
-  const d = now.getDate();
-  const duty = schedule[d];
-  if (!duty) { banner.style.display = 'none'; return; }
-
-  banner.style.display = 'flex';
-  dateEl.textContent = `${year}/${String(month).padStart(2,'0')}/${String(d).padStart(2,'0')} （週${DOW_NAMES[now.getDay()]}）`;
-
-  peopleEl.innerHTML = '';
-  
-  const name = (typeof duty === 'string') ? duty : duty.tp;
-  if (name) {
-    const p = personByName[name];
-    if (p) {
-      const chip = document.createElement('div');
-      chip.className = 'tb-chip';
-      chip.style.background = p.color + '20';
-      chip.style.color = p.color;
-      chip.style.borderColor = p.color + '60';
-      chip.textContent = name;
-      peopleEl.appendChild(chip);
-    }
-  }
-}
-
-// ── Calendar Grid ──
-function renderCalendar() {
+function renderEvtCalendar() {
   const key = MONTH_KEYS[currentIdx];
   const [yearStr, monthStr] = key.split('-');
   const year  = parseInt(yearStr);
   const month = parseInt(monthStr);
-  const schedule = ALL_SCHEDULES[key];
+  const schedule = ALL_SCHEDULES[key] || {};
 
   const daysInMonth = new Date(year, month, 0).getDate();
   const startOffset = ((new Date(year, month - 1, 1).getDay()) + 6) % 7; // Mon=0
   const todayDay = (now.getFullYear() === year && now.getMonth() + 1 === month) ? now.getDate() : -1;
 
-  // Month label
-  document.getElementById('monthLabel').textContent = `${year} 年 ${month} 月`;
-
-  // Prev / Next buttons
-  document.getElementById('prevBtn').disabled = currentIdx === 0;
-  document.getElementById('nextBtn').disabled = currentIdx === MONTH_KEYS.length - 1;
-
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
 
-  // Empty padding
   for (let i = 0; i < startOffset; i++) {
     const e = document.createElement('div');
     e.className = 'day-cell empty';
@@ -498,10 +1301,9 @@ function renderCalendar() {
     if (isToday)   cls += ' today';
     cell.className = cls;
 
-    // Day number
     const numEl = document.createElement('div');
     numEl.className = 'day-num';
-    numEl.innerHTML = `${day}<span class="dow-mini">週${DOW_NAMES[dow]}</span>`;
+    numEl.innerHTML = `${day}<span class="dow-mini">週${DOW_NAMES_TW[dow]}</span>`;
     if (isToday) {
       const dot = document.createElement('span');
       dot.className = 'today-dot';
@@ -509,7 +1311,6 @@ function renderCalendar() {
     }
     cell.appendChild(numEl);
 
-    // On-call chip
     const duty = schedule[day];
     if (duty) {
       const name = (typeof duty === 'string') ? duty : duty.tp;
@@ -530,13 +1331,41 @@ function renderCalendar() {
 
     grid.appendChild(cell);
   }
-
-  renderBanner(year, month, schedule);
 }
 
-function renderAll() { renderCalendar(); }
+// ════════════════════════════════════════════════════
+//  主渲染控制
+// ════════════════════════════════════════════════════
+function render() {
+  const key = MONTH_KEYS[currentIdx];
+  const [y, m] = key.split('-');
+  document.getElementById('monthLabel').textContent = `${y} 年 ${parseInt(m)} 月`;
+  document.getElementById('prevBtn').disabled = currentIdx === 0;
+  document.getElementById('nextBtn').disabled = currentIdx === MONTH_KEYS.length - 1;
 
-renderAll();
+  // Render combined today card
+  const container = document.getElementById('today-card-container');
+  container.innerHTML = '';
+  const todayCard = renderTodayCard(key);
+  if (todayCard) container.appendChild(todayCard);
+
+  renderTabContent();
+}
+
+function renderTabContent() {
+  const key = MONTH_KEYS[currentIdx];
+  if (activeTab === 'ni') {
+    const d = NI_DATA[key];
+    if (d) renderNiTab(d);
+  } else {
+    renderEvtCalendar();
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  初始化
+// ════════════════════════════════════════════════════
+render();
 </script>
 </body>
 </html>
