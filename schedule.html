@@ -470,6 +470,11 @@ const NI_DATA = {
       '姜信帆': ['6/4', '6/5', '6/6', '6/7', '6/8'],
       '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8']
     },
+    covers: {
+      '6/4': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' },
+      '6/5': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' },
+      '6/6': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' }
+    },
     notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
   },
   '2026-07': {
@@ -532,6 +537,12 @@ const NI_DATA = {
     ],
     leaves: {
       '黃俊肇': ['7/17', '7/18', '7/19', '7/20', '7/21']
+    },
+    covers: {
+      '7/17': { '黃俊肇': '姜信帆' },
+      '7/18': { '黃俊肇': '姜信帆' },
+      '7/19': { '黃俊肇': '姜信帆' },
+      '7/20': { '黃俊肇': '姜信帆' }
     },
     notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
   },
@@ -755,6 +766,11 @@ function getDoctorTasksForToday(a) {
     return false;
   }
 
+  const key = a.key;
+  const d = NI_DATA[key];
+  const dateStr = `${a.month}/${a.day}`;
+  const dayCovers = (d && d.covers && d.covers[dateStr]) ? d.covers[dateStr] : null;
+
   function addTask(name, task) {
     if (!name) return;
     name = name.trim();
@@ -772,6 +788,15 @@ function getDoctorTasksForToday(a) {
       doctorTasks[displayName] = { tasks: [], isOnLeave: false };
     }
     doctorTasks[displayName].tasks.push(task + suffix);
+
+    // If this doctor is covered by someone else today, duplicate the task for the cover doctor
+    if (dayCovers && dayCovers[displayName]) {
+      const coverName = dayCovers[displayName];
+      if (!doctorTasks[coverName]) {
+        doctorTasks[coverName] = { tasks: [], isOnLeave: false };
+      }
+      doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
+    }
   }
 
   function processField(raw, taskName) {
@@ -868,11 +893,19 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null) {
       const day = targetDate.getDate();
       const monthKey = `${year}-${String(month).padStart(2, '0')}`;
       const d = NI_DATA[monthKey];
-      if (d && d.leaves && d.leaves[name]) {
-        const dateStr = `${month}/${day}`;
-        if (d.leaves[name].includes(dateStr)) {
-          return `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span><span style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;">(休)</span>`;
-        }
+      
+      const dateStr = `${month}/${day}`;
+      
+      // Check if this doctor is covered by someone else today
+      let coverSuffix = '';
+      if (d && d.covers && d.covers[dateStr] && d.covers[dateStr][name]) {
+        const coverName = d.covers[dateStr][name];
+        const coverCls = personCls(coverName);
+        coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${coverCls}">${coverName}</span>`;
+      }
+
+      if (d && d.leaves && d.leaves[name] && d.leaves[name].includes(dateStr)) {
+        return `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span><span style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;">(休)</span>${coverSuffix}`;
       }
     }
     return baseHtml;
