@@ -712,6 +712,7 @@ let currentIdx = MONTH_KEYS.includes(todayKey)
   : MONTH_KEYS.length - 1;
 
 let todayCardTab = 'today';
+let todayCardCustomDate = null;
 let activeTab = 'ni'; // 'ni' or 'evt'
 const hiddenPeople = new Set();
 let viewMode = window.innerWidth <= 768 ? 'today' : 'month';
@@ -729,6 +730,17 @@ function changeMonth(dir) {
 
 function setTodayTab(tab) {
   todayCardTab = tab;
+  if (tab !== 'custom') {
+    todayCardCustomDate = null;
+  }
+  render();
+}
+
+function onCustomDateChange(val) {
+  if (!val) return;
+  todayCardTab = 'custom';
+  const [y, m, d] = val.split('-').map(Number);
+  todayCardCustomDate = new Date(y, m - 1, d);
   render();
 }
 
@@ -1046,6 +1058,9 @@ function renderTodayCard(key) {
   if (todayCardTab === 'tomorrow') {
     targetDate.setDate(targetDate.getDate() + 1);
     titleText = '明日預覽';
+  } else if (todayCardTab === 'custom' && todayCardCustomDate) {
+    targetDate.setTime(todayCardCustomDate.getTime());
+    titleText = '指定分配';
   }
 
   const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}`;
@@ -1059,13 +1074,28 @@ function renderTodayCard(key) {
   const card = document.createElement('div');
   card.className = 'today-card';
 
-  const bgToday = todayCardTab === 'today' ? '#ffffff' : 'transparent';
-  const colorToday = todayCardTab === 'today' ? 'var(--primary-color)' : '#64748b';
-  const shadowToday = todayCardTab === 'today' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+  const isTodayActive = todayCardTab === 'today';
+  const isTomorrowActive = todayCardTab === 'tomorrow';
+  const isCustomActive = todayCardTab === 'custom';
+
+  const bgToday = isTodayActive ? '#ffffff' : 'transparent';
+  const colorToday = isTodayActive ? 'var(--primary-color)' : '#64748b';
+  const shadowToday = isTodayActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
   
-  const bgTomorrow = todayCardTab === 'tomorrow' ? '#ffffff' : 'transparent';
-  const colorTomorrow = todayCardTab === 'tomorrow' ? 'var(--primary-color)' : '#64748b';
-  const shadowTomorrow = todayCardTab === 'tomorrow' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+  const bgTomorrow = isTomorrowActive ? '#ffffff' : 'transparent';
+  const colorTomorrow = isTomorrowActive ? 'var(--primary-color)' : '#64748b';
+  const shadowTomorrow = isTomorrowActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+
+  const bgCustom = isCustomActive ? '#ffffff' : 'transparent';
+  const colorCustom = isCustomActive ? 'var(--primary-color)' : '#64748b';
+  const shadowCustom = isCustomActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none';
+  
+  let customBtnLabel = '指定日期';
+  if (isCustomActive && todayCardCustomDate) {
+    customBtnLabel = `📅 ${todayCardCustomDate.getMonth() + 1}/${todayCardCustomDate.getDate()}`;
+  } else {
+    customBtnLabel = '📅 指定日期';
+  }
 
   let headerHtml = `
     <div class="today-card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
@@ -1073,9 +1103,13 @@ function renderTodayCard(key) {
         <h2>📅 ${titleText}</h2>
         <span class="today-date-badge">${a.dateStr}</span>
       </div>
-      <div style="display:flex; gap:2px; background:#f1f5f9; padding:2px; border-radius:6px; border:1px solid #e2e8f0;">
-        <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday};">今日任務</button>
-        <button onclick="setTodayTab('tomorrow')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgTomorrow}; color:${colorTomorrow}; box-shadow:${shadowTomorrow};">明日預覽</button>
+      <div style="display:flex; gap:2px; background:#f1f5f9; padding:2px; border-radius:6px; border:1px solid #e2e8f0; align-items:center; height: 28px;">
+        <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday}; height:100%;">今日</button>
+        <button onclick="setTodayTab('tomorrow')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgTomorrow}; color:${colorTomorrow}; box-shadow:${shadowTomorrow}; height:100%;">明日</button>
+        <div style="position:relative; display:flex; align-items:center; height:100%;">
+          <button style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgCustom}; color:${colorCustom}; box-shadow:${shadowCustom}; height:100%; white-space:nowrap;">${customBtnLabel}</button>
+          <input type="date" id="todayCardDatePicker" onchange="onCustomDateChange(this.value)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        </div>
       </div>
     </div>`;
   card.innerHTML = headerHtml;
