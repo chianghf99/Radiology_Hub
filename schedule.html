@@ -1052,6 +1052,10 @@ function renderTodayCard(key) {
   const a = getTodayAssignments(targetKey, targetDate);
   if (!a) return null;
 
+  const d = NI_DATA[targetKey];
+  const dateStr = `${a.month}/${a.day}`;
+  const dayCovers = (d && d.covers && d.covers[dateStr]) ? d.covers[dateStr] : null;
+
   const card = document.createElement('div');
   card.className = 'today-card';
 
@@ -1138,7 +1142,11 @@ function renderTodayCard(key) {
       
       if (info.isOnLeave) {
         cardStyle = ' style="opacity: 0.6; border-color: #fca5a5; background: #fff5f5;"';
-        badgeHtml = ' <span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 800; vertical-align: middle;">✈️ 休假</span>';
+        const hasCover = (dayCovers && dayCovers[name]);
+        const isMissingCover = (info.tasks.length > 0 && !hasCover);
+        badgeHtml = isMissingCover
+          ? ' <span style="font-size: 0.65rem; background: #dc2626; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 800; vertical-align: middle;">⚠️ 漏代班</span>'
+          : ' <span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 800; vertical-align: middle;">✈️ 休假</span>';
       }
       
       overviewHtml += `
@@ -1150,8 +1158,10 @@ function renderTodayCard(key) {
       
       if (info.isOnLeave) {
         if (info.tasks.length > 0) {
+          const hasCover = (dayCovers && dayCovers[name]);
           info.tasks.forEach(task => {
-            overviewHtml += `<div class="today-doctor-task-item" style="text-decoration: line-through; opacity: 0.7; border-left-color: #ef4444;">${task}</div>`;
+            const warningSuffix = hasCover ? '' : ' <span style="color:#dc2626; font-weight:800; font-size:0.65rem;">(無代班)</span>';
+            overviewHtml += `<div class="today-doctor-task-item" style="text-decoration: line-through; opacity: 0.7; border-left-color: #ef4444;">${task}${warningSuffix}</div>`;
           });
         } else {
           overviewHtml += `<div style="font-size: 0.72rem; color: #94a3b8; font-style: italic; padding: 2px 6px;">今日無常規任務</div>`;
