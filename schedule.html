@@ -1107,8 +1107,8 @@ function renderTodayCard(key) {
         <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday}; height:100%;">今日</button>
         <button onclick="setTodayTab('tomorrow')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgTomorrow}; color:${colorTomorrow}; box-shadow:${shadowTomorrow}; height:100%;">明日</button>
         <div style="position:relative; display:flex; align-items:center; height:100%;">
-          <button style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgCustom}; color:${colorCustom}; box-shadow:${shadowCustom}; height:100%; white-space:nowrap;">${customBtnLabel}</button>
-          <input type="date" id="todayCardDatePicker" onchange="onCustomDateChange(this.value)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+          <button style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgCustom}; color:${colorCustom}; box-shadow:${shadowCustom}; height:100%; white-space:nowrap; z-index: 1;">${customBtnLabel}</button>
+          <input type="date" id="todayCardDatePicker" onchange="onCustomDateChange(this.value)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index: 2; margin: 0; padding: 0; border: none;">
         </div>
       </div>
     </div>`;
