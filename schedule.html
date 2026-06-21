@@ -931,31 +931,30 @@ function getDoctorTasksForToday(a) {
     if (!doctorTasks[displayName]) {
       doctorTasks[displayName] = { tasks: [], isOnLeave: false };
     }
-    doctorTasks[displayName].tasks.push(task + suffix);
 
-    // If this doctor is covered by someone else today, duplicate the task for the cover doctor
+    // Determine the task key for this task
+    let taskKey = null;
+    if (task.includes('DSA') || task.includes('TAE') || task.includes('血管攝影')) {
+      taskKey = 'angio';
+    } else if (task.includes('急 CT')) {
+      taskKey = 'erct';
+    } else if (task.includes('門住 CT')) {
+      taskKey = 'ct';
+    } else if (task.includes('MRI') && !task.includes('解釋')) {
+      taskKey = 'mri';
+    } else if (task.includes('MRI') && task.includes('解釋')) {
+      taskKey = 'ds_mri';
+    } else if (task.includes('PICC')) {
+      taskKey = 'picc';
+    }
+
+    let coverName = null;
+    let isSplitCt = false;
+    let tpCover = null;
+    let dsCover = null;
+
     if (dayCovers && dayCovers[displayName]) {
       const cover = dayCovers[displayName];
-      
-      // Determine the task key for this task
-      let taskKey = null;
-      if (task.includes('DSA') || task.includes('TAE') || task.includes('血管攝影')) {
-        taskKey = 'angio';
-      } else if (task.includes('急 CT')) {
-        taskKey = 'erct';
-      } else if (task.includes('門住 CT')) {
-        taskKey = 'ct';
-      } else if (task.includes('MRI') && !task.includes('解釋')) {
-        taskKey = 'mri';
-      } else if (task.includes('MRI') && task.includes('解釋')) {
-        taskKey = 'ds_mri';
-      } else if (task.includes('PICC')) {
-        taskKey = 'picc';
-      }
-
-      let coverName = null;
-      let isSplitCt = false;
-
       if (typeof cover === 'string') {
         coverName = cover;
       } else if (typeof cover === 'object' && taskKey && cover[taskKey]) {
@@ -963,9 +962,10 @@ function getDoctorTasksForToday(a) {
         if (typeof taskCover === 'string') {
           coverName = taskCover;
         } else if (typeof taskCover === 'object') {
-          // If it's a split location task like CT
           if (taskKey === 'ct' && task.includes('北:') && task.includes('淡:')) {
             isSplitCt = true;
+            tpCover = taskCover.tp;
+            dsCover = taskCover.ds;
           } else {
             if (task.includes('台北') || task.includes('北:')) {
               coverName = taskCover.tp;
@@ -975,29 +975,33 @@ function getDoctorTasksForToday(a) {
           }
         }
       }
+    }
 
-      if (isSplitCt) {
-        const ctMatch = task.match(/門住 CT \(北:(.+?)\/淡:(.+?)\)/);
-        if (ctMatch) {
-          const tpVal = ctMatch[1];
-          const dsVal = ctMatch[2];
-          const tpCover = cover.ct.tp;
-          const dsCover = cover.ct.ds;
-          if (tpCover) {
-            if (!doctorTasks[tpCover]) doctorTasks[tpCover] = { tasks: [], isOnLeave: false };
-            doctorTasks[tpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
-          }
-          if (dsCover) {
-            if (!doctorTasks[dsCover]) doctorTasks[dsCover] = { tasks: [], isOnLeave: false };
-            doctorTasks[dsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
-          }
+    if (isSplitCt) {
+      const ctMatch = task.match(/門住 CT \(北:(.+?)\/淡:(.+?)\)/);
+      if (ctMatch) {
+        const tpVal = ctMatch[1];
+        const dsVal = ctMatch[2];
+        if (tpCover) {
+          if (!doctorTasks[tpCover]) doctorTasks[tpCover] = { tasks: [], isOnLeave: false };
+          doctorTasks[tpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
+        } else {
+          doctorTasks[displayName].tasks.push(`門住 CT 台北 (${tpVal})${suffix}`);
         }
-      } else if (coverName) {
-        if (!doctorTasks[coverName]) {
-          doctorTasks[coverName] = { tasks: [], isOnLeave: false };
+        if (dsCover) {
+          if (!doctorTasks[dsCover]) doctorTasks[dsCover] = { tasks: [], isOnLeave: false };
+          doctorTasks[dsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
+        } else {
+          doctorTasks[displayName].tasks.push(`門住 CT 淡水 (${dsVal})${suffix}`);
         }
-        doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
       }
+    } else if (coverName) {
+      if (!doctorTasks[coverName]) {
+        doctorTasks[coverName] = { tasks: [], isOnLeave: false };
+      }
+      doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
+    } else {
+      doctorTasks[displayName].tasks.push(task + suffix);
     }
   }
 
@@ -1100,25 +1104,31 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
       
       // Check if this doctor is covered by someone else today
       let coverSuffix = '';
+      let hasActiveCover = false;
       if (d && d.covers && d.covers[dateStr] && d.covers[dateStr][name]) {
         const cover = d.covers[dateStr][name];
         let coverName = '';
         if (typeof cover === 'string') {
           coverName = cover;
+          hasActiveCover = true;
         } else if (typeof cover === 'object') {
           if (taskKey && cover[taskKey]) {
             const taskCover = cover[taskKey];
             if (typeof taskCover === 'string') {
               coverName = taskCover;
+              hasActiveCover = true;
             } else if (typeof taskCover === 'object') {
               if (location === 'tp' && taskCover.tp) {
                 coverName = taskCover.tp;
+                hasActiveCover = true;
               } else if (location === 'ds' && taskCover.ds) {
                 coverName = taskCover.ds;
+                hasActiveCover = true;
               } else if (!location && taskCover.tp && taskCover.ds) {
                 const tpCls = personCls(taskCover.tp);
                 const dsCls = personCls(taskCover.ds);
                 coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${taskCover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${taskCover.ds}</span>`;
+                hasActiveCover = true;
               }
             }
           }
@@ -1131,6 +1141,9 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
 
       if (d && d.leaves && d.leaves[name] && d.leaves[name].includes(dateStr)) {
         return `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span><span style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;">(休)</span>${coverSuffix}`;
+      }
+      if (hasActiveCover) {
+        return `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span>${coverSuffix}`;
       }
     }
     return baseHtml;
