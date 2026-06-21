@@ -86,11 +86,24 @@
     <form name="form">
         
         <div class="section-card">
-            <div class="section-title">🪪 Patient</div>
+            <div class="section-title">🪪 Patient & Operator</div>
             <div class="field-row">
                 <span class="field-label" style="min-width: 80px;">病歷號：</span>
                 <input type="text" name="patient_id" placeholder="e.g. 12345678"
                     style="width:180px; font-size:1rem; letter-spacing:0.05em;">
+                <span style="color:#999; font-size:0.85em; margin-left:8px;">（僅用於統計，不會出現在報告中）</span>
+            </div>
+            <div class="field-row" style="margin-top: 10px;">
+                <span class="field-label" style="min-width: 80px;">Operator：</span>
+                <select name="stats_operator" style="width:180px; font-size:1rem;">
+                    <option value="">-- 請選擇 --</option>
+                    <option value="黃俊肇">黃俊肇</option>
+                    <option value="姜信帆">姜信帆</option>
+                    <option value="謝棖智">謝棖智</option>
+                    <option value="魏士揚">魏士揚</option>
+                    <option value="周兆亮">周兆亮</option>
+                    <option value="黃勇評">黃勇評</option>
+                </select>
                 <span style="color:#999; font-size:0.85em; margin-left:8px;">（僅用於統計，不會出現在報告中）</span>
             </div>
         </div>
@@ -459,6 +472,22 @@
         
         // 啟動 CTP 自動計算監聽
         initAutoCalcs();
+
+        // 聯動 Operator 選擇與報告中的 Radio 選項
+        const statsOpSelect = document.form.stats_operator;
+        if (statsOpSelect) {
+            statsOpSelect.addEventListener('change', function() {
+                const val = this.value;
+                const f = document.form;
+                if (val === '周兆亮') {
+                    f.Operator.value = '4189';
+                } else if (val === '黃勇評') {
+                    f.Operator.value = '4191';
+                } else {
+                    f.Operator.value = '';
+                }
+            });
+        }
     });
     
     // 自動計算功能優化
@@ -733,6 +762,7 @@ ${operatorInfo}`;
             Array.from(els).filter(c => c.checked).map(c => c.value).join(', ');
         return {
             patient_id:         f.patient_id.value.trim(),
+            operator:           f.stats_operator.value,
             thrombus:           getChecked(f.Thrombus),
             territory:          territory || '',
             aspects_score:      aspectsScore,

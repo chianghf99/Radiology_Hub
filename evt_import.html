@@ -158,6 +158,7 @@
     // 定義所有欄位規格
     const FIELDS = [
         { key: 'patient_id',         label: 'Patient ID（病歷號）', regex: null },
+        { key: 'stats_operator',     label: 'Operator（統計用）', regex: null },
         { key: 'thrombus',           label: 'Thrombus Location',
           regex: /The target thrombus was located at (.+?)(?:\r?\n|$)/ },
         { key: 'territory',          label: 'Territory',
@@ -362,6 +363,7 @@
 
         const payload = {
             patient_id:         data.patient_id         || '',
+            operator:           data.stats_operator     || '',
             thrombus:           data.thrombus            || '',
             territory:          data.territory           || '',
             aspects_score:      data.aspects_score       || '',
