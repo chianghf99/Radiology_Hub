@@ -900,6 +900,7 @@ function getDoctorTasksForToday(a) {
       } else if (typeof cover === 'object') {
         const tpCover = cover.tp;
         const dsCover = cover.ds;
+        const ctCover = cover.ct;
         const defCover = cover.default;
 
         // Check if task is like "門住 CT (北:00–23/淡:00–23)"
@@ -907,17 +908,21 @@ function getDoctorTasksForToday(a) {
         if (ctMatch) {
           const tpVal = ctMatch[1];
           const dsVal = ctMatch[2];
-          if (tpCover) {
-            if (!doctorTasks[tpCover]) doctorTasks[tpCover] = { tasks: [], isOnLeave: false };
-            doctorTasks[tpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
+          const targetTpCover = ctCover || tpCover || defCover;
+          const targetDsCover = ctCover || dsCover || defCover;
+          if (targetTpCover) {
+            if (!doctorTasks[targetTpCover]) doctorTasks[targetTpCover] = { tasks: [], isOnLeave: false };
+            doctorTasks[targetTpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
           }
-          if (dsCover) {
-            if (!doctorTasks[dsCover]) doctorTasks[dsCover] = { tasks: [], isOnLeave: false };
-            doctorTasks[dsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
+          if (targetDsCover) {
+            if (!doctorTasks[targetDsCover]) doctorTasks[targetDsCover] = { tasks: [], isOnLeave: false };
+            doctorTasks[targetDsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
           }
         } else {
           let coverName = defCover;
-          if (task.includes('台北') || task.includes('北:')) {
+          if (task.includes('門住 CT') && ctCover) {
+            coverName = ctCover;
+          } else if (task.includes('台北') || task.includes('北:')) {
             coverName = tpCover || defCover;
           } else if (task.includes('淡水') || task.includes('淡:')) {
             coverName = dsCover || defCover;
