@@ -523,9 +523,9 @@ const NI_DATA = {
       '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8']
     },
     covers: {
-      '6/4': { '姜信帆': { ds: '謝棖智', default: '黃俊肇' }, '魏士揚': '謝棖智' },
-      '6/5': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' },
-      '6/6': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' }
+      '6/4': { '姜信帆': { ds: '謝棖智', default: '黃俊肇' }, '魏士揚': { ct: '黃俊肇', default: '謝棖智' } },
+      '6/5': { '姜信帆': '黃俊肇', '魏士揚': { ct: '黃俊肇', default: '謝棖智' } },
+      '6/6': { '姜信帆': '黃俊肇', '魏士揚': { ct: '黃俊肇', default: '謝棖智' } }
     },
     notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
   },
@@ -1038,11 +1038,13 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, location = 
         if (typeof cover === 'string') {
           coverName = cover;
         } else if (typeof cover === 'object') {
-          if (location === 'tp' && cover.tp) {
+          if (location === 'ct' && cover.ct) {
+            coverName = cover.ct;
+          } else if (location === 'tp' && cover.tp) {
             coverName = cover.tp;
           } else if (location === 'ds' && cover.ds) {
             coverName = cover.ds;
-          } else if (!location && cover.tp && cover.ds) {
+          } else if ((!location || location === 'ct') && cover.tp && cover.ds) {
             const tpCls = personCls(cover.tp);
             const dsCls = personCls(cover.ds);
             coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${cover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${cover.ds}</span>`;
@@ -1320,7 +1322,7 @@ function renderTodayCard(key) {
       <div style="font-size:0.72rem;font-weight:700;color:var(--text-sub);margin-bottom:5px;">門住 CT 號碼分配</div>
       <div class="today-ct-pills">`;
     a.routine_ct.forEach(r => {
-      const formattedPerson = renderPerson(r.person, true, targetDate);
+      const formattedPerson = renderPerson(r.person, true, targetDate, 'ct');
       gridHtml += `<span class="today-ct-pill">${formattedPerson} 台北 ${r.tp} / 淡水 ${r.ds}</span>`;
     });
     gridHtml += `</div></div>`;
