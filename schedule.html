@@ -523,7 +523,7 @@ const NI_DATA = {
       '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8']
     },
     covers: {
-      '6/4': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' },
+      '6/4': { '姜信帆': { ds: '謝棖智', default: '黃俊肇' }, '魏士揚': '謝棖智' },
       '6/5': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' },
       '6/6': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' }
     },
@@ -1015,7 +1015,7 @@ function getDoctorTasksForToday(a) {
 // ════════════════════════════════════════════════════
 //  姓名渲染與小備註 helper
 // ════════════════════════════════════════════════════
-function renderPerson(raw, showTraineeTag = true, targetDate = null) {
+function renderPerson(raw, showTraineeTag = true, targetDate = null, location = null) {
   if (!raw) return '—';
 
   function formatName(name) {
@@ -1034,18 +1034,25 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null) {
       let coverSuffix = '';
       if (d && d.covers && d.covers[dateStr] && d.covers[dateStr][name]) {
         const cover = d.covers[dateStr][name];
+        let coverName = '';
         if (typeof cover === 'string') {
-          const coverCls = personCls(cover);
-          coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${coverCls}">${cover}</span>`;
+          coverName = cover;
         } else if (typeof cover === 'object') {
-          if (cover.tp && cover.ds) {
+          if (location === 'tp' && cover.tp) {
+            coverName = cover.tp;
+          } else if (location === 'ds' && cover.ds) {
+            coverName = cover.ds;
+          } else if (!location && cover.tp && cover.ds) {
             const tpCls = personCls(cover.tp);
             const dsCls = personCls(cover.ds);
             coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${cover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${cover.ds}</span>`;
-          } else if (cover.default) {
-            const defCls = personCls(cover.default);
-            coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${defCls}">${cover.default}</span>`;
+          } else {
+            coverName = cover.default || '';
           }
+        }
+        if (coverName) {
+          const coverCls = personCls(coverName);
+          coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${coverCls}">${coverName}</span>`;
         }
       }
 
@@ -1268,27 +1275,27 @@ function renderTodayCard(key) {
   const rows = [];
 
   if (a.angio) {
-    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa, true, targetDate), ds: renderPerson(a.angio.ds_dsa, true, targetDate), note: a.angio.note });
-    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae, true, targetDate), ds: renderPerson(a.angio.ds_tae, true, targetDate) });
+    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa, true, targetDate, 'tp'), ds: renderPerson(a.angio.ds_dsa, true, targetDate, 'ds'), note: a.angio.note });
+    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae, true, targetDate, 'tp'), ds: renderPerson(a.angio.ds_tae, true, targetDate, 'ds') });
   }
   if (a.erct) {
-    rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp, true, targetDate), ds: renderPerson(a.erct.ds, true, targetDate), note: a.erct.note });
+    rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp, true, targetDate, 'tp'), ds: renderPerson(a.erct.ds, true, targetDate, 'ds'), note: a.erct.note });
   }
   if (a.mri_tp || a.mri_ds) {
     rows.push({
       label: `門住急 MRI`,
-      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false, targetDate) + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
-      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false, targetDate) + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
+      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false, targetDate, 'tp') + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
+      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false, targetDate, 'ds') + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
     });
   }
   if (a.ds_mri) {
-    rows.push({ label: '淡水神經 MRI 解釋', tp: '—', ds: renderPerson(a.ds_mri.person, true, targetDate), note: a.ds_mri.note });
+    rows.push({ label: '淡水神經 MRI 解釋', tp: '—', ds: renderPerson(a.ds_mri.person, true, targetDate, 'ds'), note: a.ds_mri.note });
   }
   if (a.picc) {
-    rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp, true, targetDate), ds: renderPerson(a.picc.ds, true, targetDate), note: a.picc.note });
+    rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp, true, targetDate, 'tp'), ds: renderPerson(a.picc.ds, true, targetDate, 'ds'), note: a.picc.note });
   }
   if (a.evtDoctor) {
-    rows.push({ label: '中風取栓 On-Call', tp: renderPerson(a.evtDoctor, true, targetDate), ds: '—' });
+    rows.push({ label: '中風取栓 On-Call', tp: renderPerson(a.evtDoctor, true, targetDate, 'tp'), ds: '—' });
   }
 
   let gridHtml = `<div class="today-grid">`;
