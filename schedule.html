@@ -591,10 +591,10 @@ const NI_DATA = {
       '黃俊肇': ['7/17', '7/18', '7/19', '7/20', '7/21']
     },
     covers: {
-      '7/17': { '黃俊肇': '姜信帆' },
-      '7/18': { '黃俊肇': '姜信帆' },
-      '7/19': { '黃俊肇': '姜信帆' },
-      '7/20': { '黃俊肇': '姜信帆' },
+      '7/17': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
+      '7/18': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
+      '7/19': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
+      '7/20': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
       '7/21': { '黃俊肇': '謝棖智' }
     },
     notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
@@ -891,11 +891,45 @@ function getDoctorTasksForToday(a) {
 
     // If this doctor is covered by someone else today, duplicate the task for the cover doctor
     if (dayCovers && dayCovers[displayName]) {
-      const coverName = dayCovers[displayName];
-      if (!doctorTasks[coverName]) {
-        doctorTasks[coverName] = { tasks: [], isOnLeave: false };
+      const cover = dayCovers[displayName];
+      if (typeof cover === 'string') {
+        if (!doctorTasks[cover]) {
+          doctorTasks[cover] = { tasks: [], isOnLeave: false };
+        }
+        doctorTasks[cover].tasks.push(`${task} (代${displayName})${suffix}`);
+      } else if (typeof cover === 'object') {
+        const tpCover = cover.tp;
+        const dsCover = cover.ds;
+        const defCover = cover.default;
+
+        // Check if task is like "門住 CT (北:00–23/淡:00–23)"
+        const ctMatch = task.match(/門住 CT \(北:(.+?)\/淡:(.+?)\)/);
+        if (ctMatch) {
+          const tpVal = ctMatch[1];
+          const dsVal = ctMatch[2];
+          if (tpCover) {
+            if (!doctorTasks[tpCover]) doctorTasks[tpCover] = { tasks: [], isOnLeave: false };
+            doctorTasks[tpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
+          }
+          if (dsCover) {
+            if (!doctorTasks[dsCover]) doctorTasks[dsCover] = { tasks: [], isOnLeave: false };
+            doctorTasks[dsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
+          }
+        } else {
+          let coverName = defCover;
+          if (task.includes('台北') || task.includes('北:')) {
+            coverName = tpCover || defCover;
+          } else if (task.includes('淡水') || task.includes('淡:')) {
+            coverName = dsCover || defCover;
+          }
+          if (coverName) {
+            if (!doctorTasks[coverName]) {
+              doctorTasks[coverName] = { tasks: [], isOnLeave: false };
+            }
+            doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
+          }
+        }
       }
-      doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
     }
   }
 
@@ -999,9 +1033,20 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null) {
       // Check if this doctor is covered by someone else today
       let coverSuffix = '';
       if (d && d.covers && d.covers[dateStr] && d.covers[dateStr][name]) {
-        const coverName = d.covers[dateStr][name];
-        const coverCls = personCls(coverName);
-        coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${coverCls}">${coverName}</span>`;
+        const cover = d.covers[dateStr][name];
+        if (typeof cover === 'string') {
+          const coverCls = personCls(cover);
+          coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${coverCls}">${cover}</span>`;
+        } else if (typeof cover === 'object') {
+          if (cover.tp && cover.ds) {
+            const tpCls = personCls(cover.tp);
+            const dsCls = personCls(cover.ds);
+            coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${cover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${cover.ds}</span>`;
+          } else if (cover.default) {
+            const defCls = personCls(cover.default);
+            coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${defCls}">${cover.default}</span>`;
+          }
+        }
       }
 
       if (d && d.leaves && d.leaves[name] && d.leaves[name].includes(dateStr)) {
