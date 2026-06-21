@@ -186,6 +186,7 @@
           regex: /End time of the procedure \(last thrombectomy or final reperfusion\): Date:(.+?), Time:(.+?)(?:\r?\n|$)/,
           dateTime: true },
         { key: 'door_to_puncture',   label: 'Door-to-Puncture (min)', regex: null, calc: true },
+        { key: 'onset_to_puncture',  label: 'Onset-to-Puncture (min)', regex: null, calc: true },
         { key: 'puncture_to_contact',label: 'Puncture-to-Contact (min)', regex: null, calc: true },
         { key: 'puncture_to_end',    label: 'Puncture-to-End (min)', regex: null, calc: true },
         { key: 'aspiration_tube',    label: 'Aspiration Tube',
@@ -196,6 +197,7 @@
           regex: /Suction was conducted for (\d+) times/ },
         { key: 'stent_pass_count',   label: 'Stent Pass Count',
           regex: /Stent-retrieving was conducted for (\d+) times/ },
+        { key: 'total_passes',       label: 'Total Pass Count', regex: null, calc: true },
         { key: 'guiding',            label: 'Guiding Catheter',
           regex: /with .+? peripheral sheath and (.+?) as guiding catheter/ },
         { key: 'intermediate',       label: 'Intermediate Catheter',
@@ -257,10 +259,12 @@
             }
         }
 
-        // 計算時差
+        // 計算時差與總數
         parsedData['door_to_puncture']    = timeDiffMin(parsedData['proceduretime'], parsedData['puncturetime']);
+        parsedData['onset_to_puncture']   = timeDiffMin(parsedData['onsettime'],     parsedData['puncturetime']);
         parsedData['puncture_to_contact'] = timeDiffMin(parsedData['puncturetime'],  parsedData['contacttime']);
         parsedData['puncture_to_end']     = timeDiffMin(parsedData['puncturetime'],  parsedData['endtime']);
+        parsedData['total_passes']        = (parseInt(parsedData['suction_count']) || 0) + (parseInt(parsedData['stent_pass_count']) || 0);
 
         renderTable();
         document.getElementById('preview-section').style.display = 'block';
@@ -305,9 +309,9 @@
             }
             input.addEventListener('input', (e) => {
                 parsedData[e.target.dataset.key] = e.target.value;
-                // 若是時間欄位更動，重算時差
-                const timeKeys = ['proceduretime','puncturetime','contacttime','endtime'];
-                if (timeKeys.includes(e.target.dataset.key)) {
+                // 若是關聯欄位更動，重算時差/總數
+                const triggerKeys = ['onsettime','proceduretime','puncturetime','contacttime','endtime','suction_count','stent_pass_count'];
+                if (triggerKeys.includes(e.target.dataset.key)) {
                     recalcTimings();
                 }
             });
@@ -332,11 +336,13 @@
 
     function recalcTimings() {
         parsedData['door_to_puncture']    = timeDiffMin(parsedData['proceduretime'], parsedData['puncturetime']);
+        parsedData['onset_to_puncture']   = timeDiffMin(parsedData['onsettime'],     parsedData['puncturetime']);
         parsedData['puncture_to_contact'] = timeDiffMin(parsedData['puncturetime'],  parsedData['contacttime']);
         parsedData['puncture_to_end']     = timeDiffMin(parsedData['puncturetime'],  parsedData['endtime']);
+        parsedData['total_passes']        = (parseInt(parsedData['suction_count']) || 0) + (parseInt(parsedData['stent_pass_count']) || 0);
 
         // 更新 table 中計算欄位的 input value
-        const calcKeys = ['door_to_puncture','puncture_to_contact','puncture_to_end'];
+        const calcKeys = ['door_to_puncture','onset_to_puncture','puncture_to_contact','puncture_to_end','total_passes'];
         document.querySelectorAll('#parsed-tbody input').forEach(inp => {
             if (calcKeys.includes(inp.dataset.key)) {
                 inp.value = parsedData[inp.dataset.key] ?? '';
