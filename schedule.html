@@ -523,9 +523,18 @@ const NI_DATA = {
       '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8']
     },
     covers: {
-      '6/4': { '姜信帆': { ds: '謝棖智', default: '黃俊肇' }, '魏士揚': { ct: '黃俊肇', default: '謝棖智' } },
-      '6/5': { '姜信帆': '黃俊肇', '魏士揚': { ct: '黃俊肇', default: '謝棖智' } },
-      '6/6': { '姜信帆': '黃俊肇', '魏士揚': { ct: '黃俊肇', default: '謝棖智' } }
+      '6/4': {
+        '姜信帆': { angio: '謝棖智', erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' },
+        '魏士揚': { angio: '謝棖智', erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' }
+      },
+      '6/5': {
+        '姜信帆': '黃俊肇',
+        '魏士揚': { angio: '謝棖智', erct: '黃俊肇', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' }
+      },
+      '6/6': {
+        '姜信帆': '黃俊肇',
+        '魏士揚': '謝棖智'
+      }
     },
     notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
   },
@@ -591,10 +600,28 @@ const NI_DATA = {
       '黃俊肇': ['7/17', '7/18', '7/19', '7/20', '7/21']
     },
     covers: {
-      '7/17': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
-      '7/18': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
-      '7/19': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
-      '7/20': { '黃俊肇': { tp: '謝棖智', ds: '姜信帆', default: '姜信帆' } },
+      '7/17': {
+        '黃俊肇': {
+          ct: { tp: '謝棖智', ds: '姜信帆' },
+          angio: '姜信帆',
+          erct: '姜信帆',
+          mri: '姜信帆',
+          picc: '姜信帆',
+          ds_mri: '姜信帆'
+        }
+      },
+      '7/18': { '黃俊肇': '姜信帆' },
+      '7/19': { '黃俊肇': '姜信帆' },
+      '7/20': {
+        '黃俊肇': {
+          ct: { tp: '謝棖智', ds: '姜信帆' },
+          angio: '姜信帆',
+          erct: '姜信帆',
+          mri: '姜信帆',
+          picc: '姜信帆',
+          ds_mri: '姜信帆'
+        }
+      },
       '7/21': { '黃俊肇': '謝棖智' }
     },
     notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
@@ -892,48 +919,67 @@ function getDoctorTasksForToday(a) {
     // If this doctor is covered by someone else today, duplicate the task for the cover doctor
     if (dayCovers && dayCovers[displayName]) {
       const cover = dayCovers[displayName];
-      if (typeof cover === 'string') {
-        if (!doctorTasks[cover]) {
-          doctorTasks[cover] = { tasks: [], isOnLeave: false };
-        }
-        doctorTasks[cover].tasks.push(`${task} (代${displayName})${suffix}`);
-      } else if (typeof cover === 'object') {
-        const tpCover = cover.tp;
-        const dsCover = cover.ds;
-        const ctCover = cover.ct;
-        const defCover = cover.default;
+      
+      // Determine the task key for this task
+      let taskKey = null;
+      if (task.includes('DSA') || task.includes('TAE') || task.includes('血管攝影')) {
+        taskKey = 'angio';
+      } else if (task.includes('急 CT')) {
+        taskKey = 'erct';
+      } else if (task.includes('門住 CT')) {
+        taskKey = 'ct';
+      } else if (task.includes('MRI') && !task.includes('解釋')) {
+        taskKey = 'mri';
+      } else if (task.includes('MRI') && task.includes('解釋')) {
+        taskKey = 'ds_mri';
+      } else if (task.includes('PICC')) {
+        taskKey = 'picc';
+      }
 
-        // Check if task is like "門住 CT (北:00–23/淡:00–23)"
+      let coverName = null;
+      let isSplitCt = false;
+
+      if (typeof cover === 'string') {
+        coverName = cover;
+      } else if (typeof cover === 'object' && taskKey && cover[taskKey]) {
+        const taskCover = cover[taskKey];
+        if (typeof taskCover === 'string') {
+          coverName = taskCover;
+        } else if (typeof taskCover === 'object') {
+          // If it's a split location task like CT
+          if (taskKey === 'ct' && task.includes('北:') && task.includes('淡:')) {
+            isSplitCt = true;
+          } else {
+            if (task.includes('台北') || task.includes('北:')) {
+              coverName = taskCover.tp;
+            } else if (task.includes('淡水') || task.includes('淡:')) {
+              coverName = taskCover.ds;
+            }
+          }
+        }
+      }
+
+      if (isSplitCt) {
         const ctMatch = task.match(/門住 CT \(北:(.+?)\/淡:(.+?)\)/);
         if (ctMatch) {
           const tpVal = ctMatch[1];
           const dsVal = ctMatch[2];
-          const targetTpCover = ctCover || tpCover || defCover;
-          const targetDsCover = ctCover || dsCover || defCover;
-          if (targetTpCover) {
-            if (!doctorTasks[targetTpCover]) doctorTasks[targetTpCover] = { tasks: [], isOnLeave: false };
-            doctorTasks[targetTpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
+          const tpCover = cover.ct.tp;
+          const dsCover = cover.ct.ds;
+          if (tpCover) {
+            if (!doctorTasks[tpCover]) doctorTasks[tpCover] = { tasks: [], isOnLeave: false };
+            doctorTasks[tpCover].tasks.push(`門住 CT 台北 (${tpVal}) (代${displayName})${suffix}`);
           }
-          if (targetDsCover) {
-            if (!doctorTasks[targetDsCover]) doctorTasks[targetDsCover] = { tasks: [], isOnLeave: false };
-            doctorTasks[targetDsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
-          }
-        } else {
-          let coverName = defCover;
-          if (task.includes('門住 CT') && ctCover) {
-            coverName = ctCover;
-          } else if (task.includes('台北') || task.includes('北:')) {
-            coverName = tpCover || defCover;
-          } else if (task.includes('淡水') || task.includes('淡:')) {
-            coverName = dsCover || defCover;
-          }
-          if (coverName) {
-            if (!doctorTasks[coverName]) {
-              doctorTasks[coverName] = { tasks: [], isOnLeave: false };
-            }
-            doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
+          if (dsCover) {
+            if (!doctorTasks[dsCover]) doctorTasks[dsCover] = { tasks: [], isOnLeave: false };
+            doctorTasks[dsCover].tasks.push(`門住 CT 淡水 (${dsVal}) (代${displayName})${suffix}`);
           }
         }
+      } else if (coverName) {
+        if (!doctorTasks[coverName]) {
+          doctorTasks[coverName] = { tasks: [], isOnLeave: false };
+        }
+        doctorTasks[coverName].tasks.push(`${task} (代${displayName})${suffix}`);
       }
     }
   }
@@ -1020,7 +1066,7 @@ function getDoctorTasksForToday(a) {
 // ════════════════════════════════════════════════════
 //  姓名渲染與小備註 helper
 // ════════════════════════════════════════════════════
-function renderPerson(raw, showTraineeTag = true, targetDate = null, location = null) {
+function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = null, location = null) {
   if (!raw) return '—';
 
   function formatName(name) {
@@ -1043,18 +1089,21 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, location = 
         if (typeof cover === 'string') {
           coverName = cover;
         } else if (typeof cover === 'object') {
-          if (location === 'ct' && cover.ct) {
-            coverName = cover.ct;
-          } else if (location === 'tp' && cover.tp) {
-            coverName = cover.tp;
-          } else if (location === 'ds' && cover.ds) {
-            coverName = cover.ds;
-          } else if ((!location || location === 'ct') && cover.tp && cover.ds) {
-            const tpCls = personCls(cover.tp);
-            const dsCls = personCls(cover.ds);
-            coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${cover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${cover.ds}</span>`;
-          } else {
-            coverName = cover.default || '';
+          if (taskKey && cover[taskKey]) {
+            const taskCover = cover[taskKey];
+            if (typeof taskCover === 'string') {
+              coverName = taskCover;
+            } else if (typeof taskCover === 'object') {
+              if (location === 'tp' && taskCover.tp) {
+                coverName = taskCover.tp;
+              } else if (location === 'ds' && taskCover.ds) {
+                coverName = taskCover.ds;
+              } else if (!location && taskCover.tp && taskCover.ds) {
+                const tpCls = personCls(taskCover.tp);
+                const dsCls = personCls(taskCover.ds);
+                coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${taskCover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${taskCover.ds}</span>`;
+              }
+            }
           }
         }
         if (coverName) {
@@ -1282,27 +1331,27 @@ function renderTodayCard(key) {
   const rows = [];
 
   if (a.angio) {
-    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa, true, targetDate, 'tp'), ds: renderPerson(a.angio.ds_dsa, true, targetDate, 'ds'), note: a.angio.note });
-    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae, true, targetDate, 'tp'), ds: renderPerson(a.angio.ds_tae, true, targetDate, 'ds') });
+    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa, true, targetDate, 'angio', 'tp'), ds: renderPerson(a.angio.ds_dsa, true, targetDate, 'angio', 'ds'), note: a.angio.note });
+    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae, true, targetDate, 'angio', 'tp'), ds: renderPerson(a.angio.ds_tae, true, targetDate, 'angio', 'ds') });
   }
   if (a.erct) {
-    rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp, true, targetDate, 'tp'), ds: renderPerson(a.erct.ds, true, targetDate, 'ds'), note: a.erct.note });
+    rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp, true, targetDate, 'erct', 'tp'), ds: renderPerson(a.erct.ds, true, targetDate, 'erct', 'ds'), note: a.erct.note });
   }
   if (a.mri_tp || a.mri_ds) {
     rows.push({
       label: `門住急 MRI`,
-      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false, targetDate, 'tp') + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
-      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false, targetDate, 'ds') + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
+      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false, targetDate, 'mri', 'tp') + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
+      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false, targetDate, 'mri', 'ds') + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
     });
   }
   if (a.ds_mri) {
-    rows.push({ label: '淡水神經 MRI 解釋', tp: '—', ds: renderPerson(a.ds_mri.person, true, targetDate, 'ds'), note: a.ds_mri.note });
+    rows.push({ label: '淡水神經 MRI 解釋', tp: '—', ds: renderPerson(a.ds_mri.person, true, targetDate, 'ds_mri', 'ds'), note: a.ds_mri.note });
   }
   if (a.picc) {
-    rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp, true, targetDate, 'tp'), ds: renderPerson(a.picc.ds, true, targetDate, 'ds'), note: a.picc.note });
+    rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp, true, targetDate, 'picc', 'tp'), ds: renderPerson(a.picc.ds, true, targetDate, 'picc', 'ds'), note: a.picc.note });
   }
   if (a.evtDoctor) {
-    rows.push({ label: '中風取栓 On-Call', tp: renderPerson(a.evtDoctor, true, targetDate, 'tp'), ds: '—' });
+    rows.push({ label: '中風取栓 On-Call', tp: renderPerson(a.evtDoctor, true, targetDate, 'evt', 'tp'), ds: '—' });
   }
 
   let gridHtml = `<div class="today-grid">`;
