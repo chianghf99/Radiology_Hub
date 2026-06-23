@@ -536,6 +536,7 @@ const NI_DATA = {
         '魏士揚': '謝棖智'
       }
     },
+    holidays: [],
     notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
   },
   '2026-07': {
@@ -641,6 +642,7 @@ const NI_DATA = {
         }
       }
     },
+    holidays: [],
     notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
   },
 };
@@ -761,6 +763,67 @@ let todayCardCustomDate = null;
 let activeTab = 'ni'; // 'ni' or 'evt'
 const hiddenPeople = new Set();
 let viewMode = window.innerWidth <= 768 ? 'today' : 'month';
+
+let autoFilterTime = true;
+try {
+  autoFilterTime = localStorage.getItem('autoFilterTime') !== 'false';
+} catch (e) {}
+
+function toggleAutoFilter(checked) {
+  autoFilterTime = checked;
+  try {
+    localStorage.setItem('autoFilterTime', checked ? 'true' : 'false');
+  } catch (e) {}
+  render();
+}
+
+function getAutoFilterStatus(targetDate) {
+  if (!autoFilterTime) return 'show_all';
+  
+  const now = new Date();
+  // 時段篩選僅適用於今天 (或目前系統時間所屬日期)
+  if (targetDate.toDateString() !== now.toDateString()) {
+    return 'show_all';
+  }
+  
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth() + 1;
+  const day = targetDate.getDate();
+  const key = `${year}-${String(month).padStart(2, '0')}`;
+  const d = NI_DATA[key];
+  const dateStr = `${month}/${day}`;
+  const isHoliday = d && d.holidays && d.holidays.includes(dateStr);
+  
+  const dow = targetDate.getDay(); // 0: Sunday, 6: Saturday
+  
+  if (dow === 0 || isHoliday) {
+    return 'evt_only';
+  }
+  
+  const hour = now.getHours();
+  const min = now.getMinutes();
+  const timeInMinutes = hour * 60 + min;
+  
+  const startDaytime = 8 * 60 + 30; // 08:30
+  
+  if (dow === 6) {
+    // 週六
+    const endDaytimeSat = 12 * 60; // 12:00
+    if (timeInMinutes >= startDaytime && timeInMinutes < endDaytimeSat) {
+      return 'daytime_only';
+    } else {
+      return 'evt_only';
+    }
+  } else {
+    // 週一至週五
+    const endDaytimeWeekday = 17 * 60; // 17:00
+    if (timeInMinutes >= startDaytime && timeInMinutes < endDaytimeWeekday) {
+      return 'daytime_only';
+    } else {
+      return 'evt_only';
+    }
+  }
+}
 
 const DOW_NAMES_TW = ['日','一','二','三','四','五','六'];
 const DOW_LABEL    = { 1:'週一', 2:'週二', 3:'週三', 4:'週四', 5:'週五', 6:'週六' };
@@ -1237,11 +1300,21 @@ function renderTodayCard(key) {
     customBtnLabel = '📅 指定日期';
   }
 
+  const status = getAutoFilterStatus(targetDate);
+  let statusBadge = '';
+  if (status === 'evt_only') {
+    statusBadge = `<span style="font-size:0.7rem; background:#fee2e2; color:#ef4444; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px; margin-left: 6px; vertical-align: middle;">🌙 On-Call 時段</span>`;
+  } else if (status === 'daytime_only') {
+    statusBadge = `<span style="font-size:0.7rem; background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px; margin-left: 6px; vertical-align: middle;">☀️ 白天值班時段</span>`;
+  } else {
+    statusBadge = `<span style="font-size:0.7rem; background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px; margin-left: 6px; vertical-align: middle;">🕒 自動篩選：關</span>`;
+  }
+
   let headerHtml = `
     <div class="today-card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h2>📅 ${titleText}</h2>
-        <span class="today-date-badge">${a.dateStr}</span>
+        <span class="today-date-badge">${a.dateStr}</span>${statusBadge}
       </div>
       <div style="display:flex; gap:2px; background:#f1f5f9; padding:2px; border-radius:6px; border:1px solid #e2e8f0; align-items:center; height: 28px;">
         <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday}; height:100%;">今日</button>
@@ -1252,11 +1325,26 @@ function renderTodayCard(key) {
         </div>
       </div>
     </div>`;
-  card.innerHTML = headerHtml;
 
-  // ── Sunday ──
-  if (a.isSunday) {
-    let sunHtml = `<div style="padding:10px 0; text-align:center; color:var(--text-sub); font-size:0.88rem; font-weight:600;">☕ 週日常規日班休假</div>`;
+  let toggleHtml = `
+    <div style="display:flex; align-items:center; justify-content:flex-end; width:100%; margin-top:-8px; margin-bottom:10px; font-size:0.75rem; color:#64748b; gap:6px;">
+      <label style="display:inline-flex; align-items:center; cursor:pointer; gap:6px; user-select:none;">
+        <input type="checkbox" id="autoFilterToggle" ${autoFilterTime ? 'checked' : ''} onchange="toggleAutoFilter(this.checked)" style="cursor:pointer; width:14px; height:14px; margin:0; vertical-align:middle;">
+        <span style="vertical-align:middle;">🕒 依目前時間自動切換時段班表</span>
+      </label>
+    </div>`;
+
+  card.innerHTML = headerHtml + toggleHtml;
+
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth() + 1;
+  const day = targetDate.getDate();
+  const dateStrShort = `${month}/${day}`;
+  const isHoliday = d && d.holidays && d.holidays.includes(dateStrShort);
+
+  // ── Sunday / Holiday ──
+  if (a.isSunday || isHoliday) {
+    let sunHtml = `<div style="padding:10px 0; text-align:center; color:var(--text-sub); font-size:0.88rem; font-weight:600;">☕ 週日常規日班休假 / 醫院休假日</div>`;
     if (a.evtDoctor) {
       const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
       sunHtml += `
@@ -1268,6 +1356,28 @@ function renderTodayCard(key) {
         </div>`;
     }
     card.innerHTML += sunHtml;
+    return card;
+  }
+
+  // ── Non-office hours (evt_only) ──
+  if (status === 'evt_only') {
+    let noticeHtml = `
+      <div style="padding:12px; border-radius:8px; background:#f8fafc; border:1px solid #e2e8f0; text-align:center; color:#64748b; font-size:0.82rem; font-weight:500; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span>🌙 目前為非上班時間，僅顯示中風取栓 On-Call 人員</span>
+      </div>`;
+    if (a.evtDoctor) {
+      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
+      noticeHtml += `
+        <div style="display:flex; justify-content:center; margin-top:10px; margin-bottom: 10px;">
+          <div class="today-sat-card" style="min-width:200px;">
+            <div class="today-sat-label">中風取栓 On-Call (24H)</div>
+            <div class="today-sat-person">${formattedEvt}</div>
+          </div>
+        </div>`;
+    } else {
+      noticeHtml += `<div style="text-align:center; color:var(--text-sub); font-size:0.88rem; padding:15px 0;">今日無 On-Call 人員資料</div>`;
+    }
+    card.innerHTML += noticeHtml;
     return card;
   }
 
@@ -1286,7 +1396,7 @@ function renderTodayCard(key) {
       satHtml += `<div class="today-sat-card"><div class="today-sat-label">週六班</div><div style="color:var(--text-sub);font-size:0.88rem">無資料</div></div>`;
     }
     
-    if (a.evtDoctor) {
+    if (a.evtDoctor && status !== 'daytime_only') {
       const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
       satHtml += `
         <div class="today-sat-card">
@@ -1303,11 +1413,24 @@ function renderTodayCard(key) {
   const doctorTasks = getDoctorTasksForToday(a);
   let overviewHtml = '';
   const docNames = Object.keys(doctorTasks);
-  if (docNames.length > 0) {
+
+  // Filter active doctors based on the selected time-mode
+  const activeDocs = docNames.filter(name => {
+    const info = doctorTasks[name];
+    let filtered = info.tasks;
+    if (status === 'evt_only') {
+      filtered = info.tasks.filter(t => t.includes('中風取栓') || t.includes('On-Call'));
+    } else if (status === 'daytime_only') {
+      filtered = info.tasks.filter(t => !(t.includes('中風取栓') || t.includes('On-Call')));
+    }
+    return filtered.length > 0;
+  });
+
+  if (activeDocs.length > 0) {
     overviewHtml += `<div style="margin-bottom: 20px;">
       <div style="font-size: 0.82rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px;">👤 今日醫師任務總覽 (Task Overview)</div>
       <div class="today-doctors-grid">`;
-    docNames.forEach(name => {
+    activeDocs.forEach(name => {
       const info = doctorTasks[name];
       const pc = personCls(name);
       
@@ -1330,10 +1453,18 @@ function renderTodayCard(key) {
           </div>
           <div class="today-doctor-task-list">`;
       
+      // Filter tasks to show
+      let filteredTasks = info.tasks;
+      if (status === 'evt_only') {
+        filteredTasks = info.tasks.filter(t => t.includes('中風取栓') || t.includes('On-Call'));
+      } else if (status === 'daytime_only') {
+        filteredTasks = info.tasks.filter(t => !(t.includes('中風取栓') || t.includes('On-Call')));
+      }
+
       if (info.isOnLeave) {
-        if (info.tasks.length > 0) {
+        if (filteredTasks.length > 0) {
           const hasCover = (dayCovers && dayCovers[name]);
-          info.tasks.forEach(task => {
+          filteredTasks.forEach(task => {
             const warningSuffix = hasCover ? '' : ' <span style="color:#dc2626; font-weight:800; font-size:0.65rem;">(無代班)</span>';
             overviewHtml += `<div class="today-doctor-task-item" style="text-decoration: line-through; opacity: 0.7; border-left-color: #ef4444;">${task}${warningSuffix}</div>`;
           });
@@ -1341,8 +1472,8 @@ function renderTodayCard(key) {
           overviewHtml += `<div style="font-size: 0.72rem; color: #94a3b8; font-style: italic; padding: 2px 6px;">今日無常規任務</div>`;
         }
       } else {
-        if (info.tasks.length > 0) {
-          info.tasks.forEach(task => {
+        if (filteredTasks.length > 0) {
+          filteredTasks.forEach(task => {
             overviewHtml += `<div class="today-doctor-task-item">${task}</div>`;
           });
         } else {
@@ -1380,7 +1511,7 @@ function renderTodayCard(key) {
   if (a.picc) {
     rows.push({ label: 'PICC', tp: renderPerson(a.picc.tp, true, targetDate, 'picc', 'tp'), ds: renderPerson(a.picc.ds, true, targetDate, 'picc', 'ds'), note: a.picc.note });
   }
-  if (a.evtDoctor) {
+  if (a.evtDoctor && status !== 'daytime_only') {
     rows.push({ label: '中風取栓 On-Call', tp: renderPerson(a.evtDoctor, true, targetDate, 'evt', 'tp'), ds: '—' });
   }
 
