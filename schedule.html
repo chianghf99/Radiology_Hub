@@ -396,6 +396,98 @@
       .today-grid-row > div { padding: 5px 8px; }
       .today-ct-pill { font-size: 0.7rem; padding: 1px 8px; }
     }
+
+    /* ── 右上角設定按鈕 ── */
+    .settings-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: white;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: white;
+    }
+
+    /* ── 設定彈出視窗 Modal ── */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 24px;
+      border: 1px solid #e2e8f0;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      position: relative;
+      animation: modalFadeIn 0.15s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { transform: translateY(-15px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .close:hover {
+      color: #475569;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--accent-color);
+      padding-bottom: 8px;
+    }
+    .modal-section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .modal-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .modal-label {
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 8px;
+      display: block;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -404,17 +496,66 @@
   <a href="index.html" class="back-link">← 返回首頁</a>
   <h1>🧠 神經放射線班表</h1>
   <p>台北 & 淡水馬偕放射線科 · 班表整合平台</p>
+  <button class="settings-btn" onclick="openSettingsModal()">⚙️ 管理設定</button>
 </header>
 
 <main>
-  <!-- 管理員排班控制列 -->
-  <div id="admin-control-bar" style="display:none; justify-content:center; align-items:center; gap:12px; margin: 10px auto 25px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; max-width: 600px;">
-    <span style="font-weight: 700; color: var(--primary-color);">🔧 班表管理模式：</span>
-    <span id="admin-user-name" style="font-weight: 600; color: #475569;"></span>
-    <button id="toggleEditBtn" onclick="toggleEditMode()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: var(--primary-color); color: white; cursor: pointer;">🔧 開啟排班編輯</button>
-    <button id="saveEditBtn" onclick="saveAllSchedules()" style="display:none; padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #10b981; color: white; cursor: pointer;">💾 儲存修改</button>
-    <button id="cancelEditBtn" onclick="cancelEditMode()" style="display:none; padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer;">❌ 取消</button>
-    <button onclick="logoutAdmin()" style="padding: 4px 8px; font-size: 0.78rem; font-weight: 600; border-radius: 4px; border: none; background: none; color: #ef4444; cursor: pointer; text-decoration: underline;">登出</button>
+  <!-- 編輯狀態浮動列 -->
+  <div id="floating-edit-bar" style="display:none; justify-content:center; align-items:center; gap:12px; margin: 10px auto 25px; padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #f59e0b; font-size: 0.9rem; max-width: 600px;">
+    <span style="font-weight: 700; color: #b45309;">⚠️ 正在排班編輯模式中...</span>
+    <button id="saveEditBtn" onclick="saveAllSchedules()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #10b981; color: white; cursor: pointer;">💾 儲存修改</button>
+    <button id="cancelEditBtn" onclick="cancelEditMode()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer;">❌ 取消編輯</button>
+  </div>
+
+  <!-- 設定彈出視窗 -->
+  <div id="adminSettingsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeSettingsModal()">&times;</span>
+      <div class="modal-title">⚙️ 班表管理設定</div>
+      
+      <!-- 登入驗證區 -->
+      <div class="modal-section" id="authSection">
+        <div id="modal-logged-out">
+          <p style="margin: 0 0 10px 0; color:#64748b; font-size:0.85rem;">登入 Google 帳號後即可開啟線上排班編輯、修改休假日等管理功能。</p>
+          <button onclick="loginAdmin()" style="width:100%; padding:10px; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">🔑 登入 Google 帳號</button>
+        </div>
+        <div id="modal-logged-in" style="display:none; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#94a3b8; display:block;">已登入管理者：</span>
+            <span id="modal-admin-name" style="font-weight:700; color:var(--primary-color);"></span>
+          </div>
+          <button onclick="logoutAdmin()" style="padding:6px 12px; font-size:0.78rem; font-weight:600; border-radius:4px; border:1px solid #ef4444; background:none; color:#ef4444; cursor:pointer;">登出</button>
+        </div>
+      </div>
+
+      <!-- 功能管理區 (僅登入後顯示) -->
+      <div id="adminFunctions" style="display:none;">
+        <!-- 1. 開啟編輯模式 -->
+        <div class="modal-section">
+          <label class="modal-label">🔧 排班編輯狀態</label>
+          <button id="modalToggleEditBtn" onclick="toggleEditModeFromModal()" style="width:100%; padding:10px; font-weight:700; border-radius:6px; border:none; background:var(--accent-color); color:white; cursor:pointer;">🔧 開啟排班編輯模式</button>
+          <p style="margin:6px 0 0 0; font-size:0.72rem; color:#94a3b8;">開啟後，網頁的欄位會切換為選單/輸入框，並於主頁上方出現儲存工具列。</p>
+        </div>
+
+        <!-- 2. 醫院休假日設定 -->
+        <div class="modal-section">
+          <label class="modal-label">📅 醫院休假日設定</label>
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">請輸入本月放假日期，以半形逗號分隔（如: 7/1, 7/2）：</div>
+          <input type="text" id="modalHolidayInput" placeholder="例如: 7/1, 7/2" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; margin-bottom:8px;">
+          <button onclick="saveHolidaysFromModal()" style="width:100%; padding:8px; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">💾 儲存休假日設定</button>
+        </div>
+
+        <!-- 3. 新增月份 -->
+        <div class="modal-section">
+          <label class="modal-label">➕ 建立新月份班表</label>
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">自動在雲端 Firestore 初始化目標月份的空白班表模板：</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="newMonthInput" placeholder="例如: 2026-08" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; flex:1; font-size:0.88rem; box-sizing:border-box;">
+            <button onclick="handleCreateNewMonth()" style="padding:8px 16px; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">建立</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="month-switcher">
@@ -816,17 +957,287 @@ if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY")
 }
 
 function updateAdminControlBar() {
-  const bar = document.getElementById('admin-control-bar');
-  const nameSpan = document.getElementById('admin-user-name');
-  if (!bar) return;
+  updateModalAuthStatus();
+}
+
+// ════════════════════════════════════════════════════
+//  管理設定彈出視窗與新月份建立控制
+// ════════════════════════════════════════════════════
+function openSettingsModal() {
+  const modal = document.getElementById('adminSettingsModal');
+  if (modal) {
+    modal.style.display = 'block';
+    updateModalAuthStatus();
+  }
+}
+
+function closeSettingsModal() {
+  const modal = document.getElementById('adminSettingsModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// 點擊 Modal 外部時關閉 Modal
+window.addEventListener('click', (event) => {
+  const modal = document.getElementById('adminSettingsModal');
+  if (event.target === modal) {
+    closeSettingsModal();
+  }
+});
+
+function updateModalAuthStatus() {
+  const loggedOutDiv = document.getElementById('modal-logged-out');
+  const loggedInDiv = document.getElementById('modal-logged-in');
+  const adminNameSpan = document.getElementById('modal-admin-name');
+  const adminFunctionsDiv = document.getElementById('adminFunctions');
+  
+  if (!loggedOutDiv || !loggedInDiv) return;
   
   if (currentUser) {
-    bar.style.display = 'flex';
-    nameSpan.textContent = currentUser.displayName || currentUser.email;
+    loggedOutDiv.style.display = 'none';
+    loggedInDiv.style.display = 'flex';
+    if (adminNameSpan) {
+      adminNameSpan.textContent = currentUser.displayName || currentUser.email;
+    }
+    if (adminFunctionsDiv) {
+      adminFunctionsDiv.style.display = 'block';
+    }
+    
+    // 更新排班編輯按鈕文字
+    const editBtn = document.getElementById('modalToggleEditBtn');
+    if (editBtn) {
+      if (isEditMode) {
+        editBtn.textContent = "❌ 關閉排班編輯模式";
+        editBtn.style.background = "#ef4444";
+      } else {
+        editBtn.textContent = "🔧 開啟排班編輯模式";
+        editBtn.style.background = "var(--accent-color)";
+      }
+    }
+    
+    // 填入本月放假日期
+    const key = MONTH_KEYS[currentIdx];
+    const d = NI_DATA[key];
+    const activeHolidays = (d && d.holidays) ? d.holidays : [];
+    const holidayInput = document.getElementById('modalHolidayInput');
+    if (holidayInput) {
+      holidayInput.value = activeHolidays.join(', ');
+    }
   } else {
-    bar.style.display = 'none';
-    isEditMode = false;
-    toggleEditUiState();
+    loggedOutDiv.style.display = 'block';
+    loggedInDiv.style.display = 'none';
+    if (adminFunctionsDiv) {
+      adminFunctionsDiv.style.display = 'none';
+    }
+    if (isEditMode) {
+      cancelEditMode();
+    }
+  }
+}
+
+function toggleEditModeFromModal() {
+  if (!currentUser) {
+    alert("請先登入管理帳號！");
+    return;
+  }
+  
+  if (!isEditMode) {
+    toggleEditMode();
+    closeSettingsModal();
+  } else {
+    cancelEditMode();
+    closeSettingsModal();
+  }
+}
+
+async function saveHolidaysFromModal() {
+  const key = MONTH_KEYS[currentIdx];
+  const holidayInput = document.getElementById('modalHolidayInput');
+  if (!holidayInput) return;
+  
+  const inputVal = holidayInput.value;
+  const rawParts = inputVal.split(',');
+  const parsed = [];
+  
+  rawParts.forEach(p => {
+    p = p.trim();
+    if (!p) return;
+    const match = p.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (match) {
+      parsed.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
+    }
+  });
+
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+
+  const saveBtn = document.querySelector('button[onclick="saveHolidaysFromModal()"]');
+  const originalText = saveBtn ? saveBtn.textContent : "💾 儲存休假日設定";
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "儲存中...";
+    }
+    
+    await db.collection("schedules").doc(key).update({
+      "ni.holidays": parsed
+    });
+    
+    if (!NI_DATA[key]) {
+      NI_DATA[key] = {};
+    }
+    NI_DATA[key].holidays = parsed;
+    
+    render();
+    alert("休假日已成功同步至雲端！");
+    closeSettingsModal();
+  } catch (error) {
+    alert("休假日儲存失敗: " + error.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = originalText;
+    }
+  }
+}
+
+async function handleCreateNewMonth() {
+  const input = document.getElementById('newMonthInput');
+  if (!input) return;
+  
+  const monthKey = input.value.trim();
+  if (!monthKey) {
+    alert("請輸入月份，例如: 2026-08");
+    return;
+  }
+  
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) {
+    alert("月份格式錯誤，請使用 YYYY-MM 格式，例如: 2026-08");
+    return;
+  }
+  
+  if (NI_DATA[monthKey]) {
+    alert(`月份 ${monthKey} 的班表已存在！`);
+    return;
+  }
+  
+  const [yearStr, monthStr] = monthKey.split('-');
+  const year = parseInt(yearStr);
+  const month = parseInt(monthStr);
+  
+  // 計算星期六的日期列表
+  const saturdays = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month - 1, d);
+    if (date.getDay() === 6) { // 6 是星期六
+      saturdays.push(`${month}/${d}`);
+    }
+  }
+  
+  const saturdayList = saturdays.map(dateStr => ({
+    date: dateStr,
+    person: '',
+    note: ''
+  }));
+  
+  const ni = {
+    angio: [
+      { dow: '週一', tp_dsa: '', tp_tae: '', ds_dsa: '', ds_tae: '', note: '' },
+      { dow: '週二', tp_dsa: '', tp_tae: '', ds_dsa: '', ds_tae: '', note: '' },
+      { dow: '週三', tp_dsa: '', tp_tae: '', ds_dsa: '', ds_tae: '', note: '' },
+      { dow: '週四', tp_dsa: '', tp_tae: '', ds_dsa: '', ds_tae: '', note: '' },
+      { dow: '週五', tp_dsa: '', tp_tae: '', ds_dsa: '', ds_tae: '', note: '' }
+    ],
+    erct: [
+      { dow: '週一', tp: '', ds: '', note: '' },
+      { dow: '週二', tp: '', ds: '', note: '' },
+      { dow: '週三', tp: '', ds: '', note: '' },
+      { dow: '週四', tp: '', ds: '', note: '' },
+      { dow: '週五', tp: '', ds: '', note: '' }
+    ],
+    routine_ct: [
+      { person: '黃俊肇', tp: '', ds: '', note: '' },
+      { person: '謝棖智', tp: '', ds: '', note: '' },
+      { person: '姜信帆', tp: '', ds: '', note: '' },
+      { person: '魏士揚', tp: '', ds: '', note: '' },
+      { person: '鄭宇凡', tp: '', ds: '', note: '' }
+    ],
+    mri: {
+      tp: [
+        { week: 'W1', person: '', note: '' },
+        { week: 'W2', person: '', note: '' },
+        { week: 'W3', person: '', note: '' },
+        { week: 'W4', person: '', note: '' },
+        { week: 'W5', person: '', note: '' }
+      ],
+      ds: [
+        { week: 'W1', person: '', note: '' },
+        { week: 'W2', person: '', note: '' },
+        { week: 'W3', person: '', note: '' },
+        { week: 'W4', person: '', note: '' },
+        { week: 'W5', person: '', note: '' }
+      ]
+    },
+    ds_mri_daily: [
+      { dow: '週一', person: '', note: '' },
+      { dow: '週二', person: '', note: '' },
+      { dow: '週三', person: '', note: '' },
+      { dow: '週四', person: '', note: '' },
+      { dow: '週五', person: '', note: '' }
+    ],
+    saturday: saturdayList,
+    picc: [
+      { dow: '週一', tp: '', ds: '', note: '' },
+      { dow: '週二', tp: '', ds: '', note: '' },
+      { dow: '週三', tp: '', ds: '', note: '' },
+      { dow: '週四', tp: '', ds: '', note: '' },
+      { dow: '週五', tp: '', ds: '', note: '' }
+    ],
+    leaves: {},
+    covers: {},
+    holidays: [],
+    notes: ''
+  };
+  
+  const evt = {};
+  
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+  
+  const createBtn = document.querySelector('button[onclick="handleCreateNewMonth()"]');
+  const originalText = createBtn ? createBtn.textContent : "建立";
+  
+  try {
+    if (createBtn) {
+      createBtn.disabled = true;
+      createBtn.textContent = "建立中...";
+    }
+    
+    await db.collection("schedules").doc(monthKey).set({ ni, evt });
+    
+    alert(`月份 ${monthKey} 的空白班表已成功建立！`);
+    input.value = "";
+    
+    await loadCloudSchedules();
+    if (MONTH_KEYS.includes(monthKey)) {
+      currentIdx = MONTH_KEYS.indexOf(monthKey);
+      render();
+    }
+    
+    closeSettingsModal();
+  } catch (error) {
+    alert("建立新月份失敗: " + error.message);
+  } finally {
+    if (createBtn) {
+      createBtn.disabled = false;
+      createBtn.textContent = originalText;
+    }
   }
 }
 
@@ -843,20 +1254,13 @@ function cancelEditMode() {
 }
 
 function toggleEditUiState() {
-  const toggleBtn = document.getElementById('toggleEditBtn');
-  const saveBtn = document.getElementById('saveEditBtn');
-  const cancelBtn = document.getElementById('cancelEditBtn');
-  
-  if (!toggleBtn || !saveBtn || !cancelBtn) return;
+  const editBar = document.getElementById('floating-edit-bar');
+  if (!editBar) return;
   
   if (isEditMode) {
-    toggleBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'inline-block';
+    editBar.style.display = 'flex';
   } else {
-    toggleBtn.style.display = 'inline-block';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
+    editBar.style.display = 'none';
   }
 }
 
@@ -1704,7 +2108,6 @@ function renderNiTab(d) {
   if (d.picc) root.appendChild(renderPicc(d.picc));
   root.appendChild(renderLeavesAndCoversEditorSection(d));
   root.appendChild(renderNotes(d.notes || ''));
-  root.appendChild(renderHolidayEditorSection());
 }
 
 function makeSection(icon, title, cls='') {
@@ -2081,67 +2484,6 @@ function renderNotes(notes) {
   return sec;
 }
 
-function renderHolidayEditorSection() {
-  const key = MONTH_KEYS[currentIdx];
-  const d = NI_DATA[key];
-  const activeHolidays = (d && d.holidays) ? d.holidays : [];
-  
-  const sec = makeSection('📅', '醫院休假日設定 (Hospital Holidays)');
-  sec.className = 'section-card full-width';
-  
-  const container = document.createElement('div');
-  container.style.marginTop = '12px';
-  container.style.padding = '16px';
-  container.style.background = '#f8fafc';
-  container.style.border = '1px solid #e2e8f0';
-  container.style.borderRadius = '8px';
-  container.style.fontSize = '0.88rem';
-  
-  const displayList = activeHolidays.length > 0 
-    ? activeHolidays.map(h => `<span class="holiday-pill" style="display:inline-block; background:#fee2e2; color:#ef4444; padding:2px 8px; border-radius:12px; margin-right:6px; font-weight:600; font-size:0.8rem;">${h}</span>`).join('')
-    : '<span style="color:#94a3b8; font-style:italic;">本月無設定休假日</span>';
-    
-  if (!currentUser) {
-    // 未登入狀態：僅顯示，不允許編輯
-    container.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-          <span style="font-weight:700; color:#475569; margin-right:8px;">本月休假日：</span>
-          <div style="display:inline-block; vertical-align:middle;">${displayList}</div>
-        </div>
-        <button onclick="loginAdmin()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:1px solid #cbd5e1; background:white; color:#475569; font-weight:600; cursor:pointer;">🔑 登入編輯</button>
-      </div>
-    `;
-  } else {
-    // 已登入狀態：解鎖編輯
-    container.innerHTML = `
-      <div id="holidayDisplayMode" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-          <span style="font-weight:700; color:#475569; margin-right:8px;">本月休假日：</span>
-          <div style="display:inline-block; vertical-align:middle;">${displayList}</div>
-        </div>
-        <div>
-          <span style="font-size:0.75rem; color:#64748b; margin-right:10px;">管理者：${currentUser.displayName || currentUser.email}</span>
-          <button onclick="showHolidayEditMode()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:none; background:var(--primary-color); color:white; font-weight:600; cursor:pointer;">編輯休假日</button>
-          <button onclick="logoutAdmin()" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; border:none; background:none; color:#ef4444; cursor:pointer; text-decoration:underline; font-weight:600;">登出</button>
-        </div>
-      </div>
-      
-      <div id="holidayEditMode" style="display:none; flex-direction:column; gap:10px;">
-        <div style="font-weight:700; color:#475569;">編輯本月休假日：</div>
-        <div style="font-size:0.75rem; color:#64748b; margin-top:-6px;">請輸入日期，以半形逗號分隔（例如: 7/1, 7/2, 7/21）</div>
-        <input type="text" id="holidayInput" value="${activeHolidays.join(', ')}" placeholder="例如: 7/1, 7/2" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box;">
-        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
-          <button onclick="hideHolidayEditMode()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:1px solid #cbd5e1; background:white; color:#475569; font-weight:600; cursor:pointer;">取消</button>
-          <button id="saveHolidayBtn" onclick="saveHolidays()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:none; background:var(--primary-color); color:white; font-weight:600; cursor:pointer;">儲存</button>
-        </div>
-      </div>
-    `;
-  }
-  
-  sec.appendChild(container);
-  return sec;
-}
 
 // ════════════════════════════════════════════════════
 //  管理權限與雲端寫入事件
@@ -2158,24 +2500,6 @@ function logoutAdmin() {
   }
 }
 
-function showHolidayEditMode() {
-  const display = document.getElementById('holidayDisplayMode');
-  const edit = document.getElementById('holidayEditMode');
-  if (display && edit) {
-    display.style.display = 'none';
-    edit.style.display = 'flex';
-    document.getElementById('holidayInput').focus();
-  }
-}
-
-function hideHolidayEditMode() {
-  const display = document.getElementById('holidayDisplayMode');
-  const edit = document.getElementById('holidayEditMode');
-  if (display && edit) {
-    display.style.display = 'flex';
-    edit.style.display = 'none';
-  }
-}
 
 function showNotesEditMode() {
   const display = document.getElementById('notesDisplayMode');
@@ -2196,52 +2520,6 @@ function hideNotesEditMode() {
   }
 }
 
-async function saveHolidays() {
-  const key = MONTH_KEYS[currentIdx];
-  const inputVal = document.getElementById('holidayInput').value;
-  const rawParts = inputVal.split(',');
-  const parsed = [];
-  
-  rawParts.forEach(p => {
-    p = p.trim();
-    if (!p) return;
-    const match = p.match(/^(\d{1,2})\/(\d{1,2})$/);
-    if (match) {
-      parsed.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
-    }
-  });
-
-  if (!db) {
-    alert("雲端資料庫尚未初始化");
-    return;
-  }
-
-  const saveBtn = document.getElementById('saveHolidayBtn');
-  try {
-    saveBtn.disabled = true;
-    saveBtn.textContent = "儲存中...";
-    
-    // 更新 Firestore 中的 ni.holidays
-    await db.collection("schedules").doc(key).update({
-      "ni.holidays": parsed
-    });
-    
-    // 同步更新本地記憶體並重新渲染
-    if (NI_DATA[key]) {
-      NI_DATA[key].holidays = parsed;
-    }
-    render();
-    alert("休假日已成功同步至雲端！");
-  } catch (error) {
-    console.error("雲端儲存失敗:", error);
-    alert("儲存失敗：" + error.message);
-  } finally {
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = "儲存";
-    }
-  }
-}
 
 async function saveNotes() {
   const key = MONTH_KEYS[currentIdx];
