@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班表雲端資料庫導入工具</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        body { padding: 40px 20px; font-family: inherit; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+        }
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-login {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-login:hover { background-color: #1e293b; }
+        .btn-import {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        .btn-import:hover:not(:disabled) { background-color: #3b82f6; }
+        .btn-import:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            display: none;
+        }
+        .status.success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            display: block;
+        }
+        .status.error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📅 班表雲端資料庫導入工具 (第一階段)</h1>
+    
+    <div class="info-box">
+        <p>此工具將會把本地 <code>schedule.html</code> 中的 <strong>2026-06</strong> 與 <strong>2026-07</strong> 的日班排班資料 (NI) 與中風值班資料 (EVT) 上傳至您 Firebase 專案的 <code>schedules</code> 集合中。</p>
+        <p><strong>準備步驟：</strong></p>
+        <ol>
+            <li>請點擊下方按鈕登入您的 Google 帳號。</li>
+            <li>確認登入成功後，點擊「開始導入雲端資料庫」按鈕。</li>
+        </ol>
+    </div>
+
+    <div id="user-info" style="display: none; margin-bottom: 20px; font-weight: bold; color: var(--primary-color);">
+        已登入：<span id="display-name"></span>
+    </div>
+
+    <div class="btn-group">
+        <button id="loginBtn" class="btn-login">🔑 登入 Google 帳號</button>
+        <button id="importBtn" class="btn-import" disabled>🚀 開始導入雲端資料庫</button>
+    </div>
+
+    <div id="statusBox" class="status"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    // Firebase Config (與 index.html 相同)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBFKkYhLe_s4R10wuP80T1OHkGLFLn2epE",
+        authDomain: "radiology-hub-80908.firebaseapp.com",
+        projectId: "radiology-hub-80908",
+        storageBucket: "radiology-hub-80908.firebasestorage.app",
+        messagingSenderId: "508499242885",
+        appId: "1:508499242885:web:885a5f469fe30bf32f9eec",
+        measurementId: "G-14TEJRN2LT"
+    };
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // 待導入的本地資料
+    const NI_DATA = {
+      '2026-06': {
+        angio: [
+          { dow: '週一', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '魏士揚',   ds_tae: '魏士揚/黃俊肇', note: '淡水DSA：神外醫師協助；6/8 淡水DSA→俊肇' },
+          { dow: '週二', tp_dsa: '姜信帆',    tp_tae: '姜信帆',              ds_dsa: '黃俊肇',   ds_tae: '黃俊肇',        note: '' },
+          { dow: '週三', tp_dsa: '黃俊肇',    tp_tae: '黃俊肇',              ds_dsa: '謝棖智',   ds_tae: '謝棖智',        note: '' },
+          { dow: '週四', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '姜信帆',   ds_tae: '魏士揚/姜信帆', note: '6/4 台北DSA→俊肇；淡水DSA→棖智' },
+          { dow: '週五', tp_dsa: '魏士揚',    tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',   ds_tae: '姜信帆',        note: '6/5 台北DSA→棖智；淡水DSA→俊肇' },
+        ],
+        erct: [
+          { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+          { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+          { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '6/10 →魏士揚' },
+          { dow: '週四', tp: '謝棖智', ds: '姜信帆', note: '6/4 淡水→棖智；6/11 台北→信帆代棖智' },
+          { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '6/5 →俊肇' },
+        ],
+        routine_ct: [
+          { person: '黃俊肇', tp: '00–19',         ds: '00–19',  note: '' },
+          { person: '謝棖智', tp: '20–39',         ds: '20–39',  note: '' },
+          { person: '姜信帆', tp: '40–59',         ds: '80–99',  note: '6/4–6 →俊肇代' },
+          { person: '魏士揚', tp: '60–67, 89–99',  ds: '40–59',  note: '6/4–6 →俊肇代' },
+          { person: '郭律志', tp: '68–88',         ds: '60–79',  note: '' },
+        ],
+        mri: {
+          tp: [
+            { week: 'W1', person: '謝棖智',                 note: '' },
+            { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+            { week: 'W3', person: '姜信帆',                 note: '' },
+            { week: 'W4', person: '黃俊肇',                 note: '' },
+            { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '6/5 PM→棖智' },
+          ],
+          ds: [
+            { week: 'W1', person: '黃俊肇', note: '' },
+            { week: 'W2', person: '黃俊肇', note: '6/9 →信帆' },
+            { week: 'W3', person: '魏士揚', note: '' },
+            { week: 'W4', person: '謝棖智', note: '6/11 →士揚' },
+            { week: 'W5', person: '姜信帆', note: '6/5 →俊肇' },
+          ],
+        },
+        ds_mri_daily: [
+          { dow: '週一', person: '魏士揚', note: '' },
+          { dow: '週二', person: '黃俊肇', note: '' },
+          { dow: '週三', person: '謝棖智', note: '' },
+          { dow: '週四', person: '姜信帆', note: '6/4 →棖智' },
+          { dow: '週五', person: '姜信帆', note: '6/5 →俊肇' },
+        ],
+        saturday: [
+          { date: '6/06', person: '謝棖智', note: '' },
+          { date: '6/13', person: '魏士揚', note: '' },
+          { date: '6/20', person: '姜信帆', note: '假日 — 僅 MRI' },
+          { date: '6/27', person: '姜信帆', note: '' },
+        ],
+        picc: [
+          { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+          { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '' },
+          { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+          { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '6/4 淡水→棖智' },
+          { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+        ],
+        leaves: {
+          '姜信帆': ['6/4', '6/5', '6/6', '6/7', '6/8'],
+          '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8']
+        },
+        covers: {
+          '6/4': {
+            '姜信帆': { angio: '謝棖智', erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' },
+            '魏士揚': { angio: '謝棖智', erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' }
+          },
+          '6/5': {
+            '姜信帆': '黃俊肇',
+            '魏士揚': { angio: '謝棖智', erct: '黃俊肇', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' }
+          },
+          '6/6': {
+            '姜信帆': '黃俊肇',
+            '魏士揚': '謝棖智'
+          }
+        },
+        holidays: [],
+        notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
+      },
+      '2026-07': {
+        angio: [
+          { dow: '週一', tp_dsa: '鄭宇凡',  tp_tae: '謝棖智',        ds_dsa: '魏士揚',  ds_tae: '魏士揚/黃俊肇', note: '' },
+          { dow: '週二', tp_dsa: '姜信帆',  tp_tae: '姜信帆',        ds_dsa: '黃俊肇',  ds_tae: '黃俊肇',        note: '7/21 淡水DSA→棖智' },
+          { dow: '週三', tp_dsa: '黃俊肇',  tp_tae: '黃俊肇',        ds_dsa: '謝棖智',  ds_tae: '謝棖智',        note: '' },
+          { dow: '週四', tp_dsa: '謝棖智',  tp_tae: '謝棖智',        ds_dsa: '鄭宇凡',  ds_tae: '魏士揚/姜信帆', note: '' },
+          { dow: '週五', tp_dsa: '魏士揚',  tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆',  ds_tae: '姜信帆',        note: '' },
+        ],
+        erct: [
+          { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+          { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+          { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '' },
+          { dow: '週四', tp: '鄭宇凡', ds: '鄭宇凡', note: '' },
+          { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '' },
+        ],
+        routine_ct: [
+          { person: '黃俊肇', tp: '00–23', ds: '00–23', note: '7/17–20 台北→棖智 / 淡水→信帆' },
+          { person: '謝棖智', tp: '24–47', ds: '24–47', note: '' },
+          { person: '魏士揚', tp: '48–71', ds: '48–71', note: '' },
+          { person: '鄭宇凡', tp: '72–75', ds: '72–75', note: '' },
+          { person: '姜信帆', tp: '76–99', ds: '76–99', note: '' },
+        ],
+        mri: {
+          tp: [
+            { week: 'W1', person: '謝棖智',                 note: '' },
+            { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+            { week: 'W3', person: '姜信帆',                 note: '' },
+            { week: 'W4', person: '黃俊肇',                 note: '' },
+            { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+          ],
+          ds: [
+            { week: 'W1', person: '黃俊肇', note: '7/20 →信帆' },
+            { week: 'W2', person: '黃俊肇', note: '7/21 →棖智' },
+            { week: 'W3', person: '魏士揚', note: '' },
+            { week: 'W4', person: '謝棖智', note: '7/23 →俊肇' },
+            { week: 'W5', person: '姜信帆', note: '7/24 →俊肇' },
+          ],
+        },
+        ds_mri_daily: [
+          { dow: '週一', person: '魏士揚', note: '' },
+          { dow: '週二', person: '黃俊肇', note: '7/21 →棖智' },
+          { dow: '週三', person: '謝棖智', note: '' },
+          { dow: '週四', person: '姜信帆', note: '' },
+          { dow: '週五', person: '姜信帆', note: '' },
+        ],
+        saturday: [
+          { date: '7/04', person: '鄭宇凡', note: '' },
+          { date: '7/11', person: '魏士揚', note: '' },
+          { date: '7/18', person: '姜信帆', note: '' },
+          { date: '7/25', person: '謝棖智', note: '' },
+        ],
+        picc: [
+          { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+          { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '7/21 淡水→棖智' },
+          { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+          { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '' },
+          { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+        ],
+        leaves: {
+          '黃俊肇': ['7/17', '7/18', '7/19', '7/20', '7/21']
+        },
+        covers: {
+          '7/17': {
+            '黃俊肇': {
+              ct: { tp: '謝棖智', ds: '姜信帆' },
+              angio: '姜信帆',
+              erct: '姜信帆',
+              mri: '姜信帆',
+              picc: '姜信帆',
+              ds_mri: '姜信帆'
+            }
+          },
+          '7/18': { '黃俊肇': '姜信帆' },
+          '7/19': { '黃俊肇': '姜信帆' },
+          '7/20': {
+            '黃俊肇': {
+              ct: { tp: '謝棖智', ds: '姜信帆' },
+              angio: '姜信帆',
+              erct: '姜信帆',
+              mri: '姜信帆',
+              picc: '姜信帆',
+              ds_mri: '姜信帆'
+            }
+          },
+          '7/21': {
+            '黃俊肇': {
+              angio: '謝棖智',
+              mri: '謝棖智',
+              picc: '謝棖智',
+              ds_mri: '謝棖智'
+            }
+          },
+          '7/23': {
+            '謝棖智': {
+              mri: '黃俊肇'
+            }
+          },
+          '7/24': {
+            '姜信帆': {
+              mri: '黃俊肇'
+            }
+          }
+        },
+        holidays: [],
+        notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
+      },
+    };
+
+    const ALL_SCHEDULES = {
+      '2026-06': {
+         1: { tp: '姜信帆', ds: '謝棖智' },
+         2: { tp: '姜信帆', ds: '謝棖智' },
+         3: { tp: '黃俊肇', ds: '周兆亮' },
+         4: { tp: '黃勇評', ds: '姜信帆' },
+         5: { tp: '黃勇評', ds: '姜信帆' },
+         6: { tp: '黃勇評', ds: '姜信帆' },
+         7: { tp: '黃勇評', ds: '姜信帆' },
+         8: { tp: '黃勇評', ds: '姜信帆' },
+         9: { tp: '黃俊肇', ds: '周兆亮' },
+        10: { tp: '魏士揚', ds: '黃俊肇' },
+        11: { tp: '魏士揚', ds: '黃俊肇' },
+        12: { tp: '魏士揚', ds: '黃俊肇' },
+        13: { tp: '魏士揚', ds: '黃俊肇' },
+        14: { tp: '魏士揚', ds: '黃俊肇' },
+        15: { tp: '謝棖智', ds: '魏士揚' },
+        16: { tp: '謝棖智', ds: '魏士揚' },
+        17: { tp: '謝棖智', ds: '魏士揚' },
+        18: { tp: '謝棖智', ds: '魏士揚' },
+        19: { tp: '謝棖智', ds: '魏士揚' },
+        20: { tp: '姜信帆', ds: '謝棖智' },
+        21: { tp: '黃俊肇', ds: '周兆亮' },
+        22: { tp: '黃俊肇', ds: '周兆亮' },
+        23: { tp: '黃俊肇', ds: '周兆亮' },
+        24: { tp: '姜信帆', ds: '謝棖智' },
+        25: { tp: '姜信帆', ds: '謝棖智' },
+        26: { tp: '周兆亮', ds: '黃勇評' },
+        27: { tp: '周兆亮', ds: '黃勇評' },
+        28: { tp: '周兆亮', ds: '黃勇評' },
+        29: { tp: '周兆亮', ds: '黃勇評' },
+        30: { tp: '周兆亮', ds: '黃勇評' },
+      },
+      '2026-07': {
+         1: { tp: '黃俊肇', ds: '周兆亮' },
+         2: { tp: '黃俊肇', ds: '周兆亮' },
+         3: { tp: '黃俊肇', ds: '周兆亮' },
+         4: { tp: '周兆亮', ds: '黃勇評' },
+         5: { tp: '周兆亮', ds: '黃勇評' },
+         6: { tp: '周兆亮', ds: '黃勇評' },
+         7: { tp: '周兆亮', ds: '黃勇評' },
+         8: { tp: '魏士揚', ds: '黃俊肇' },
+         9: { tp: '魏士揚', ds: '黃俊肇' },
+        10: { tp: '魏士揚', ds: '黃俊肇' },
+        11: { tp: '魏士揚', ds: '黃俊肇' },
+        12: { tp: '魏士揚', ds: '黃俊肇' },
+        13: { tp: '姜信帆', ds: '謝棖智' },
+        14: { tp: '姜信帆', ds: '謝棖智' },
+        15: { tp: '姜信帆', ds: '謝棖智' },
+        16: { tp: '黃勇評', ds: '姜信帆' },
+        17: { tp: '黃勇評', ds: '姜信帆' },
+        18: { tp: '黃勇評', ds: '姜信帆' },
+        19: { tp: '黃勇評', ds: '姜信帆' },
+        20: { tp: '黃勇評', ds: '姜信帆' },
+        21: { tp: '姜信帆', ds: '謝棖智' },
+        22: { tp: '姜信帆', ds: '謝棖智' },
+        23: { tp: '姜信帆', ds: '謝棖智' },
+        24: { tp: '謝棖智', ds: '魏士揚' },
+        25: { tp: '謝棖智', ds: '魏士揚' },
+        26: { tp: '謝棖智', ds: '魏士揚' },
+        27: { tp: '謝棖智', ds: '魏士揚' },
+        28: { tp: '謝棖智', ds: '魏士揚' },
+        29: { tp: '黃俊肇', ds: '周兆亮' },
+        30: { tp: '黃俊肇', ds: '周兆亮' },
+        31: { tp: '黃俊肇', ds: '周兆亮' },
+      },
+    };
+
+    const loginBtn = document.getElementById('loginBtn');
+    const importBtn = document.getElementById('importBtn');
+    const userInfo = document.getElementById('user-info');
+    const displayName = document.getElementById('display-name');
+    const statusBox = document.getElementById('statusBox');
+
+    // 監聽登入狀態
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            userInfo.style.display = 'block';
+            displayName.textContent = user.displayName || user.email;
+            loginBtn.style.display = 'none';
+            importBtn.disabled = false;
+        } else {
+            userInfo.style.display = 'none';
+            loginBtn.style.display = 'inline-block';
+            importBtn.disabled = true;
+        }
+    });
+
+    // 登入事件
+    loginBtn.addEventListener('click', () => {
+        signInWithPopup(auth, provider).catch((error) => {
+            showStatus("登入失敗: " + error.message, "error");
+        });
+    });
+
+    // 導入事件
+    importBtn.addEventListener('click', async () => {
+        try {
+            importBtn.disabled = true;
+            importBtn.textContent = '導入中...';
+            
+            // 寫入 2026-06
+            showStatus("正在導入 2026-06 班表...", "");
+            await setDoc(doc(db, "schedules", "2026-06"), {
+                ni: NI_DATA['2026-06'],
+                evt: ALL_SCHEDULES['2026-06']
+            });
+
+            // 寫入 2026-07
+            showStatus("正在導入 2026-07 班表...", "");
+            await setDoc(doc(db, "schedules", "2026-07"), {
+                ni: NI_DATA['2026-07'],
+                evt: ALL_SCHEDULES['2026-07']
+            });
+
+            showStatus("🎉 所有班表資料成功導入雲端資料庫！", "success");
+        } catch (error) {
+            console.error("導入失敗:", error);
+            showStatus("❌ 導入失敗：" + error.message, "error");
+        } finally {
+            importBtn.disabled = false;
+            importBtn.textContent = '🚀 開始導入雲端資料庫';
+        }
+    });
+
+    function showStatus(msg, type) {
+        statusBox.textContent = msg;
+        statusBox.className = "status " + type;
+    }
+</script>
+
+</body>
+</html>
