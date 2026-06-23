@@ -407,6 +407,16 @@
 </header>
 
 <main>
+  <!-- 管理員排班控制列 -->
+  <div id="admin-control-bar" style="display:none; justify-content:center; align-items:center; gap:12px; margin: 10px auto 25px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; max-width: 600px;">
+    <span style="font-weight: 700; color: var(--primary-color);">🔧 班表管理模式：</span>
+    <span id="admin-user-name" style="font-weight: 600; color: #475569;"></span>
+    <button id="toggleEditBtn" onclick="toggleEditMode()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: var(--primary-color); color: white; cursor: pointer;">🔧 開啟排班編輯</button>
+    <button id="saveEditBtn" onclick="saveAllSchedules()" style="display:none; padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #10b981; color: white; cursor: pointer;">💾 儲存修改</button>
+    <button id="cancelEditBtn" onclick="cancelEditMode()" style="display:none; padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer;">❌ 取消</button>
+    <button onclick="logoutAdmin()" style="padding: 4px 8px; font-size: 0.78rem; font-weight: 600; border-radius: 4px; border: none; background: none; color: #ef4444; cursor: pointer; text-decoration: underline;">登出</button>
+  </div>
+
   <div class="month-switcher">
     <button class="month-btn" id="prevBtn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-label" id="monthLabel"></div>
@@ -786,6 +796,8 @@ let db = null;
 let currentUser = null;
 let provider = null;
 
+let isEditMode = false;
+
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY") {
   try {
     firebase.initializeApp(firebaseConfig);
@@ -795,10 +807,56 @@ if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY")
     // 監聽登入狀態
     firebase.auth().onAuthStateChanged((user) => {
       currentUser = user;
+      updateAdminControlBar();
       render(); // 當登入狀態改變時，重新渲染畫面以更新編輯按鈕與介面
     });
   } catch (e) {
     console.error("Firebase 初始化與監聽失敗:", e);
+  }
+}
+
+function updateAdminControlBar() {
+  const bar = document.getElementById('admin-control-bar');
+  const nameSpan = document.getElementById('admin-user-name');
+  if (!bar) return;
+  
+  if (currentUser) {
+    bar.style.display = 'flex';
+    nameSpan.textContent = currentUser.displayName || currentUser.email;
+  } else {
+    bar.style.display = 'none';
+    isEditMode = false;
+    toggleEditUiState();
+  }
+}
+
+function toggleEditMode() {
+  isEditMode = true;
+  toggleEditUiState();
+  render();
+}
+
+function cancelEditMode() {
+  isEditMode = false;
+  toggleEditUiState();
+  render();
+}
+
+function toggleEditUiState() {
+  const toggleBtn = document.getElementById('toggleEditBtn');
+  const saveBtn = document.getElementById('saveEditBtn');
+  const cancelBtn = document.getElementById('cancelEditBtn');
+  
+  if (!toggleBtn || !saveBtn || !cancelBtn) return;
+  
+  if (isEditMode) {
+    toggleBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+  } else {
+    toggleBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
   }
 }
 
@@ -1644,6 +1702,7 @@ function renderNiTab(d) {
   root.appendChild(renderDsMriDaily(d.ds_mri_daily));
   root.appendChild(renderSaturday(d.saturday));
   if (d.picc) root.appendChild(renderPicc(d.picc));
+  root.appendChild(renderLeavesAndCoversEditorSection(d));
   root.appendChild(renderNotes(d.notes || ''));
   root.appendChild(renderHolidayEditorSection());
 }
@@ -1656,6 +1715,58 @@ function makeSection(icon, title, cls='') {
   h.textContent = `${icon} ${title}`;
   div.appendChild(h);
   return div;
+}
+
+function makeEditSelect(id, currentValue) {
+  return `<select id="${id}" style="width:100%; font-size:0.8rem; padding:2px;"><option value="">-</option>` + 
+    PEOPLE.map(p => `<option value="${p.name}" ${p.name === currentValue ? 'selected' : ''}>${p.name}</option>`).join('') + 
+    `</select>`;
+}
+
+function makeEditInput(id, currentValue) {
+  return `<input type="text" id="${id}" value="${currentValue || ''}" style="width:100%; font-size:0.8rem; padding:2px; box-sizing:border-box;">`;
+}
+
+function renderLeavesAndCoversEditorSection(d) {
+  if (!isEditMode) {
+    const f = document.createDocumentFragment();
+    return f;
+  }
+  
+  const sec = makeSection('⚙️', '請假與代班設定 (Leaves & Covers) — 僅在編輯模式顯示', 'full-width');
+  const container = document.createElement('div');
+  container.style.marginTop = '12px';
+  container.style.padding = '16px';
+  container.style.background = '#f1f5f9';
+  container.style.border = '1px solid #cbd5e1';
+  container.style.borderRadius = '8px';
+  container.style.fontSize = '0.88rem';
+  
+  // 1. 生成請假編輯 HTML
+  let leavesHtml = `<div style="margin-bottom: 20px;">
+    <div style="font-weight:700; color:#475569; margin-bottom:8px;">醫師請假日期設定 (請輸入半形逗號分隔日期，如 7/17, 7/18)：</div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">`;
+  
+  PEOPLE.forEach(p => {
+    const currentLeaves = d.leaves && d.leaves[p.name] ? d.leaves[p.name].join(', ') : '';
+    leavesHtml += `<div style="display:flex; align-items:center; gap:8px; background:white; padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0;">
+      <span style="font-weight:700; min-width:60px;">${p.name}：</span>
+      <input type="text" id="ni-leaves-${p.name}" value="${currentLeaves}" placeholder="如: 7/17, 7/18" style="flex:1; padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
+    </div>`;
+  });
+  leavesHtml += `</div></div>`;
+  
+  // 2. 生成代班 JSON 編輯 HTML
+  const currentCoversStr = d.covers ? JSON.stringify(d.covers, null, 2) : '{}';
+  const coversHtml = `<div>
+    <div style="font-weight:700; color:#475569; margin-bottom:4px;">代班規則設定 (Covers JSON 格式)：</div>
+    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">支援指定日期、請假醫師與被代班項目的對應（若整天由同一人代班，可以直接輸入醫師姓名）。</div>
+    <textarea id="ni-covers-json" style="width:100%; min-height:180px; font-family:monospace; font-size:0.8rem; padding:10px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; resize:vertical;">${currentCoversStr}</textarea>
+  </div>`;
+  
+  container.innerHTML = leavesHtml + coversHtml;
+  sec.appendChild(container);
+  return sec;
 }
 
 function renderAngio(data) {
@@ -1674,15 +1785,25 @@ function renderAngio(data) {
     </tr></thead>
     <tbody></tbody>`;
   const tbody = t.querySelector('tbody');
-  data.forEach(row => {
+  data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="dow">${row.dow}</td>
-      <td>${renderPerson(row.tp_dsa)}</td>
-      <td>${renderPerson(row.tp_tae)}</td>
-      <td>${renderPerson(row.ds_dsa)}</td>
-      <td>${renderPerson(row.ds_tae)}</td>
-      <td class="note-cell">${row.note}</td>`;
+    if (isEditMode) {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${makeEditSelect(`ni-angio-${idx}-tp_dsa`, row.tp_dsa)}</td>
+        <td>${makeEditSelect(`ni-angio-${idx}-tp_tae`, row.tp_tae)}</td>
+        <td>${makeEditSelect(`ni-angio-${idx}-ds_dsa`, row.ds_dsa)}</td>
+        <td>${makeEditSelect(`ni-angio-${idx}-ds_tae`, row.ds_tae)}</td>
+        <td>${makeEditInput(`ni-angio-${idx}-note`, row.note)}</td>`;
+    } else {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${renderPerson(row.tp_dsa)}</td>
+        <td>${renderPerson(row.tp_tae)}</td>
+        <td>${renderPerson(row.ds_dsa)}</td>
+        <td>${renderPerson(row.ds_tae)}</td>
+        <td class="note-cell">${row.note}</td>`;
+    }
     tbody.appendChild(tr);
   });
   
@@ -1708,13 +1829,21 @@ function renderErCt(data) {
       <th>備注</th>
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
-  data.forEach(row => {
+  data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="dow">${row.dow}</td>
-      <td>${renderPerson(row.tp)}</td>
-      <td>${renderPerson(row.ds)}</td>
-      <td class="note-cell">${row.note}</td>`;
+    if (isEditMode) {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${makeEditSelect(`ni-erct-${idx}-tp`, row.tp)}</td>
+        <td>${makeEditSelect(`ni-erct-${idx}-ds`, row.ds)}</td>
+        <td>${makeEditInput(`ni-erct-${idx}-note`, row.note)}</td>`;
+    } else {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${renderPerson(row.tp)}</td>
+        <td>${renderPerson(row.ds)}</td>
+        <td class="note-cell">${row.note}</td>`;
+    }
     tbody.appendChild(tr);
   });
 
@@ -1740,13 +1869,21 @@ function renderRoutineCt(data) {
       <th>備注</th>
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
-  data.forEach(row => {
+  data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${renderPerson(row.person)}</td>
-      <td style="text-align:center;font-weight:600;">${row.tp}</td>
-      <td style="text-align:center;font-weight:600;">${row.ds}</td>
-      <td class="note-cell">${row.note}</td>`;
+    if (isEditMode) {
+      tr.innerHTML = `
+        <td>${renderPerson(row.person)}</td>
+        <td>${makeEditInput(`ni-ct-${idx}-tp`, row.tp)}</td>
+        <td>${makeEditInput(`ni-ct-${idx}-ds`, row.ds)}</td>
+        <td>${makeEditInput(`ni-ct-${idx}-note`, row.note)}</td>`;
+    } else {
+      tr.innerHTML = `
+        <td>${renderPerson(row.person)}</td>
+        <td style="text-align:center;font-weight:600;">${row.tp}</td>
+        <td style="text-align:center;font-weight:600;">${row.ds}</td>
+        <td class="note-cell">${row.note}</td>`;
+    }
     tbody.appendChild(tr);
   });
 
@@ -1779,8 +1916,15 @@ function renderMri(data) {
       ? `<span class="loc loc-tp">台北</span>`
       : `<span class="loc loc-ds">淡水</span>`;
     let cells = `<td class="dow">${label}</td>`;
-    data[side].forEach(r => {
-      cells += `<td>${renderPerson(r.person, false)}${r.note ? noteHtml(r.note) : ''}</td>`;
+    data[side].forEach((r, idx) => {
+      if (isEditMode) {
+        cells += `<td>
+          ${makeEditInput(`ni-mri-${side}-${idx}-person`, r.person)}
+          <div style="margin-top:4px;">${makeEditInput(`ni-mri-${side}-${idx}-note`, r.note)}</div>
+        </td>`;
+      } else {
+        cells += `<td>${renderPerson(r.person, false)}${r.note ? noteHtml(r.note) : ''}</td>`;
+      }
     });
     tr.innerHTML = cells;
     tbody.appendChild(tr);
@@ -1807,12 +1951,19 @@ function renderDsMriDaily(data) {
       <th>備注</th>
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
-  data.forEach(row => {
+  data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="dow">${row.dow}</td>
-      <td>${renderPerson(row.person)}</td>
-      <td class="note-cell">${row.note}</td>`;
+    if (isEditMode) {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${makeEditSelect(`ni-dsmri-${idx}-person`, row.person)}</td>
+        <td>${makeEditInput(`ni-dsmri-${idx}-note`, row.note)}</td>`;
+    } else {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${renderPerson(row.person)}</td>
+        <td class="note-cell">${row.note}</td>`;
+    }
     tbody.appendChild(tr);
   });
 
@@ -1829,14 +1980,21 @@ function renderSaturday(data) {
   const sec = makeSection('📅', '週六班（北淡 MRI + 急 CT）');
   const list = document.createElement('div');
   list.className = 'sat-list';
-  data.forEach(row => {
+  data.forEach((row, idx) => {
     const card = document.createElement('div');
     card.className = 'sat-card';
-    const pc = personCls(row.person);
-    card.innerHTML = `
-      <div class="sat-date">${row.date}</div>
-      <div class="sat-person person ${pc}">${row.person}</div>
-      ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
+    if (isEditMode) {
+      card.innerHTML = `
+        <div class="sat-date">${row.date}</div>
+        <div style="margin-top:4px; width:100%;">${makeEditSelect(`ni-sat-${idx}-person`, row.person)}</div>
+        <div style="margin-top:4px; width:100%;">${makeEditInput(`ni-sat-${idx}-note`, row.note)}</div>`;
+    } else {
+      const pc = personCls(row.person);
+      card.innerHTML = `
+        <div class="sat-date">${row.date}</div>
+        <div class="sat-person person ${pc}">${row.person}</div>
+        ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
+    }
     list.appendChild(card);
   });
   sec.appendChild(list);
@@ -1856,13 +2014,21 @@ function renderPicc(data) {
       <th>備注</th>
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
-  data.forEach(row => {
+  data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="dow">${row.dow}</td>
-      <td>${renderPerson(row.tp)}</td>
-      <td>${renderPerson(row.ds)}</td>
-      <td class="note-cell">${row.note}</td>`;
+    if (isEditMode) {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${makeEditSelect(`ni-picc-${idx}-tp`, row.tp)}</td>
+        <td>${makeEditSelect(`ni-picc-${idx}-ds`, row.ds)}</td>
+        <td>${makeEditInput(`ni-picc-${idx}-note`, row.note)}</td>`;
+    } else {
+      tr.innerHTML = `
+        <td class="dow">${row.dow}</td>
+        <td>${renderPerson(row.tp)}</td>
+        <td>${renderPerson(row.ds)}</td>
+        <td class="note-cell">${row.note}</td>`;
+    }
     tbody.appendChild(tr);
   });
 
@@ -2113,6 +2279,213 @@ async function saveNotes() {
   }
 }
 
+async function saveAllSchedules() {
+  const key = MONTH_KEYS[currentIdx];
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+  
+  const saveBtn = document.getElementById('saveEditBtn');
+  
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "儲存中...";
+    }
+    
+    // 1. 收集日班 (NI) 資料
+    // Angio (5 days)
+    const angio = [];
+    for (let i = 0; i < 5; i++) {
+      angio.push({
+        dow: ['週一', '週二', '週三', '週四', '週五'][i],
+        tp_dsa: document.getElementById(`ni-angio-${i}-tp_dsa`).value,
+        tp_tae: document.getElementById(`ni-angio-${i}-tp_tae`).value,
+        ds_dsa: document.getElementById(`ni-angio-${i}-ds_dsa`).value,
+        ds_tae: document.getElementById(`ni-angio-${i}-ds_tae`).value,
+        note: document.getElementById(`ni-angio-${i}-note`).value
+      });
+    }
+    
+    // ERCT (5 days)
+    const erct = [];
+    for (let i = 0; i < 5; i++) {
+      erct.push({
+        dow: ['週一', '週二', '週三', '週四', '週五'][i],
+        tp: document.getElementById(`ni-erct-${i}-tp`).value,
+        ds: document.getElementById(`ni-erct-${i}-ds`).value,
+        note: document.getElementById(`ni-erct-${i}-note`).value
+      });
+    }
+    
+    // Routine CT
+    const routine_ct = [];
+    const originalCt = NI_DATA[key].routine_ct || [];
+    originalCt.forEach((row, i) => {
+      routine_ct.push({
+        person: row.person,
+        tp: document.getElementById(`ni-ct-${i}-tp`).value,
+        ds: document.getElementById(`ni-ct-${i}-ds`).value,
+        note: document.getElementById(`ni-ct-${i}-note`).value
+      });
+    });
+    
+    // MRI (tp and ds)
+    const mri = { tp: [], ds: [] };
+    ['tp', 'ds'].forEach(side => {
+      for (let i = 0; i < 5; i++) {
+        mri[side].push({
+          week: `W${i+1}`,
+          person: document.getElementById(`ni-mri-${side}-${i}-person`).value,
+          note: document.getElementById(`ni-mri-${side}-${i}-note`).value
+        });
+      }
+    });
+    
+    // Ds MRI Daily (5 days)
+    const ds_mri_daily = [];
+    for (let i = 0; i < 5; i++) {
+      ds_mri_daily.push({
+        dow: ['週一', '週二', '週三', '週四', '週五'][i],
+        person: document.getElementById(`ni-dsmri-${i}-person`).value,
+        note: document.getElementById(`ni-dsmri-${i}-note`).value
+      });
+    }
+    
+    // Saturday (varies)
+    const saturday = [];
+    const originalSat = NI_DATA[key].saturday || [];
+    originalSat.forEach((row, i) => {
+      saturday.push({
+        date: row.date,
+        person: document.getElementById(`ni-sat-${i}-person`).value,
+        note: document.getElementById(`ni-sat-${i}-note`).value
+      });
+    });
+    
+    // PICC (5 days)
+    const picc = [];
+    for (let i = 0; i < 5; i++) {
+      picc.push({
+        dow: ['週一', '週二', '週三', '週四', '週五'][i],
+        tp: document.getElementById(`ni-picc-${i}-tp`).value,
+        ds: document.getElementById(`ni-picc-${i}-ds`).value,
+        note: document.getElementById(`ni-picc-${i}-note`).value
+      });
+    }
+    
+    // Leaves
+    const leaves = {};
+    PEOPLE.forEach(p => {
+      const inputEl = document.getElementById(`ni-leaves-${p.name}`);
+      if (inputEl) {
+        const val = inputEl.value;
+        const parts = val.split(',').map(x => x.trim()).filter(Boolean);
+        if (parts.length > 0) {
+          leaves[p.name] = parts;
+        }
+      }
+    });
+    
+    // Covers (JSON Parsing)
+    let covers = {};
+    const coversEl = document.getElementById('ni-covers-json');
+    if (coversEl) {
+      try {
+        covers = JSON.parse(coversEl.value);
+      } catch (e) {
+        alert("代班規則的 JSON 格式錯誤，請檢查是否有遺漏引號、逗號或括號！\n錯誤原因: " + e.message);
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "💾 儲存修改";
+        }
+        return;
+      }
+    }
+    
+    // Holidays
+    const holidays = [];
+    const holInput = document.getElementById('holidayInput');
+    if (holInput) {
+      holInput.value.split(',').forEach(p => {
+        p = p.trim();
+        if (!p) return;
+        const match = p.match(/^(\d{1,2})\/(\d{1,2})$/);
+        if (match) {
+          holidays.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
+        }
+      });
+    } else {
+      holidays.push(...(NI_DATA[key].holidays || []));
+    }
+    
+    // Notes
+    const notesInput = document.getElementById('notesInput');
+    const notes = notesInput ? notesInput.value : (NI_DATA[key].notes || '');
+    
+    // 2. 收集中風值班 (EVT) 資料
+    const [yearStr, monthStr] = key.split('-');
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    const evt = {};
+    for (let day = 1; day <= daysInMonth; day++) {
+      const tpEl = document.getElementById(`evt-tp-${day}`);
+      const dsEl = document.getElementById(`evt-ds-${day}`);
+      if (tpEl && dsEl) {
+        const tpVal = tpEl.value;
+        const dsVal = dsEl.value;
+        if (tpVal || dsVal) {
+          evt[day] = {
+            tp: tpVal || '',
+            ds: dsVal || ''
+          };
+        }
+      }
+    }
+    
+    // 3. 上傳雲端 Firestore
+    const ni = {
+      angio,
+      erct,
+      routine_ct,
+      mri,
+      ds_mri_daily,
+      saturday,
+      picc,
+      leaves,
+      covers,
+      holidays,
+      notes
+    };
+    
+    await db.collection("schedules").doc(key).set({
+      ni,
+      evt
+    });
+    
+    // 4. 同步更新記憶體
+    NI_DATA[key] = ni;
+    ALL_SCHEDULES[key] = evt;
+    
+    // 退出編輯模式
+    isEditMode = false;
+    toggleEditUiState();
+    render();
+    alert("🎉 整個班表已成功儲存並同步至雲端資料庫！");
+  } catch (error) {
+    console.error("儲存班表失敗:", error);
+    alert("❌ 儲存失敗：" + error.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 儲存修改";
+    }
+  }
+}
+
 // ════════════════════════════════════════════════════
 //  中風取栓班表 (EVT) Tab 渲染
 // ════════════════════════════════════════════════════
@@ -2190,19 +2563,71 @@ function renderEvtCalendar() {
     }
     cell.appendChild(numEl);
 
-    const duty = schedule[day];
-    if (duty) {
-      const name = (typeof duty === 'string') ? duty : duty.tp;
-      if (name) {
-        const p = personByName[name];
-        if (p) {
-          const list = document.createElement('div');
-          list.className = 'oncall-list';
-          const chip = document.createElement('div');
-          chip.className = `oncall-chip ${p.cls}`;
-          if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
-          chip.textContent = name;
-          list.appendChild(chip);
+    if (isEditMode) {
+      const editDiv = document.createElement('div');
+      editDiv.style.display = 'flex';
+      editDiv.style.flexDirection = 'column';
+      editDiv.style.gap = '4px';
+      editDiv.style.marginTop = '4px';
+      
+      const duty = schedule[day] || {};
+      const currentTp = (typeof duty === 'string') ? duty : (duty.tp || '');
+      const currentDs = (typeof duty === 'object') ? (duty.ds || '') : '';
+      
+      // 台北選單
+      const selectTp = document.createElement('select');
+      selectTp.id = `evt-tp-${day}`;
+      selectTp.style.fontSize = '0.72rem';
+      selectTp.style.padding = '1px 2px';
+      selectTp.style.width = '100%';
+      selectTp.innerHTML = `<option value="">北: -</option>` + PEOPLE.map(p => `<option value="${p.name}" ${p.name === currentTp ? 'selected' : ''}>北: ${p.name}</option>`).join('');
+      editDiv.appendChild(selectTp);
+      
+      // 淡水選單
+      const selectDs = document.createElement('select');
+      selectDs.id = `evt-ds-${day}`;
+      selectDs.style.fontSize = '0.72rem';
+      selectDs.style.padding = '1px 2px';
+      selectDs.style.width = '100%';
+      selectDs.innerHTML = `<option value="">淡: -</option>` + PEOPLE.map(p => `<option value="${p.name}" ${p.name === currentDs ? 'selected' : ''}>淡: ${p.name}</option>`).join('');
+      editDiv.appendChild(selectDs);
+      
+      cell.appendChild(editDiv);
+    } else {
+      const duty = schedule[day];
+      if (duty) {
+        const list = document.createElement('div');
+        list.className = 'oncall-list';
+        list.style.display = 'flex';
+        list.style.flexDirection = 'column';
+        list.style.gap = '3px';
+        
+        const tpName = (typeof duty === 'string') ? duty : duty.tp;
+        const dsName = (typeof duty === 'object') ? duty.ds : '';
+        
+        if (tpName) {
+          const p = personByName[tpName];
+          if (p) {
+            const chip = document.createElement('div');
+            chip.className = `oncall-chip ${p.cls}`;
+            if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
+            chip.textContent = `北: ${tpName}`;
+            list.appendChild(chip);
+          }
+        }
+        
+        if (dsName) {
+          const p = personByName[dsName];
+          if (p) {
+            const chip = document.createElement('div');
+            chip.className = `oncall-chip ${p.cls}`;
+            if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
+            chip.textContent = `淡: ${dsName}`;
+            list.appendChild(chip);
+          }
+        }
+        
+        if (list.children.length > 0) {
           cell.appendChild(list);
         }
       }
