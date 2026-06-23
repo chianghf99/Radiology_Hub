@@ -457,6 +457,7 @@
 
 <!-- Firebase SDK 相容版 UMD 引入 -->
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -782,12 +783,22 @@ const firebaseConfig = {
 };
 
 let db = null;
+let currentUser = null;
+let provider = null;
+
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY") {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
+    provider = new firebase.auth.GoogleAuthProvider();
+    
+    // 監聽登入狀態
+    firebase.auth().onAuthStateChanged((user) => {
+      currentUser = user;
+      render(); // 當登入狀態改變時，重新渲染畫面以更新編輯按鈕與介面
+    });
   } catch (e) {
-    console.error("Firebase 初始化失敗:", e);
+    console.error("Firebase 初始化與監聽失敗:", e);
   }
 }
 
@@ -1633,7 +1644,8 @@ function renderNiTab(d) {
   root.appendChild(renderDsMriDaily(d.ds_mri_daily));
   root.appendChild(renderSaturday(d.saturday));
   if (d.picc) root.appendChild(renderPicc(d.picc));
-  if (d.notes) root.appendChild(renderNotes(d.notes));
+  root.appendChild(renderNotes(d.notes || ''));
+  root.appendChild(renderHolidayEditorSection());
 }
 
 function makeSection(icon, title, cls='') {
@@ -1863,11 +1875,242 @@ function renderPicc(data) {
   return sec;
 }
 
-function renderNotes(text) {
-  const div = document.createElement('div');
-  div.className = 'notes-banner full-width';
-  div.innerHTML = `<strong>⚠️ 本月備注</strong>${text}`;
-  return div;
+function renderNotes(notes) {
+  const sec = makeSection('📝', '本月備註');
+  sec.className = 'section-card full-width';
+  
+  const container = document.createElement('div');
+  container.style.marginTop = '12px';
+  container.style.padding = '16px';
+  container.style.background = '#fff8e1';
+  container.style.border = '1px solid #ffe082';
+  container.style.borderRadius = '8px';
+  container.style.fontSize = '0.88rem';
+  
+  const formattedNotes = notes ? notes.replace(/\n/g, '<br>') : '<span style="color:#94a3b8; font-style:italic;">本月無備註</span>';
+  
+  if (!currentUser) {
+    container.innerHTML = `<div style="white-space:pre-line; line-height:1.6; color:#5d4037;">${formattedNotes}</div>`;
+  } else {
+    container.innerHTML = `
+      <div id="notesDisplayMode">
+        <div style="white-space:pre-line; line-height:1.6; color:#5d4037; margin-bottom:12px;">${formattedNotes}</div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button onclick="showNotesEditMode()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:none; background:var(--primary-color); color:white; font-weight:600; cursor:pointer;">編輯備註</button>
+        </div>
+      </div>
+      
+      <div id="notesEditMode" style="display:none; flex-direction:column; gap:10px;">
+        <div style="font-weight:700; color:#475569;">編輯本月備註：</div>
+        <textarea id="notesInput" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; min-height:100px; font-size:0.88rem; box-sizing:border-box; font-family:inherit; resize:vertical;">${notes || ''}</textarea>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
+          <button onclick="hideNotesEditMode()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:1px solid #cbd5e1; background:white; color:#475569; font-weight:600; cursor:pointer;">取消</button>
+          <button id="saveNotesBtn" onclick="saveNotes()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:none; background:var(--primary-color); color:white; font-weight:600; cursor:pointer;">儲存</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  sec.appendChild(container);
+  return sec;
+}
+
+function renderHolidayEditorSection() {
+  const key = MONTH_KEYS[currentIdx];
+  const d = NI_DATA[key];
+  const activeHolidays = (d && d.holidays) ? d.holidays : [];
+  
+  const sec = makeSection('📅', '醫院休假日設定 (Hospital Holidays)');
+  sec.className = 'section-card full-width';
+  
+  const container = document.createElement('div');
+  container.style.marginTop = '12px';
+  container.style.padding = '16px';
+  container.style.background = '#f8fafc';
+  container.style.border = '1px solid #e2e8f0';
+  container.style.borderRadius = '8px';
+  container.style.fontSize = '0.88rem';
+  
+  const displayList = activeHolidays.length > 0 
+    ? activeHolidays.map(h => `<span class="holiday-pill" style="display:inline-block; background:#fee2e2; color:#ef4444; padding:2px 8px; border-radius:12px; margin-right:6px; font-weight:600; font-size:0.8rem;">${h}</span>`).join('')
+    : '<span style="color:#94a3b8; font-style:italic;">本月無設定休假日</span>';
+    
+  if (!currentUser) {
+    // 未登入狀態：僅顯示，不允許編輯
+    container.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <span style="font-weight:700; color:#475569; margin-right:8px;">本月休假日：</span>
+          <div style="display:inline-block; vertical-align:middle;">${displayList}</div>
+        </div>
+        <button onclick="loginAdmin()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:1px solid #cbd5e1; background:white; color:#475569; font-weight:600; cursor:pointer;">🔑 登入編輯</button>
+      </div>
+    `;
+  } else {
+    // 已登入狀態：解鎖編輯
+    container.innerHTML = `
+      <div id="holidayDisplayMode" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <span style="font-weight:700; color:#475569; margin-right:8px;">本月休假日：</span>
+          <div style="display:inline-block; vertical-align:middle;">${displayList}</div>
+        </div>
+        <div>
+          <span style="font-size:0.75rem; color:#64748b; margin-right:10px;">管理者：${currentUser.displayName || currentUser.email}</span>
+          <button onclick="showHolidayEditMode()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:none; background:var(--primary-color); color:white; font-weight:600; cursor:pointer;">編輯休假日</button>
+          <button onclick="logoutAdmin()" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; border:none; background:none; color:#ef4444; cursor:pointer; text-decoration:underline; font-weight:600;">登出</button>
+        </div>
+      </div>
+      
+      <div id="holidayEditMode" style="display:none; flex-direction:column; gap:10px;">
+        <div style="font-weight:700; color:#475569;">編輯本月休假日：</div>
+        <div style="font-size:0.75rem; color:#64748b; margin-top:-6px;">請輸入日期，以半形逗號分隔（例如: 7/1, 7/2, 7/21）</div>
+        <input type="text" id="holidayInput" value="${activeHolidays.join(', ')}" placeholder="例如: 7/1, 7/2" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box;">
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
+          <button onclick="hideHolidayEditMode()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:1px solid #cbd5e1; background:white; color:#475569; font-weight:600; cursor:pointer;">取消</button>
+          <button id="saveHolidayBtn" onclick="saveHolidays()" style="padding:4px 12px; font-size:0.75rem; border-radius:4px; border:none; background:var(--primary-color); color:white; font-weight:600; cursor:pointer;">儲存</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  sec.appendChild(container);
+  return sec;
+}
+
+// ════════════════════════════════════════════════════
+//  管理權限與雲端寫入事件
+// ════════════════════════════════════════════════════
+function loginAdmin() {
+  if (typeof firebase !== 'undefined' && provider) {
+    firebase.auth().signInWithPopup(provider).catch(e => alert("登入失敗: " + e.message));
+  }
+}
+
+function logoutAdmin() {
+  if (typeof firebase !== 'undefined') {
+    firebase.auth().signOut().catch(e => console.error("登出失敗:", e));
+  }
+}
+
+function showHolidayEditMode() {
+  const display = document.getElementById('holidayDisplayMode');
+  const edit = document.getElementById('holidayEditMode');
+  if (display && edit) {
+    display.style.display = 'none';
+    edit.style.display = 'flex';
+    document.getElementById('holidayInput').focus();
+  }
+}
+
+function hideHolidayEditMode() {
+  const display = document.getElementById('holidayDisplayMode');
+  const edit = document.getElementById('holidayEditMode');
+  if (display && edit) {
+    display.style.display = 'flex';
+    edit.style.display = 'none';
+  }
+}
+
+function showNotesEditMode() {
+  const display = document.getElementById('notesDisplayMode');
+  const edit = document.getElementById('notesEditMode');
+  if (display && edit) {
+    display.style.display = 'none';
+    edit.style.display = 'flex';
+    document.getElementById('notesInput').focus();
+  }
+}
+
+function hideNotesEditMode() {
+  const display = document.getElementById('notesDisplayMode');
+  const edit = document.getElementById('notesEditMode');
+  if (display && edit) {
+    display.style.display = 'block';
+    edit.style.display = 'none';
+  }
+}
+
+async function saveHolidays() {
+  const key = MONTH_KEYS[currentIdx];
+  const inputVal = document.getElementById('holidayInput').value;
+  const rawParts = inputVal.split(',');
+  const parsed = [];
+  
+  rawParts.forEach(p => {
+    p = p.trim();
+    if (!p) return;
+    const match = p.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (match) {
+      parsed.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
+    }
+  });
+
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+
+  const saveBtn = document.getElementById('saveHolidayBtn');
+  try {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "儲存中...";
+    
+    // 更新 Firestore 中的 ni.holidays
+    await db.collection("schedules").doc(key).update({
+      "ni.holidays": parsed
+    });
+    
+    // 同步更新本地記憶體並重新渲染
+    if (NI_DATA[key]) {
+      NI_DATA[key].holidays = parsed;
+    }
+    render();
+    alert("休假日已成功同步至雲端！");
+  } catch (error) {
+    console.error("雲端儲存失敗:", error);
+    alert("儲存失敗：" + error.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "儲存";
+    }
+  }
+}
+
+async function saveNotes() {
+  const key = MONTH_KEYS[currentIdx];
+  const notesVal = document.getElementById('notesInput').value;
+
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+
+  const saveBtn = document.getElementById('saveNotesBtn');
+  try {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "儲存中...";
+
+    // 更新 Firestore 中的 ni.notes
+    await db.collection("schedules").doc(key).update({
+      "ni.notes": notesVal
+    });
+
+    // 同步更新本地記憶體並重新渲染
+    if (NI_DATA[key]) {
+      NI_DATA[key].notes = notesVal;
+    }
+    render();
+    alert("備註已成功同步至雲端！");
+  } catch (error) {
+    console.error("雲端儲存失敗:", error);
+    alert("儲存失敗：" + error.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "儲存";
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════
