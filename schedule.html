@@ -1322,12 +1322,27 @@ function toggleAutoFilter(checked) {
   render();
 }
 
+function getLogicalDate() {
+  const now = new Date();
+  const hour = now.getHours();
+  const min = now.getMinutes();
+  const timeInMinutes = hour * 60 + min;
+  
+  const logicalDate = new Date(now.getTime());
+  // 凌晨 00:00 到 08:30 之間，屬於前一天的 On-Call 時段延續，邏輯日期設為昨天
+  if (timeInMinutes < 8 * 60 + 30) {
+    logicalDate.setDate(logicalDate.getDate() - 1);
+  }
+  return logicalDate;
+}
+
 function getAutoFilterStatus(targetDate) {
   if (!autoFilterTime) return 'show_all';
   
   const now = new Date();
-  // 時段篩選僅適用於今天 (或目前系統時間所屬日期)
-  if (targetDate.toDateString() !== now.toDateString()) {
+  const logicalDate = getLogicalDate();
+  // 時段篩選僅適用於邏輯上的今天
+  if (targetDate.toDateString() !== logicalDate.toDateString()) {
     return 'show_all';
   }
   
@@ -1801,7 +1816,7 @@ function noteHtml(note) {
 //  今日卡片渲染
 // ════════════════════════════════════════════════════
 function renderTodayCard(key) {
-  const targetDate = new Date();
+  const targetDate = getLogicalDate();
   let titleText = '今日分配';
   if (todayCardTab === 'tomorrow') {
     targetDate.setDate(targetDate.getDate() + 1);
