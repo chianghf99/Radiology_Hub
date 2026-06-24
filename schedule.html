@@ -1552,10 +1552,21 @@ async function loadTemplatesList() {
   if (!selectEl) return;
   
   try {
-    const querySnapshot = await db.collection("templates").get();
+    const querySnapshot = await db.collection("schedules").get();
     selectEl.innerHTML = "";
     
-    if (querySnapshot.empty) {
+    let hasTemplates = false;
+    const templates = [];
+    
+    querySnapshot.forEach((doc) => {
+      if (doc.id.startsWith("template:")) {
+        const templateName = doc.id.substring("template:".length);
+        templates.push(templateName);
+        hasTemplates = true;
+      }
+    });
+    
+    if (!hasTemplates) {
       const opt = document.createElement('option');
       opt.value = "";
       opt.textContent = "無現有自訂範本";
@@ -1568,10 +1579,10 @@ async function loadTemplatesList() {
     defaultOpt.textContent = "-- 請選擇範本 --";
     selectEl.appendChild(defaultOpt);
     
-    querySnapshot.forEach((doc) => {
+    templates.forEach((name) => {
       const opt = document.createElement('option');
-      opt.value = doc.id;
-      opt.textContent = doc.id;
+      opt.value = name;
+      opt.textContent = name;
       selectEl.appendChild(opt);
     });
   } catch (error) {
@@ -1601,9 +1612,11 @@ async function saveCurrentAsTemplate() {
     return;
   }
   
+  const docId = `template:${trimmedName}`;
+  
   let isOverwrite = true;
   try {
-    const docSnap = await db.collection("templates").doc(trimmedName).get();
+    const docSnap = await db.collection("schedules").doc(docId).get();
     if (docSnap.exists) {
       isOverwrite = confirm(`範本「${trimmedName}」已存在。確定要覆寫它嗎？`);
       if (!isOverwrite) return;
@@ -1723,7 +1736,7 @@ async function saveCurrentAsTemplate() {
       };
     }
     
-    await db.collection("templates").doc(trimmedName).set(templateData);
+    await db.collection("schedules").doc(docId).set(templateData);
     alert(`自訂範本「${trimmedName}」儲存成功！`);
     
     await loadTemplatesList();
@@ -1757,8 +1770,10 @@ async function applyTemplateToCurrent() {
     return;
   }
   
+  const docId = `template:${selectedTemplate}`;
+  
   try {
-    const docSnap = await db.collection("templates").doc(selectedTemplate).get();
+    const docSnap = await db.collection("schedules").doc(docId).get();
     if (!docSnap.exists) {
       alert(`找不到指定的範本「${selectedTemplate}」！`);
       return;
@@ -1821,8 +1836,10 @@ async function deleteSelectedTemplate() {
   const confirmDelete = confirm(`確定要「永久刪除」自訂範本「${selectedTemplate}」嗎？此操作無法還原。`);
   if (!confirmDelete) return;
   
+  const docId = `template:${selectedTemplate}`;
+  
   try {
-    await db.collection("templates").doc(selectedTemplate).delete();
+    await db.collection("schedules").doc(docId).delete();
     alert(`已成功刪除範本「${selectedTemplate}」！`);
     await loadTemplatesList();
   } catch (error) {
@@ -1861,6 +1878,7 @@ async function loadCloudSchedules() {
     let hasNewData = false;
     querySnapshot.forEach((doc) => {
       const monthKey = doc.id; // 例如 '2026-07'
+      if (monthKey.startsWith("template")) return;
       const data = doc.data();
       if (data.ni) {
         NI_DATA[monthKey] = data.ni;
