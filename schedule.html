@@ -548,11 +548,14 @@
         <!-- 3. 新增月份 -->
         <div class="modal-section">
           <label class="modal-label">➕ 建立新月份班表</label>
-          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">自動在雲端 Firestore 初始化目標月份的空白班表模板：</div>
-          <div style="display:flex; gap:8px;">
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">自動在雲端 Firestore 初始化目標月份的班表模板：</div>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
             <input type="text" id="newMonthInput" placeholder="例如: 2026-08" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; flex:1; font-size:0.88rem; box-sizing:border-box;">
             <button onclick="handleCreateNewMonth()" style="padding:8px 16px; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">建立</button>
           </div>
+          <label style="font-size:0.75rem; color:#475569; display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="copyPrevMonthCheckbox" checked style="cursor:pointer;"> 帶入前一個月份的工作分配（備註除外）
+          </label>
         </div>
       </div>
     </div>
@@ -1202,6 +1205,44 @@ async function handleCreateNewMonth() {
     holidays: [],
     notes: ''
   };
+
+  // 判斷是否帶入前一個月份的工作分配（備註除外）
+  const copyCheckbox = document.getElementById('copyPrevMonthCheckbox');
+  const shouldCopy = copyCheckbox ? copyCheckbox.checked : false;
+  
+  if (shouldCopy) {
+    let prevY = year;
+    let prevM = month - 1;
+    if (prevM === 0) {
+      prevM = 12;
+      prevY = year - 1;
+    }
+    const prevMonthKey = `${prevY}-${String(prevM).padStart(2, '0')}`;
+    const prevData = NI_DATA[prevMonthKey];
+    
+    if (prevData) {
+      const cleanNote = (arr) => {
+        if (!arr) return [];
+        return arr.map(item => {
+          const copy = { ...item };
+          if ('note' in copy) copy.note = '';
+          return copy;
+        });
+      };
+      
+      if (prevData.angio) ni.angio = cleanNote(prevData.angio);
+      if (prevData.erct) ni.erct = cleanNote(prevData.erct);
+      if (prevData.routine_ct) ni.routine_ct = cleanNote(prevData.routine_ct);
+      if (prevData.mri) {
+        ni.mri = {
+          tp: cleanNote(prevData.mri.tp),
+          ds: cleanNote(prevData.mri.ds)
+        };
+      }
+      if (prevData.ds_mri_daily) ni.ds_mri_daily = cleanNote(prevData.ds_mri_daily);
+      if (prevData.picc) ni.picc = cleanNote(prevData.picc);
+    }
+  }
   
   const evt = {};
   
