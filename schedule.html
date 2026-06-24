@@ -561,10 +561,21 @@
         <!-- 4. 排班範本管理 -->
         <div class="modal-section" style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 16px;">
           <label class="modal-label">📋 排班範本管理</label>
-          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">您可以將當前月份的排班儲存為範本，或將已儲存的範本手動套用到目前月份（排除備註）。</div>
-          <div style="display:flex; gap:8px;">
-            <button onclick="saveCurrentAsTemplate()" style="flex:1; padding:8px; font-weight:700; border-radius:6px; border: 1px solid var(--primary-color); background:none; color:var(--primary-color); cursor:pointer;">💾 儲存當前為範本</button>
-            <button onclick="applyTemplateToCurrent()" style="flex:1; padding:8px; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">📋 套用範本到本月</button>
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">您可以將當前排班儲存為多個自訂範本，並隨時選取套用至目前月份（保留原有備註）。</div>
+          
+          <div style="margin-bottom:12px;">
+            <label style="font-size:0.75rem; color:#475569; display:block; margin-bottom:4px;">選擇現有範本：</label>
+            <select id="templateSelect" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; background:white; color:#1e293b; cursor:pointer;">
+              <option value="">載入範本中...</option>
+            </select>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+              <button onclick="saveCurrentAsTemplate()" style="flex:1; padding:8px; font-size:0.82rem; font-weight:700; border-radius:6px; border: 1px solid var(--primary-color); background:none; color:var(--primary-color); cursor:pointer;">💾 儲存當前為新範本</button>
+              <button onclick="applyTemplateToCurrent()" style="flex:1; padding:8px; font-size:0.82rem; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">📋 套用所選範本</button>
+            </div>
+            <button onclick="deleteSelectedTemplate()" style="padding:8px; font-size:0.82rem; font-weight:700; border-radius:6px; border: 1px solid #ef4444; background:none; color:#ef4444; cursor:pointer;">🗑️ 刪除所選範本</button>
           </div>
         </div>
       </div>
@@ -1015,6 +1026,7 @@ function updateModalAuthStatus() {
     }
     if (adminFunctionsDiv) {
       adminFunctionsDiv.style.display = 'block';
+      loadTemplatesList();
     }
     
     // 更新排班編輯按鈕文字
@@ -1534,6 +1546,40 @@ function applyTemplateToMemory(key, templateData) {
   }
 }
 
+async function loadTemplatesList() {
+  if (!db) return;
+  const selectEl = document.getElementById('templateSelect');
+  if (!selectEl) return;
+  
+  try {
+    const querySnapshot = await db.collection("templates").get();
+    selectEl.innerHTML = "";
+    
+    if (querySnapshot.empty) {
+      const opt = document.createElement('option');
+      opt.value = "";
+      opt.textContent = "無現有自訂範本";
+      selectEl.appendChild(opt);
+      return;
+    }
+    
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = "";
+    defaultOpt.textContent = "-- 請選擇範本 --";
+    selectEl.appendChild(defaultOpt);
+    
+    querySnapshot.forEach((doc) => {
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      opt.textContent = doc.id;
+      selectEl.appendChild(opt);
+    });
+  } catch (error) {
+    console.error("載入範本列表失敗:", error);
+    selectEl.innerHTML = '<option value="">載入失敗</option>';
+  }
+}
+
 async function saveCurrentAsTemplate() {
   if (!db) {
     alert("雲端資料庫尚未初始化");
@@ -1546,6 +1592,24 @@ async function saveCurrentAsTemplate() {
     return;
   }
   
+  const templateName = prompt("請輸入新範本的名稱（例如：常規班 A）：");
+  if (templateName === null) return;
+  
+  const trimmedName = templateName.trim();
+  if (!trimmedName) {
+    alert("範本名稱不可為空值！");
+    return;
+  }
+  
+  let isOverwrite = true;
+  try {
+    const docSnap = await db.collection("templates").doc(trimmedName).get();
+    if (docSnap.exists) {
+      isOverwrite = confirm(`範本「${trimmedName}」已存在。確定要覆寫它嗎？`);
+      if (!isOverwrite) return;
+    }
+  } catch (e) {}
+
   let templateData = {};
   const cleanNote = (arr) => {
     if (!arr) return [];
@@ -1659,8 +1723,14 @@ async function saveCurrentAsTemplate() {
       };
     }
     
-    await db.collection("schedules").doc("template").set(templateData);
-    alert("排班範本儲存成功！");
+    await db.collection("templates").doc(trimmedName).set(templateData);
+    alert(`自訂範本「${trimmedName}」儲存成功！`);
+    
+    await loadTemplatesList();
+    const selectEl = document.getElementById('templateSelect');
+    if (selectEl) {
+      selectEl.value = trimmedName;
+    }
   } catch (error) {
     alert("儲存範本失敗: " + error.message);
   }
@@ -1678,10 +1748,19 @@ async function applyTemplateToCurrent() {
     return;
   }
   
+  const selectEl = document.getElementById('templateSelect');
+  if (!selectEl) return;
+  
+  const selectedTemplate = selectEl.value;
+  if (!selectedTemplate) {
+    alert("請先選取一個自訂範本！");
+    return;
+  }
+  
   try {
-    const docSnap = await db.collection("schedules").doc("template").get();
+    const docSnap = await db.collection("templates").doc(selectedTemplate).get();
     if (!docSnap.exists) {
-      alert("尚未儲存任何排班範本！");
+      alert(`找不到指定的範本「${selectedTemplate}」！`);
       return;
     }
     const templateData = docSnap.data();
@@ -1690,10 +1769,10 @@ async function applyTemplateToCurrent() {
       syncDomToMemory(key);
       applyTemplateToMemory(key, templateData);
       render();
-      alert("已成功在編輯模式中帶入範本！（請記得點選上方的「💾 儲存修改」以儲存至雲端，或按「❌ 取消編輯」還原）");
+      alert(`已成功在編輯模式中帶入範本「${selectedTemplate}」！（請記得點選上方的「💾 儲存修改」以儲存至雲端，或按「❌ 取消編輯」還原）`);
       closeSettingsModal();
     } else {
-      const confirmApply = confirm("您目前不在編輯模式。套用範本將會「直接覆寫」本月線上班表（但會保留原有的備註）。確定要直接套用並上傳嗎？");
+      const confirmApply = confirm(`您目前不在編輯模式。套用範本「${selectedTemplate}」將會「直接覆寫」本月線上班表（但會保留原有的備註）。確定要直接套用並上傳嗎？`);
       if (!confirmApply) return;
       
       const currentDocSnap = await db.collection("schedules").doc(key).get();
@@ -1719,11 +1798,35 @@ async function applyTemplateToCurrent() {
       }
       
       render();
-      alert("已成功套用範本並儲存至雲端！");
+      alert(`已成功套用範本「${selectedTemplate}」並儲存至雲端！`);
       closeSettingsModal();
     }
   } catch (error) {
     alert("套用範本失敗: " + error.message);
+  }
+}
+
+async function deleteSelectedTemplate() {
+  if (!db) return;
+  
+  const selectEl = document.getElementById('templateSelect');
+  if (!selectEl) return;
+  
+  const selectedTemplate = selectEl.value;
+  if (!selectedTemplate) {
+    alert("請先選取一個想要刪除的自訂範本！");
+    return;
+  }
+  
+  const confirmDelete = confirm(`確定要「永久刪除」自訂範本「${selectedTemplate}」嗎？此操作無法還原。`);
+  if (!confirmDelete) return;
+  
+  try {
+    await db.collection("templates").doc(selectedTemplate).delete();
+    alert(`已成功刪除範本「${selectedTemplate}」！`);
+    await loadTemplatesList();
+  } catch (error) {
+    alert("刪除範本失敗: " + error.message);
   }
 }
 
