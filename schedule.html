@@ -557,6 +557,16 @@
             <input type="checkbox" id="copyPrevMonthCheckbox" checked style="cursor:pointer;"> 帶入前一個月份的工作分配（備註除外）
           </label>
         </div>
+
+        <!-- 4. 排班範本管理 -->
+        <div class="modal-section" style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 16px;">
+          <label class="modal-label">📋 排班範本管理</label>
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">您可以將當前月份的排班儲存為範本，或將已儲存的範本手動套用到目前月份（排除備註）。</div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="saveCurrentAsTemplate()" style="flex:1; padding:8px; font-weight:700; border-radius:6px; border: 1px solid var(--primary-color); background:none; color:var(--primary-color); cursor:pointer;">💾 儲存當前為範本</button>
+            <button onclick="applyTemplateToCurrent()" style="flex:1; padding:8px; font-weight:700; border-radius:6px; border:none; background:var(--primary-color); color:white; cursor:pointer;">📋 套用範本到本月</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1279,6 +1289,441 @@ async function handleCreateNewMonth() {
       createBtn.disabled = false;
       createBtn.textContent = originalText;
     }
+  }
+}
+
+function syncDomToMemory(key) {
+  if (!NI_DATA[key]) return;
+  
+  // 1. Angio (5 days)
+  const angio = [];
+  for (let i = 0; i < 5; i++) {
+    const el_tp_dsa = document.getElementById(`ni-angio-${i}-tp_dsa`);
+    const el_tp_tae = document.getElementById(`ni-angio-${i}-tp_tae`);
+    const el_ds_dsa = document.getElementById(`ni-angio-${i}-ds_dsa`);
+    const el_ds_tae = document.getElementById(`ni-angio-${i}-ds_tae`);
+    const el_note = document.getElementById(`ni-angio-${i}-note`);
+    angio.push({
+      dow: ['週一', '週二', '週三', '週四', '週五'][i],
+      tp_dsa: el_tp_dsa ? el_tp_dsa.value : '',
+      tp_tae: el_tp_tae ? el_tp_tae.value : '',
+      ds_dsa: el_ds_dsa ? el_ds_dsa.value : '',
+      ds_tae: el_ds_tae ? el_ds_tae.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  }
+  NI_DATA[key].angio = angio;
+  
+  // 2. ERCT (5 days)
+  const erct = [];
+  for (let i = 0; i < 5; i++) {
+    const el_tp = document.getElementById(`ni-erct-${i}-tp`);
+    const el_ds = document.getElementById(`ni-erct-${i}-ds`);
+    const el_note = document.getElementById(`ni-erct-${i}-note`);
+    erct.push({
+      dow: ['週一', '週二', '週三', '週四', '週五'][i],
+      tp: el_tp ? el_tp.value : '',
+      ds: el_ds ? el_ds.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  }
+  NI_DATA[key].erct = erct;
+  
+  // 3. Routine CT
+  const routine_ct = [];
+  const originalCt = NI_DATA[key].routine_ct || [];
+  originalCt.forEach((row, i) => {
+    const el_tp = document.getElementById(`ni-ct-${i}-tp`);
+    const el_ds = document.getElementById(`ni-ct-${i}-ds`);
+    const el_note = document.getElementById(`ni-ct-${i}-note`);
+    routine_ct.push({
+      person: row.person,
+      tp: el_tp ? el_tp.value : '',
+      ds: el_ds ? el_ds.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  });
+  NI_DATA[key].routine_ct = routine_ct;
+  
+  // 4. MRI (tp and ds)
+  const mri = { tp: [], ds: [] };
+  ['tp', 'ds'].forEach(side => {
+    for (let i = 0; i < 5; i++) {
+      const el_person = document.getElementById(`ni-mri-${side}-${i}-person`);
+      const el_note = document.getElementById(`ni-mri-${side}-${i}-note`);
+      mri[side].push({
+        week: `W${i+1}`,
+        person: el_person ? el_person.value : '',
+        note: el_note ? el_note.value : ''
+      });
+    }
+  });
+  NI_DATA[key].mri = mri;
+  
+  // 5. Ds MRI Daily (5 days)
+  const ds_mri_daily = [];
+  for (let i = 0; i < 5; i++) {
+    const el_person = document.getElementById(`ni-dsmri-${i}-person`);
+    const el_note = document.getElementById(`ni-dsmri-${i}-note`);
+    ds_mri_daily.push({
+      dow: ['週一', '週二', '週三', '週四', '週五'][i],
+      person: el_person ? el_person.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  }
+  NI_DATA[key].ds_mri_daily = ds_mri_daily;
+  
+  // 6. Saturday (varies)
+  const saturday = [];
+  const originalSat = NI_DATA[key].saturday || [];
+  originalSat.forEach((row, i) => {
+    const el_person = document.getElementById(`ni-sat-${i}-person`);
+    const el_note = document.getElementById(`ni-sat-${i}-note`);
+    saturday.push({
+      date: row.date,
+      person: el_person ? el_person.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  });
+  NI_DATA[key].saturday = saturday;
+  
+  // 7. PICC (5 days)
+  const picc = [];
+  for (let i = 0; i < 5; i++) {
+    const el_tp = document.getElementById(`ni-picc-${i}-tp`);
+    const el_ds = document.getElementById(`ni-picc-${i}-ds`);
+    const el_note = document.getElementById(`ni-picc-${i}-note`);
+    picc.push({
+      dow: ['週一', '週二', '週三', '週四', '週五'][i],
+      tp: el_tp ? el_tp.value : '',
+      ds: el_ds ? el_ds.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  }
+  NI_DATA[key].picc = picc;
+  
+  // 8. Leaves
+  const leaves = {};
+  PEOPLE.forEach(p => {
+    const inputEl = document.getElementById(`ni-leaves-${p.name}`);
+    if (inputEl) {
+      const val = inputEl.value;
+      const parts = val.split(',').map(x => x.trim()).filter(Boolean);
+      if (parts.length > 0) {
+        leaves[p.name] = parts;
+      }
+    }
+  });
+  NI_DATA[key].leaves = leaves;
+  
+  // 9. Covers (JSON Parsing)
+  const coversEl = document.getElementById('ni-covers-json');
+  if (coversEl) {
+    try {
+      NI_DATA[key].covers = JSON.parse(coversEl.value);
+    } catch (e) {}
+  }
+  
+  // 10. Holidays
+  const holidays = [];
+  const holInput = document.getElementById('holidayInput');
+  if (holInput) {
+    holInput.value.split(',').forEach(p => {
+      p = p.trim();
+      if (!p) return;
+      const match = p.match(/^(\d{1,2})\/(\d{1,2})$/);
+      if (match) {
+        holidays.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
+      }
+    });
+    NI_DATA[key].holidays = holidays;
+  }
+  
+  // 11. Notes
+  const notesInput = document.getElementById('notesInput');
+  if (notesInput) {
+    NI_DATA[key].notes = notesInput.value;
+  }
+}
+
+function applyTemplateToMemory(key, templateData) {
+  if (!NI_DATA[key]) return;
+  const temp = templateData || {};
+  
+  // 1. Angio
+  if (temp.angio && NI_DATA[key].angio) {
+    NI_DATA[key].angio = NI_DATA[key].angio.map((item, i) => {
+      const tempItem = temp.angio[i] || {};
+      return {
+        ...item,
+        tp_dsa: tempItem.tp_dsa !== undefined ? tempItem.tp_dsa : item.tp_dsa,
+        tp_tae: tempItem.tp_tae !== undefined ? tempItem.tp_tae : item.tp_tae,
+        ds_dsa: tempItem.ds_dsa !== undefined ? tempItem.ds_dsa : item.ds_dsa,
+        ds_tae: tempItem.ds_tae !== undefined ? tempItem.ds_tae : item.ds_tae
+      };
+    });
+  }
+  
+  // 2. ERCT
+  if (temp.erct && NI_DATA[key].erct) {
+    NI_DATA[key].erct = NI_DATA[key].erct.map((item, i) => {
+      const tempItem = temp.erct[i] || {};
+      return {
+        ...item,
+        tp: tempItem.tp !== undefined ? tempItem.tp : item.tp,
+        ds: tempItem.ds !== undefined ? tempItem.ds : item.ds
+      };
+    });
+  }
+  
+  // 3. Routine CT
+  if (temp.routine_ct && NI_DATA[key].routine_ct) {
+    NI_DATA[key].routine_ct = NI_DATA[key].routine_ct.map((item) => {
+      const tempItem = temp.routine_ct.find(t => t.person === item.person) || {};
+      return {
+        ...item,
+        tp: tempItem.tp !== undefined ? tempItem.tp : item.tp,
+        ds: tempItem.ds !== undefined ? tempItem.ds : item.ds
+      };
+    });
+  }
+  
+  // 4. MRI
+  if (temp.mri && NI_DATA[key].mri) {
+    if (temp.mri.tp && NI_DATA[key].mri.tp) {
+      NI_DATA[key].mri.tp = NI_DATA[key].mri.tp.map((item, i) => {
+        const tempItem = temp.mri.tp[i] || {};
+        return {
+          ...item,
+          person: tempItem.person !== undefined ? tempItem.person : item.person
+        };
+      });
+    }
+    if (temp.mri.ds && NI_DATA[key].mri.ds) {
+      NI_DATA[key].mri.ds = NI_DATA[key].mri.ds.map((item, i) => {
+        const tempItem = temp.mri.ds[i] || {};
+        return {
+          ...item,
+          person: tempItem.person !== undefined ? tempItem.person : item.person
+        };
+      });
+    }
+  }
+  
+  // 5. Ds MRI Daily
+  if (temp.ds_mri_daily && NI_DATA[key].ds_mri_daily) {
+    NI_DATA[key].ds_mri_daily = NI_DATA[key].ds_mri_daily.map((item, i) => {
+      const tempItem = temp.ds_mri_daily[i] || {};
+      return {
+        ...item,
+        person: tempItem.person !== undefined ? tempItem.person : item.person
+      };
+    });
+  }
+  
+  // 6. PICC
+  if (temp.picc && NI_DATA[key].picc) {
+    NI_DATA[key].picc = NI_DATA[key].picc.map((item, i) => {
+      const tempItem = temp.picc[i] || {};
+      return {
+        ...item,
+        tp: tempItem.tp !== undefined ? tempItem.tp : item.tp,
+        ds: tempItem.ds !== undefined ? tempItem.ds : item.ds
+      };
+    });
+  }
+}
+
+async function saveCurrentAsTemplate() {
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+  
+  const key = MONTH_KEYS[currentIdx];
+  if (!key) {
+    alert("無法取得當前月份");
+    return;
+  }
+  
+  let templateData = {};
+  const cleanNote = (arr) => {
+    if (!arr) return [];
+    return arr.map(item => {
+      const copy = { ...item };
+      if ('note' in copy) copy.note = '';
+      return copy;
+    });
+  };
+
+  try {
+    if (isEditMode) {
+      // 1. Angio
+      const angio = [];
+      for (let i = 0; i < 5; i++) {
+        const el_tp_dsa = document.getElementById(`ni-angio-${i}-tp_dsa`);
+        const el_tp_tae = document.getElementById(`ni-angio-${i}-tp_tae`);
+        const el_ds_dsa = document.getElementById(`ni-angio-${i}-ds_dsa`);
+        const el_ds_tae = document.getElementById(`ni-angio-${i}-ds_tae`);
+        angio.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          tp_dsa: el_tp_dsa ? el_tp_dsa.value : '',
+          tp_tae: el_tp_tae ? el_tp_tae.value : '',
+          ds_dsa: el_ds_dsa ? el_ds_dsa.value : '',
+          ds_tae: el_ds_tae ? el_ds_tae.value : '',
+          note: ''
+        });
+      }
+      
+      // 2. ERCT
+      const erct = [];
+      for (let i = 0; i < 5; i++) {
+        const el_tp = document.getElementById(`ni-erct-${i}-tp`);
+        const el_ds = document.getElementById(`ni-erct-${i}-ds`);
+        erct.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          tp: el_tp ? el_tp.value : '',
+          ds: el_ds ? el_ds.value : '',
+          note: ''
+        });
+      }
+      
+      // 3. Routine CT
+      const routine_ct = [];
+      const originalCt = NI_DATA[key].routine_ct || [];
+      originalCt.forEach((row, i) => {
+        const el_tp = document.getElementById(`ni-ct-${i}-tp`);
+        const el_ds = document.getElementById(`ni-ct-${i}-ds`);
+        routine_ct.push({
+          person: row.person,
+          tp: el_tp ? el_tp.value : '',
+          ds: el_ds ? el_ds.value : '',
+          note: ''
+        });
+      });
+      
+      // 4. MRI
+      const mri = { tp: [], ds: [] };
+      ['tp', 'ds'].forEach(side => {
+        for (let i = 0; i < 5; i++) {
+          const el_person = document.getElementById(`ni-mri-${side}-${i}-person`);
+          mri[side].push({
+            week: `W${i+1}`,
+            person: el_person ? el_person.value : '',
+            note: ''
+          });
+        }
+      });
+      
+      // 5. Ds MRI Daily
+      const ds_mri_daily = [];
+      for (let i = 0; i < 5; i++) {
+        const el_person = document.getElementById(`ni-dsmri-${i}-person`);
+        ds_mri_daily.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          person: el_person ? el_person.value : '',
+          note: ''
+        });
+      }
+      
+      // 6. PICC
+      const picc = [];
+      for (let i = 0; i < 5; i++) {
+        const el_tp = document.getElementById(`ni-picc-${i}-tp`);
+        const el_ds = document.getElementById(`ni-picc-${i}-ds`);
+        picc.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          tp: el_tp ? el_tp.value : '',
+          ds: el_ds ? el_ds.value : '',
+          note: ''
+        });
+      }
+      
+      templateData = { angio, erct, routine_ct, mri, ds_mri_daily, picc };
+    } else {
+      const data = NI_DATA[key];
+      if (!data) {
+        alert("無當前月份資料可供儲存為範本");
+        return;
+      }
+      templateData = {
+        angio: cleanNote(data.angio),
+        erct: cleanNote(data.erct),
+        routine_ct: cleanNote(data.routine_ct),
+        mri: data.mri ? {
+          tp: cleanNote(data.mri.tp),
+          ds: cleanNote(data.mri.ds)
+        } : { tp: [], ds: [] },
+        ds_mri_daily: cleanNote(data.ds_mri_daily),
+        picc: cleanNote(data.picc)
+      };
+    }
+    
+    await db.collection("schedules").doc("template").set(templateData);
+    alert("排班範本儲存成功！");
+  } catch (error) {
+    alert("儲存範本失敗: " + error.message);
+  }
+}
+
+async function applyTemplateToCurrent() {
+  if (!db) {
+    alert("雲端資料庫尚未初始化");
+    return;
+  }
+  
+  const key = MONTH_KEYS[currentIdx];
+  if (!key) {
+    alert("無法取得當前月份");
+    return;
+  }
+  
+  try {
+    const docSnap = await db.collection("schedules").doc("template").get();
+    if (!docSnap.exists) {
+      alert("尚未儲存任何排班範本！");
+      return;
+    }
+    const templateData = docSnap.data();
+    
+    if (isEditMode) {
+      syncDomToMemory(key);
+      applyTemplateToMemory(key, templateData);
+      render();
+      alert("已成功在編輯模式中帶入範本！（請記得點選上方的「💾 儲存修改」以儲存至雲端，或按「❌ 取消編輯」還原）");
+      closeSettingsModal();
+    } else {
+      const confirmApply = confirm("您目前不在編輯模式。套用範本將會「直接覆寫」本月線上班表（但會保留原有的備註）。確定要直接套用並上傳嗎？");
+      if (!confirmApply) return;
+      
+      const currentDocSnap = await db.collection("schedules").doc(key).get();
+      if (currentDocSnap.exists) {
+        const currentData = currentDocSnap.data();
+        NI_DATA[key] = currentData.ni || {};
+        applyTemplateToMemory(key, templateData);
+        
+        await db.collection("schedules").doc(key).set({
+          ni: NI_DATA[key],
+          evt: currentData.evt || {}
+        });
+      } else {
+        NI_DATA[key] = {
+          angio: [], erct: [], routine_ct: [], mri: { tp: [], ds: [] }, ds_mri_daily: [], picc: [],
+          saturday: [], leaves: {}, covers: {}, holidays: [], notes: ''
+        };
+        applyTemplateToMemory(key, templateData);
+        await db.collection("schedules").doc(key).set({
+          ni: NI_DATA[key],
+          evt: {}
+        });
+      }
+      
+      render();
+      alert("已成功套用範本並儲存至雲端！");
+      closeSettingsModal();
+    }
+  } catch (error) {
+    alert("套用範本失敗: " + error.message);
   }
 }
 
