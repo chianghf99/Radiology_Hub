@@ -405,7 +405,7 @@
     <div class="header">
         <a href="index.html" class="back-link">← 返回首頁</a>
         <h1>醫材與健保紀錄小幫手</h1>
-        <p>快速勾選醫材數量、查閱健保給付規定，並產生文字格式<br><span style="font-size: 0.85rem; color: var(--text-sub);">(Updated: 2026/06/11)</span></p>
+        <p>快速勾選醫材數量、查閱健保給付規定，並產生文字格式<br><span style="font-size: 0.85rem; color: var(--text-sub);">(Updated: 2026/06/27)</span></p>
     </div>
 
     <div class="container">
@@ -461,6 +461,9 @@
                         @click="openModal(policy)">
                         {{ policy.title }}
                     </button>
+                    <div style="margin-top:10px; font-size:0.85rem; color:var(--text-sub);">
+                        官方來源：<a href="https://www.nhi.gov.tw/ch/cp-11366-1966b-3410-1.html" target="_blank" style="color:var(--accent-color);">全民健康保險特殊材料給付規定</a>
+                    </div>
                 </div>
             </div>
 
@@ -515,9 +518,7 @@
                 <p>{{ selectedPolicy.content }}</p>
             </div>
             <div class="modal-footer">
-                <div>來源文件：{{ selectedPolicy.sourceDoc }}</div>
                 <div>本地更新：{{ selectedPolicy.updateDate }}</div>
-                <div>官方連結：<a :href="selectedPolicy.url" target="_blank">{{ selectedPolicy.url }}</a></div>
             </div>
         </div>
     </div>
@@ -598,9 +599,17 @@
                                 "name": "分流支架栓塞裝置",
                                 "effectiveDate": "生效區間：2018-03-01 ～ 2910-12-31",
                                 "content": "(自1070301生效)\n一、僅適用於顱內之內頸動脈岩骨段至垂體上段，且符合下列情況之一：\n(一)動脈瘤最大徑大於15mm 者。\n(二)梭狀動脈瘤(fusiform aneurysm) 最大徑大於10mm 者。\n(三)剝離性動脈瘤(dissecting aneurysm)最大徑大於10mm。\n(四)動脈瘤經線圈栓塞治療後復發，其最大徑大於10mm 者。\n(五)同一支血管中發現2 顆顱內動脈瘤。\n二、每次限用一支；如同時申請線圈者，以5 個為限。\n三、需事前審查。",
-                                "sourceDoc": "全民健康保險特殊材料給付規定（11503.ods）",
-                                "updateDate": "115-02-24",
+                                "sourceDoc": "全民健康保險特殊材料給付規定(115.05.25更新)",
+                                "updateDate": "115-06-27",
                                 "url": "https://www.nhi.gov.tw/ch/cp-11366-1966b-3410-1.html"
+                },
+                {
+                                "id": "I203-26",
+                                "title": "I203-26｜液態栓塞系統-中樞神經血管｜2023-07-01 ~ 2910-12-31",
+                                "name": "液態栓塞系統-中樞神經血管",
+                                "effectiveDate": "生效區間：2023-07-01 ～ 2910-12-31",
+                                "content": "一、腦血管病灶栓塞，如腦動靜脈畸形(bAVM)、動靜脈瘻管(AVF)及高血管性腫瘤。\n二、脊椎血管系統之動靜脈畸形(Spinal AVM)或瘻管(Spinal AV fistula)。",
+                                "updateDate": "115-06-27"
                 },
                 {
                                 "id": "A220-1",
