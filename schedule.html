@@ -1153,17 +1153,27 @@ async function handleCreateNewMonth() {
   const year = parseInt(yearStr);
   const month = parseInt(monthStr);
   
-  // 計算星期六的日期列表
+  // 計算星期六與星期日的日期列表
   const saturdays = [];
+  const sundays = [];
   const daysInMonth = new Date(year, month, 0).getDate();
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d);
-    if (date.getDay() === 6) { // 6 是星期六
+    const dow = date.getDay();
+    if (dow === 6) { // 6 是星期六
       saturdays.push(`${month}/${d}`);
+    } else if (dow === 0) { // 0 是星期日
+      sundays.push(`${month}/${d}`);
     }
   }
   
   const saturdayList = saturdays.map(dateStr => ({
+    date: dateStr,
+    person: '',
+    note: ''
+  }));
+
+  const sundayList = sundays.map(dateStr => ({
     date: dateStr,
     person: '',
     note: ''
@@ -1215,6 +1225,7 @@ async function handleCreateNewMonth() {
       { dow: '週五', person: '', note: '' }
     ],
     saturday: saturdayList,
+    mri_sunday: sundayList,
     picc: [
       { dow: '週一', tp: '', ds: '', note: '' },
       { dow: '週二', tp: '', ds: '', note: '' },
@@ -1398,6 +1409,20 @@ function syncDomToMemory(key) {
     });
   });
   NI_DATA[key].saturday = saturday;
+
+  // Sunday MRI Overtime (varies)
+  const mri_sunday = [];
+  const originalSun = NI_DATA[key].mri_sunday || [];
+  originalSun.forEach((row, i) => {
+    const el_person = document.getElementById(`ni-sun-${i}-person`);
+    const el_note = document.getElementById(`ni-sun-${i}-note`);
+    mri_sunday.push({
+      date: row.date,
+      person: el_person ? el_person.value : '',
+      note: el_note ? el_note.value : ''
+    });
+  });
+  NI_DATA[key].mri_sunday = mri_sunday;
   
   // 7. PICC (5 days)
   const picc = [];
@@ -2727,6 +2752,7 @@ function renderNiTab(d) {
   root.appendChild(renderMri(d.mri));
   root.appendChild(renderDsMriDaily(d.ds_mri_daily));
   root.appendChild(renderSaturday(d.saturday));
+  root.appendChild(renderSundayMri(d.mri_sunday));
   if (d.picc) root.appendChild(renderPicc(d.picc));
   root.appendChild(renderLeavesAndCoversEditorSection(d));
   root.appendChild(renderNotes(d.notes || ''));
@@ -3026,6 +3052,32 @@ function renderSaturday(data) {
   return sec;
 }
 
+function renderSundayMri(data) {
+  const sec = makeSection('📅', '週日 MRI 加班（08:30 - 12:00）');
+  const list = document.createElement('div');
+  list.className = 'sat-list';
+  const activeData = data || [];
+  activeData.forEach((row, idx) => {
+    const card = document.createElement('div');
+    card.className = 'sat-card';
+    if (isEditMode) {
+      card.innerHTML = `
+        <div class="sat-date">${row.date}</div>
+        <div style="margin-top:4px; width:100%;">${makeEditSelect(`ni-sun-${idx}-person`, row.person)}</div>
+        <div style="margin-top:4px; width:100%;">${makeEditInput(`ni-sun-${idx}-note`, row.note)}</div>`;
+    } else {
+      const pc = personCls(row.person);
+      card.innerHTML = `
+        <div class="sat-date">${row.date}</div>
+        <div class="sat-person person ${pc}">${row.person}</div>
+        ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
+    }
+    list.appendChild(card);
+  });
+  sec.appendChild(list);
+  return sec;
+}
+
 function renderPicc(data) {
   const sec = makeSection('💉', 'PICC');
   const t = document.createElement('table');
@@ -3263,6 +3315,19 @@ async function saveAllSchedules() {
         note: document.getElementById(`ni-sat-${i}-note`).value
       });
     });
+
+    // Sunday MRI Overtime (varies)
+    const mri_sunday = [];
+    const originalSun = NI_DATA[key].mri_sunday || [];
+    originalSun.forEach((row, i) => {
+      const el_person = document.getElementById(`ni-sun-${i}-person`);
+      const el_note = document.getElementById(`ni-sun-${i}-note`);
+      mri_sunday.push({
+        date: row.date,
+        person: el_person ? el_person.value : '',
+        note: el_note ? el_note.value : ''
+      });
+    });
     
     // PICC (5 days)
     const picc = [];
@@ -3354,6 +3419,7 @@ async function saveAllSchedules() {
       mri,
       ds_mri_daily,
       saturday,
+      mri_sunday,
       picc,
       leaves,
       covers,
