@@ -2855,7 +2855,7 @@ function renderLeavesAndCoversEditorSection(d) {
 }
 
 function renderAngio(data) {
-  const sec = makeSection('🏥', '血管攝影室（Brain Angiography）', 'full-width');
+  const sec = makeSection('🏥', '血管攝影室（神經介入）', 'full-width');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
@@ -2876,9 +2876,9 @@ function renderAngio(data) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${makeEditSelect(`ni-angio-${idx}-tp_dsa`, row.tp_dsa)}</td>
-        <td>${makeEditSelect(`ni-angio-${idx}-tp_tae`, row.tp_tae)}</td>
+        <td>${makeEditInput(`ni-angio-${idx}-tp_tae`, row.tp_tae)}</td>
         <td>${makeEditSelect(`ni-angio-${idx}-ds_dsa`, row.ds_dsa)}</td>
-        <td>${makeEditSelect(`ni-angio-${idx}-ds_tae`, row.ds_tae)}</td>
+        <td>${makeEditInput(`ni-angio-${idx}-ds_tae`, row.ds_tae)}</td>
         <td>${makeEditInput(`ni-angio-${idx}-note`, row.note)}</td>`;
     } else {
       tr.innerHTML = `
