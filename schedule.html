@@ -1910,7 +1910,13 @@ async function loadCloudSchedules() {
         hasNewData = true;
       }
       if (data.evt) {
-        ALL_SCHEDULES[monthKey] = data.evt;
+        const hasCloudEvt = Object.keys(data.evt).length > 0;
+        const hasLocalEvt = ALL_SCHEDULES[monthKey] && Object.keys(ALL_SCHEDULES[monthKey]).length > 0;
+        if (!hasCloudEvt && hasLocalEvt) {
+          console.log(`[Sync] 雲端 ${monthKey} 的 evt 為空，保留本地預設中風取栓班表`);
+        } else {
+          ALL_SCHEDULES[monthKey] = data.evt;
+        }
         hasNewData = true;
       }
     });
@@ -3307,95 +3313,172 @@ async function saveAllSchedules() {
     // 1. 收集日班 (NI) 資料
     // Angio (5 days)
     const angio = [];
+    const originalAngio = NI_DATA[key] ? (NI_DATA[key].angio || []) : [];
     for (let i = 0; i < 5; i++) {
-      angio.push({
-        dow: ['週一', '週二', '週三', '週四', '週五'][i],
-        tp_dsa: document.getElementById(`ni-angio-${i}-tp_dsa`).value,
-        tp_tae: document.getElementById(`ni-angio-${i}-tp_tae`).value,
-        ds_dsa: document.getElementById(`ni-angio-${i}-ds_dsa`).value,
-        ds_tae: document.getElementById(`ni-angio-${i}-ds_tae`).value,
-        note: document.getElementById(`ni-angio-${i}-note`).value
-      });
+      const el_tp_dsa = document.getElementById(`ni-angio-${i}-tp_dsa`);
+      const el_tp_tae = document.getElementById(`ni-angio-${i}-tp_tae`);
+      const el_ds_dsa = document.getElementById(`ni-angio-${i}-ds_dsa`);
+      const el_ds_tae = document.getElementById(`ni-angio-${i}-ds_tae`);
+      const el_note = document.getElementById(`ni-angio-${i}-note`);
+      if (el_tp_dsa && el_tp_tae && el_ds_dsa && el_ds_tae && el_note) {
+        angio.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          tp_dsa: el_tp_dsa.value,
+          tp_tae: el_tp_tae.value,
+          ds_dsa: el_ds_dsa.value,
+          ds_tae: el_ds_tae.value,
+          note: el_note.value
+        });
+      } else {
+        if (originalAngio[i]) {
+          angio.push(originalAngio[i]);
+        } else {
+          angio.push({ dow: ['週一', '週二', '週三', '週四', '週五'][i], tp_dsa: '', tp_tae: '', ds_dsa: '', ds_tae: '', note: '' });
+        }
+      }
     }
     
     // ERCT (5 days)
     const erct = [];
+    const originalErct = NI_DATA[key] ? (NI_DATA[key].erct || []) : [];
     for (let i = 0; i < 5; i++) {
-      erct.push({
-        dow: ['週一', '週二', '週三', '週四', '週五'][i],
-        tp: document.getElementById(`ni-erct-${i}-tp`).value,
-        ds: document.getElementById(`ni-erct-${i}-ds`).value,
-        note: document.getElementById(`ni-erct-${i}-note`).value
-      });
+      const el_tp = document.getElementById(`ni-erct-${i}-tp`);
+      const el_ds = document.getElementById(`ni-erct-${i}-ds`);
+      const el_note = document.getElementById(`ni-erct-${i}-note`);
+      if (el_tp && el_ds && el_note) {
+        erct.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          tp: el_tp.value,
+          ds: el_ds.value,
+          note: el_note.value
+        });
+      } else {
+        if (originalErct[i]) {
+          erct.push(originalErct[i]);
+        } else {
+          erct.push({ dow: ['週一', '週二', '週三', '週四', '週五'][i], tp: '', ds: '', note: '' });
+        }
+      }
     }
     
     // Routine CT
     const routine_ct = [];
-    const originalCt = NI_DATA[key].routine_ct || [];
+    const originalCt = NI_DATA[key] ? (NI_DATA[key].routine_ct || []) : [];
     originalCt.forEach((row, i) => {
-      routine_ct.push({
-        person: row.person,
-        tp: document.getElementById(`ni-ct-${i}-tp`).value,
-        ds: document.getElementById(`ni-ct-${i}-ds`).value,
-        note: document.getElementById(`ni-ct-${i}-note`).value
-      });
+      const el_tp = document.getElementById(`ni-ct-${i}-tp`);
+      const el_ds = document.getElementById(`ni-ct-${i}-ds`);
+      const el_note = document.getElementById(`ni-ct-${i}-note`);
+      if (el_tp && el_ds && el_note) {
+        routine_ct.push({
+          person: row.person,
+          tp: el_tp.value,
+          ds: el_ds.value,
+          note: el_note.value
+        });
+      } else {
+        routine_ct.push(row);
+      }
     });
     
     // MRI (tp and ds)
     const mri = { tp: [], ds: [] };
+    const originalMri = NI_DATA[key] ? (NI_DATA[key].mri || { tp: [], ds: [] }) : { tp: [], ds: [] };
     ['tp', 'ds'].forEach(side => {
       for (let i = 0; i < 5; i++) {
-        mri[side].push({
-          week: `W${i+1}`,
-          person: document.getElementById(`ni-mri-${side}-${i}-person`).value,
-          note: document.getElementById(`ni-mri-${side}-${i}-note`).value
-        });
+        const el_person = document.getElementById(`ni-mri-${side}-${i}-person`);
+        const el_note = document.getElementById(`ni-mri-${side}-${i}-note`);
+        if (el_person && el_note) {
+          mri[side].push({
+            week: `W${i+1}`,
+            person: el_person.value,
+            note: el_note.value
+          });
+        } else {
+          if (originalMri[side] && originalMri[side][i]) {
+            mri[side].push(originalMri[side][i]);
+          } else {
+            mri[side].push({ week: `W${i+1}`, person: '', note: '' });
+          }
+        }
       }
     });
     
     // Ds MRI Daily (5 days)
     const ds_mri_daily = [];
+    const originalDsMri = NI_DATA[key] ? (NI_DATA[key].ds_mri_daily || []) : [];
     for (let i = 0; i < 5; i++) {
-      ds_mri_daily.push({
-        dow: ['週一', '週二', '週三', '週四', '週五'][i],
-        person: document.getElementById(`ni-dsmri-${i}-person`).value,
-        note: document.getElementById(`ni-dsmri-${i}-note`).value
-      });
+      const el_person = document.getElementById(`ni-dsmri-${i}-person`);
+      const el_note = document.getElementById(`ni-dsmri-${i}-note`);
+      if (el_person && el_note) {
+        ds_mri_daily.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          person: el_person.value,
+          note: el_note.value
+        });
+      } else {
+        if (originalDsMri[i]) {
+          ds_mri_daily.push(originalDsMri[i]);
+        } else {
+          ds_mri_daily.push({ dow: ['週一', '週二', '週三', '週四', '週五'][i], person: '', note: '' });
+        }
+      }
     }
     
     // Saturday (varies)
     const saturday = [];
-    const originalSat = NI_DATA[key].saturday || [];
+    const originalSat = NI_DATA[key] ? (NI_DATA[key].saturday || []) : [];
     originalSat.forEach((row, i) => {
-      saturday.push({
-        date: row.date,
-        person: document.getElementById(`ni-sat-${i}-person`).value,
-        note: document.getElementById(`ni-sat-${i}-note`).value
-      });
+      const el_person = document.getElementById(`ni-sat-${i}-person`);
+      const el_note = document.getElementById(`ni-sat-${i}-note`);
+      if (el_person && el_note) {
+        saturday.push({
+          date: row.date,
+          person: el_person.value,
+          note: el_note.value
+        });
+      } else {
+        saturday.push(row);
+      }
     });
 
     // Sunday MRI Overtime (varies)
     const mri_sunday = [];
-    const originalSun = NI_DATA[key].mri_sunday || [];
+    const originalSun = NI_DATA[key] ? (NI_DATA[key].mri_sunday || []) : [];
     originalSun.forEach((row, i) => {
       const el_person = document.getElementById(`ni-sun-${i}-person`);
       const el_note = document.getElementById(`ni-sun-${i}-note`);
-      mri_sunday.push({
-        date: row.date,
-        person: el_person ? el_person.value : '',
-        note: el_note ? el_note.value : ''
-      });
+      if (el_person && el_note) {
+        mri_sunday.push({
+          date: row.date,
+          person: el_person.value,
+          note: el_note.value
+        });
+      } else {
+        mri_sunday.push(row);
+      }
     });
     
     // PICC (5 days)
     const picc = [];
+    const originalPicc = NI_DATA[key] ? (NI_DATA[key].picc || []) : [];
     for (let i = 0; i < 5; i++) {
-      picc.push({
-        dow: ['週一', '週二', '週三', '週四', '週五'][i],
-        tp: document.getElementById(`ni-picc-${i}-tp`).value,
-        ds: document.getElementById(`ni-picc-${i}-ds`).value,
-        note: document.getElementById(`ni-picc-${i}-note`).value
-      });
+      const el_tp = document.getElementById(`ni-picc-${i}-tp`);
+      const el_ds = document.getElementById(`ni-picc-${i}-ds`);
+      const el_note = document.getElementById(`ni-picc-${i}-note`);
+      if (el_tp && el_ds && el_note) {
+        picc.push({
+          dow: ['週一', '週二', '週三', '週四', '週五'][i],
+          tp: el_tp.value,
+          ds: el_ds.value,
+          note: el_note.value
+        });
+      } else {
+        if (originalPicc[i]) {
+          picc.push(originalPicc[i]);
+        } else {
+          picc.push({ dow: ['週一', '週二', '週三', '週四', '週五'][i], tp: '', ds: '', note: '' });
+        }
+      }
     }
     
     // Leaves
@@ -3454,6 +3537,7 @@ async function saveAllSchedules() {
     const daysInMonth = new Date(year, month, 0).getDate();
     
     const evt = {};
+    const originalEvt = ALL_SCHEDULES[key] || {};
     for (let day = 1; day <= daysInMonth; day++) {
       const tpEl = document.getElementById(`evt-tp-${day}`);
       const dsEl = document.getElementById(`evt-ds-${day}`);
@@ -3465,6 +3549,10 @@ async function saveAllSchedules() {
             tp: tpVal || '',
             ds: dsVal || ''
           };
+        }
+      } else {
+        if (originalEvt[day]) {
+          evt[day] = originalEvt[day];
         }
       }
     }
