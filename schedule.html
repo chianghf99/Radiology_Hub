@@ -2117,7 +2117,12 @@ function getTodayAssignments(key, targetDate = new Date()) {
   };
 
   if (dowNum === 0) {
-    return { ...baseResult, isSunday: true, evtDoctor };
+    const d = NI_DATA[key];
+    const sunMri = (d && d.mri_sunday) ? d.mri_sunday.find(r => {
+      const [sm, sd] = r.date.split('/').map(Number);
+      return sm === m && sd === day;
+    }) : null;
+    return { ...baseResult, isSunday: true, sunMri, evtDoctor };
   }
 
   const d = NI_DATA[key];
@@ -2284,6 +2289,7 @@ function getDoctorTasksForToday(a) {
   }
 
   if (a.isSunday) {
+    if (a.sunMri) processField(a.sunMri.person, '週日 MRI 加班');
     if (a.evtDoctor) processField(a.evtDoctor, '中風取栓 On-Call');
   } else if (a.isSat) {
     if (a.sat) processField(a.sat.person, '週六班');
@@ -2536,8 +2542,30 @@ function renderTodayCard(key) {
 
   // ── Sunday / Holiday ──
   if (a.isSunday || isHoliday) {
-    let sunHtml = `<div style="padding:10px 0; text-align:center; color:var(--text-sub); font-size:0.88rem; font-weight:600;">☕ 週日常規日班休假 / 醫院休假日</div>`;
-    if (a.evtDoctor) {
+    let sunHtml = '';
+    if (a.isSunday && status !== 'evt_only') {
+      sunHtml += `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:5px; padding:10px 0; justify-content:center;">`;
+      if (a.sunMri) {
+        const formattedPerson = renderPerson(a.sunMri.person, true, targetDate);
+        sunHtml += `
+          <div class="today-sat-card" style="min-width:200px;">
+            <div class="today-sat-label">週日 MRI 加班</div>
+            <div class="today-sat-person">${formattedPerson}</div>
+            ${a.sunMri.note ? `<div style="font-size:0.72rem;color:var(--text-sub)">※ ${a.sunMri.note}</div>` : ''}
+          </div>`;
+      } else {
+        sunHtml += `
+          <div class="today-sat-card" style="min-width:200px;">
+            <div class="today-sat-label">週日 MRI 加班</div>
+            <div style="color:var(--text-sub);font-size:0.88rem;text-align:center;padding:10px 0;">無加班資料</div>
+          </div>`;
+      }
+      sunHtml += `</div>`;
+    } else {
+      sunHtml += `<div style="padding:10px 0; text-align:center; color:var(--text-sub); font-size:0.88rem; font-weight:600;">☕ 週日常規日班休假 / 醫院休假日</div>`;
+    }
+
+    if (a.evtDoctor && status !== 'daytime_only') {
       const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
       sunHtml += `
         <div style="display:flex; justify-content:center; margin-top:10px;">
@@ -2948,16 +2976,24 @@ function renderRoutineCt(data) {
 }
 
 function renderMri(data) {
-  const sec = makeSection('🧲', '門住急 MRI（按週次）', 'full-width');
+  const sec = makeSection('🧲', '門住急 MRI', 'full-width');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
+
+  const weekToDow = {
+    'W1': '週一',
+    'W2': '週二',
+    'W3': '週三',
+    'W4': '週四',
+    'W5': '週五'
+  };
 
   const weekLabels = data.tp.map(r => r.week);
   t.innerHTML = `
     <thead><tr>
       <th>院區</th>
-      ${weekLabels.map(w => `<th><span class="week-badge">${w}</span></th>`).join('')}
+      ${weekLabels.map(w => `<th><span class="week-badge">${weekToDow[w] || w}</span></th>`).join('')}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
 
@@ -3053,10 +3089,32 @@ function renderSaturday(data) {
 }
 
 function renderSundayMri(data) {
-  const sec = makeSection('📅', '週日 MRI 加班（08:30 - 12:00）');
+  let activeData = data;
+  if (!activeData || activeData.length === 0) {
+    const key = MONTH_KEYS[currentIdx];
+    if (key && /^\d{4}-\d{2}$/.test(key)) {
+      const [yearStr, monthStr] = key.split('-');
+      const year = parseInt(yearStr);
+      const month = parseInt(monthStr);
+      const sundays = [];
+      const daysInMonth = new Date(year, month, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        if (date.getDay() === 0) {
+          sundays.push(`${month}/${day}`);
+        }
+      }
+      activeData = sundays.map(dateStr => ({ date: dateStr, person: '', note: '' }));
+      if (NI_DATA[key] && !NI_DATA[key].mri_sunday) {
+        NI_DATA[key].mri_sunday = activeData;
+      }
+    }
+  }
+  if (!activeData) activeData = [];
+
+  const sec = makeSection('📅', '週日 MRI 加班');
   const list = document.createElement('div');
   list.className = 'sat-list';
-  const activeData = data || [];
   activeData.forEach((row, idx) => {
     const card = document.createElement('div');
     card.className = 'sat-card';
