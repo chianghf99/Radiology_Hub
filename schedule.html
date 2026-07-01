@@ -183,7 +183,7 @@
     /* ── NI Tables ── */
     .ni-table {
       width: 100%; border-collapse: collapse; font-size: 0.85rem;
-      margin-top: 12px;
+      margin-top: 12px; table-layout: fixed;
     }
     .ni-table th {
       background: #f0f4f8; color: var(--primary-color);
@@ -487,6 +487,69 @@
       margin-bottom: 8px;
       display: block;
       font-size: 0.9rem;
+    }
+    
+    /* ── Note Tooltip styles ── */
+    .note-tooltip-trigger {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.92rem;
+      color: #475569;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      transition: all 0.15s ease;
+      margin: 0 auto;
+      user-select: none;
+    }
+    .note-tooltip-trigger:hover {
+      background: #e2e8f0;
+      transform: scale(1.1);
+      color: var(--primary-color);
+    }
+    .note-tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: #1e293b;
+      color: #fff;
+      text-align: left;
+      border-radius: 6px;
+      padding: 8px 12px;
+      position: absolute;
+      z-index: 999;
+      bottom: 125%;
+      right: 0;
+      left: auto;
+      transform: none;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      font-size: 0.76rem;
+      line-height: 1.4;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      pointer-events: none;
+      word-break: break-all;
+      white-space: normal;
+      font-weight: 500;
+    }
+    .note-tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      right: 7px;
+      left: auto;
+      margin-left: 0;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #1e293b transparent transparent transparent;
+    }
+    .note-tooltip-trigger:hover .note-tooltip-text {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(-2px);
     }
   </style>
 </head>
@@ -2859,14 +2922,15 @@ function renderAngio(data) {
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
+  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
-      <th>星期</th>
-      <th><span class="loc loc-tp">台北</span> DSA / IA</th>
-      <th><span class="loc loc-tp">台北</span> TAE</th>
-      <th><span class="loc loc-ds">淡水</span> DSA / IA</th>
-      <th><span class="loc loc-ds">淡水</span> TAE</th>
-      <th>備注</th>
+      <th style="width: 10%;">星期</th>
+      <th style="width: 22.5%;"><span class="loc loc-tp">台北</span> DSA / IA</th>
+      <th style="width: 22.5%;"><span class="loc loc-tp">台北</span> TAE</th>
+      <th style="width: 22.5%;"><span class="loc loc-ds">淡水</span> DSA / IA</th>
+      <th style="width: 22.5%;"><span class="loc loc-ds">淡水</span> TAE</th>
+      ${noteColHeader}
     </tr></thead>
     <tbody></tbody>`;
   const tbody = t.querySelector('tbody');
@@ -2887,7 +2951,7 @@ function renderAngio(data) {
         <td>${renderPerson(row.tp_tae)}</td>
         <td>${renderPerson(row.ds_dsa)}</td>
         <td>${renderPerson(row.ds_tae)}</td>
-        <td class="note-cell">${row.note}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -2906,12 +2970,13 @@ function renderErCt(data) {
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
+  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
-      <th>星期</th>
-      <th><span class="loc loc-tp">台北</span></th>
-      <th><span class="loc loc-ds">淡水</span></th>
-      <th>備注</th>
+      <th style="width: 15%;">星期</th>
+      <th style="width: 42.5%;"><span class="loc loc-tp">台北</span></th>
+      <th style="width: 42.5%;"><span class="loc loc-ds">淡水</span></th>
+      ${noteColHeader}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
@@ -2927,7 +2992,7 @@ function renderErCt(data) {
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.tp)}</td>
         <td>${renderPerson(row.ds)}</td>
-        <td class="note-cell">${row.note}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -2946,12 +3011,13 @@ function renderRoutineCt(data) {
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
+  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
-      <th>醫師</th>
-      <th><span class="loc loc-tp">台北</span> 號碼</th>
-      <th><span class="loc loc-ds">淡水</span> 號碼</th>
-      <th>備注</th>
+      <th style="width: 15%;">醫師</th>
+      <th style="width: 42.5%;"><span class="loc loc-tp">台北</span> 號碼</th>
+      <th style="width: 42.5%;"><span class="loc loc-ds">淡水</span> 號碼</th>
+      ${noteColHeader}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
@@ -2967,7 +3033,7 @@ function renderRoutineCt(data) {
         <td>${renderPerson(row.person)}</td>
         <td style="text-align:center;font-weight:600;">${row.tp}</td>
         <td style="text-align:center;font-weight:600;">${row.ds}</td>
-        <td class="note-cell">${row.note}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -2998,8 +3064,8 @@ function renderMri(data) {
   const weekLabels = data.tp.map(r => r.week);
   t.innerHTML = `
     <thead><tr>
-      <th>院區</th>
-      ${weekLabels.map(w => `<th><span class="week-badge">${weekToDow[w] || w}</span></th>`).join('')}
+      <th style="width: 10%;">院區</th>
+      ${weekLabels.map(w => `<th style="width: 18%;"><span class="week-badge">${weekToDow[w] || w}</span></th>`).join('')}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
 
@@ -3037,11 +3103,12 @@ function renderDsMriDaily(data) {
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
+  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
-      <th>星期</th>
-      <th><span class="loc loc-ds">淡水</span> 負責人</th>
-      <th>備注</th>
+      <th style="width: 20%;">星期</th>
+      <th style="width: 65%;"><span class="loc loc-ds">淡水</span> 負責人</th>
+      ${noteColHeader}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
@@ -3055,7 +3122,7 @@ function renderDsMriDaily(data) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.person)}</td>
-        <td class="note-cell">${row.note}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -3147,12 +3214,13 @@ function renderPicc(data) {
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
+  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
-      <th>星期</th>
-      <th><span class="loc loc-tp">台北</span></th>
-      <th><span class="loc loc-ds">淡水</span></th>
-      <th>備注</th>
+      <th style="width: 15%;">星期</th>
+      <th style="width: 42.5%;"><span class="loc loc-tp">台北</span></th>
+      <th style="width: 42.5%;"><span class="loc loc-ds">淡水</span></th>
+      ${noteColHeader}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
@@ -3168,7 +3236,7 @@ function renderPicc(data) {
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.tp)}</td>
         <td>${renderPerson(row.ds)}</td>
-        <td class="note-cell">${row.note}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
