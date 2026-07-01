@@ -513,7 +513,7 @@
     }
     .note-tooltip-text {
       visibility: hidden;
-      width: 200px;
+      width: 180px;
       background-color: #1e293b;
       color: #fff;
       text-align: left;
@@ -522,9 +522,8 @@
       position: absolute;
       z-index: 999;
       bottom: 125%;
-      right: 0;
-      left: auto;
-      transform: none;
+      left: 50%;
+      transform: translateX(-50%);
       opacity: 0;
       transition: opacity 0.2s ease, transform 0.2s ease;
       font-size: 0.76rem;
@@ -539,9 +538,8 @@
       content: "";
       position: absolute;
       top: 100%;
-      right: 7px;
-      left: auto;
-      margin-left: 0;
+      left: 50%;
+      margin-left: -5px;
       border-width: 5px;
       border-style: solid;
       border-color: #1e293b transparent transparent transparent;
@@ -549,6 +547,21 @@
     .note-tooltip-trigger:hover .note-tooltip-text {
       visibility: visible;
       opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    /* 靠右對齊 (專門適合表格最右側備註欄的氣泡，防止超出右邊界被裁剪) */
+    .tooltip-right .note-tooltip-text {
+      right: 0;
+      left: auto;
+      transform: none;
+    }
+    .tooltip-right .note-tooltip-text::after {
+      right: 6px;
+      left: auto;
+      margin-left: 0;
+    }
+    .tooltip-right:hover .note-tooltip-text {
       transform: translateY(-2px);
     }
   </style>
@@ -2516,7 +2529,7 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
 
 function noteHtml(note) {
   if (!note) return '';
-  return `<span class="note-inline">※ ${note}</span>`;
+  return `<div class="note-tooltip-trigger" style="display: inline-flex; width: 18px; height: 18px; font-size: 0.72rem; margin-left: 4px; vertical-align: middle;">💬<span class="note-tooltip-text">${note}</span></div>`;
 }
 
 // ════════════════════════════════════════════════════
@@ -2951,7 +2964,7 @@ function renderAngio(data) {
         <td>${renderPerson(row.tp_tae)}</td>
         <td>${renderPerson(row.ds_dsa)}</td>
         <td>${renderPerson(row.ds_tae)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -2992,7 +3005,7 @@ function renderErCt(data) {
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.tp)}</td>
         <td>${renderPerson(row.ds)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -3033,7 +3046,7 @@ function renderRoutineCt(data) {
         <td>${renderPerson(row.person)}</td>
         <td style="text-align:center;font-weight:600;">${row.tp}</td>
         <td style="text-align:center;font-weight:600;">${row.ds}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -3122,7 +3135,7 @@ function renderDsMriDaily(data) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.person)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -3236,7 +3249,7 @@ function renderPicc(data) {
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.tp)}</td>
         <td>${renderPerson(row.ds)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
