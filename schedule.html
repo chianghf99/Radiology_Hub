@@ -512,57 +512,46 @@
       color: var(--primary-color);
     }
     .note-tooltip-text {
-      visibility: hidden;
-      width: 180px;
+      display: none;
+    }
+    
+    .global-note-tooltip {
+      position: absolute;
+      display: none;
+      z-index: 10000;
+      width: 200px;
       background-color: #1e293b;
       color: #fff;
       text-align: left;
       border-radius: 6px;
       padding: 8px 12px;
-      position: absolute;
-      z-index: 999;
-      bottom: 125%;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0;
-      transition: opacity 0.2s ease, transform 0.2s ease;
       font-size: 0.76rem;
       line-height: 1.4;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.3);
       pointer-events: none;
       word-break: break-all;
       white-space: normal;
       font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.15s ease;
     }
-    .note-tooltip-text::after {
+    .global-note-tooltip::after {
       content: "";
       position: absolute;
+      border-width: 5px;
+      border-style: solid;
+    }
+    .global-note-tooltip.arrow-bottom::after {
       top: 100%;
       left: 50%;
       margin-left: -5px;
-      border-width: 5px;
-      border-style: solid;
       border-color: #1e293b transparent transparent transparent;
     }
-    .note-tooltip-trigger:hover .note-tooltip-text {
-      visibility: visible;
-      opacity: 1;
-      transform: translateX(-50%) translateY(-2px);
-    }
-
-    /* 靠右對齊 (專門適合表格最右側備註欄的氣泡，防止超出右邊界被裁剪) */
-    .tooltip-right .note-tooltip-text {
-      right: 0;
-      left: auto;
-      transform: none;
-    }
-    .tooltip-right .note-tooltip-text::after {
-      right: 6px;
-      left: auto;
-      margin-left: 0;
-    }
-    .tooltip-right:hover .note-tooltip-text {
-      transform: translateY(-2px);
+    .global-note-tooltip.arrow-top::after {
+      bottom: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-color: transparent transparent #1e293b transparent;
     }
   </style>
 </head>
@@ -2020,6 +2009,97 @@ async function loadCloudSchedules() {
 
 // 在網頁載入後背景執行
 window.addEventListener('DOMContentLoaded', () => {
+  // 初始化全域氣泡 Tooltip 容器
+  const gt = document.createElement('div');
+  gt.id = 'global-tooltip';
+  gt.className = 'global-note-tooltip';
+  document.body.appendChild(gt);
+
+  // 全域 Hover 監聽器 (自適應防遮擋與邊界修正)
+  document.addEventListener('mouseover', function(e) {
+    const trigger = e.target.closest('.note-tooltip-trigger');
+    if (!trigger) return;
+    
+    const textEl = trigger.querySelector('.note-tooltip-text');
+    if (!textEl) return;
+    
+    const noteText = textEl.textContent ? textEl.textContent.trim() : '';
+    if (!noteText) return;
+    
+    const tooltip = document.getElementById('global-tooltip');
+    if (!tooltip) return;
+    
+    tooltip.innerHTML = noteText;
+    tooltip.style.display = 'block';
+    
+    const rect = trigger.getBoundingClientRect();
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    const tooltipHeight = tooltip.offsetHeight;
+    const tooltipWidth = tooltip.offsetWidth;
+    
+    // 自適應防遮擋：若上方高度不足以容納 tooltip 加上安全邊距 15px，則向下彈出
+    let showBelow = false;
+    if (rect.top < tooltipHeight + 15) {
+      showBelow = true;
+    }
+    
+    // 計算置中 Left 位置，並套用邊界防禦避免超出左右螢幕
+    let leftPos = rect.left + scrollLeft + rect.width / 2 - tooltipWidth / 2;
+    const maxLeft = document.documentElement.clientWidth + scrollLeft - tooltipWidth - 10;
+    if (leftPos < scrollLeft + 10) {
+      leftPos = scrollLeft + 10;
+    } else if (leftPos > maxLeft) {
+      leftPos = maxLeft;
+    }
+    
+    // 表格最右邊的備註欄氣泡 (帶有 tooltip-right class)，改用靠右對齊 (防止超出右邊界被裁剪)
+    if (trigger.classList.contains('tooltip-right')) {
+      leftPos = rect.right + scrollLeft - tooltipWidth;
+      // 確保右側防禦
+      if (leftPos < scrollLeft + 10) leftPos = scrollLeft + 10;
+    }
+    
+    let topPos = 0;
+    if (showBelow) {
+      topPos = rect.bottom + scrollTop + 8;
+      tooltip.className = 'global-note-tooltip arrow-top';
+    } else {
+      topPos = rect.top + scrollTop - tooltipHeight - 8;
+      tooltip.className = 'global-note-tooltip arrow-bottom';
+    }
+    
+    tooltip.style.left = leftPos + 'px';
+    tooltip.style.top = topPos + 'px';
+    
+    // 動態修正箭頭位置，精準指向 trigger 中心
+    const triggerCenterRelative = rect.left + rect.width / 2 - leftPos;
+    const arrowStyle = document.getElementById('global-tooltip-arrow-style') || document.createElement('style');
+    arrowStyle.id = 'global-tooltip-arrow-style';
+    arrowStyle.innerHTML = `
+      .global-note-tooltip::after {
+        left: ${triggerCenterRelative}px !important;
+      }
+    `;
+    if (!arrowStyle.parentNode) {
+      document.head.appendChild(arrowStyle);
+    }
+    
+    tooltip.style.opacity = '1';
+  });
+
+  document.addEventListener('mouseout', function(e) {
+    const trigger = e.target.closest('.note-tooltip-trigger');
+    if (!trigger) return;
+    
+    const tooltip = document.getElementById('global-tooltip');
+    if (tooltip) {
+      tooltip.style.opacity = '0';
+      tooltip.style.display = 'none';
+    }
+  });
+
   loadCloudSchedules();
 });
 
@@ -3027,9 +3107,9 @@ function renderRoutineCt(data) {
   const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
-      <th style="width: 15%;">醫師</th>
-      <th style="width: 42.5%;"><span class="loc loc-tp">台北</span> 號碼</th>
-      <th style="width: 42.5%;"><span class="loc loc-ds">淡水</span> 號碼</th>
+      <th style="width: 25%;">醫師</th>
+      <th style="width: 37.5%;"><span class="loc loc-tp">台北</span> 號碼</th>
+      <th style="width: 37.5%;"><span class="loc loc-ds">淡水</span> 號碼</th>
       ${noteColHeader}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
