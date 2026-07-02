@@ -2713,7 +2713,6 @@ function renderTodayCard(key) {
           <div class="today-sat-card" style="min-width:200px;">
             <div class="today-sat-label">週日 MRI 加班</div>
             <div class="today-sat-person">${formattedPerson}</div>
-            ${a.sunMri.note ? `<div style="font-size:0.72rem;color:var(--text-sub)">※ ${a.sunMri.note}</div>` : ''}
           </div>`;
       } else {
         sunHtml += `
@@ -2772,7 +2771,6 @@ function renderTodayCard(key) {
         <div class="today-sat-card">
           <div class="today-sat-label">週六班（北淡 MRI + 急 CT）</div>
           <div class="today-sat-person">${formattedPerson}</div>
-          ${a.sat.note ? `<div style="font-size:0.72rem;color:var(--text-sub)">※ ${a.sat.note}</div>` : ''}
         </div>`;
     } else {
       satHtml += `<div class="today-sat-card"><div class="today-sat-label">週六班</div><div style="color:var(--text-sub);font-size:0.88rem">無資料</div></div>`;
@@ -2883,8 +2881,8 @@ function renderTodayCard(key) {
   if (a.mri_tp || a.mri_ds) {
     rows.push({
       label: `門住急 MRI`,
-      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false, targetDate, 'mri', 'tp') + (a.mri_tp.note ? `<span class="note-inline">※ ${a.mri_tp.note}</span>` : '') : '—',
-      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false, targetDate, 'mri', 'ds') + (a.mri_ds.note ? `<span class="note-inline">※ ${a.mri_ds.note}</span>` : '') : '—',
+      tp: a.mri_tp ? renderPerson(a.mri_tp.person, false, targetDate, 'mri', 'tp') : '—',
+      ds: a.mri_ds ? renderPerson(a.mri_ds.person, false, targetDate, 'mri', 'ds') : '—',
     });
   }
   if (a.ds_mri) {
@@ -2904,9 +2902,8 @@ function renderTodayCard(key) {
     <div><span class="loc loc-ds">淡水</span></div>
   </div>`;
   rows.forEach(r => {
-    const noteStr = r.note ? `<span class="note-inline">※ ${r.note}</span>` : '';
     gridHtml += `<div class="today-grid-row">
-      <div>${r.label}${noteStr}</div>
+      <div>${r.label}</div>
       <div>${r.tp}</div>
       <div>${r.ds}</div>
     </div>`;
