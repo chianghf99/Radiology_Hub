@@ -3644,6 +3644,7 @@ function renderSaturday(data) {
 }
 
 function renderSundayMri(data) {
+  const editing = isSectionEditing('sunday');
   let activeData = data;
   if (!activeData || activeData.length === 0) {
     const key = MONTH_KEYS[currentIdx];
