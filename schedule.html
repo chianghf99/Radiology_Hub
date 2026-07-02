@@ -1645,20 +1645,25 @@ function syncDomToMemory(key) {
   rows.forEach(tr => {
     const dateInput = tr.querySelector('.cover-date-input');
     const absentSelect = tr.querySelector('.cover-absent-select');
+    const taskSelect = tr.querySelector('.cover-task-select');
     const modeSelect = tr.querySelector('.cover-mode-select');
-    if (!dateInput || !absentSelect || !modeSelect) return;
+    if (!dateInput || !absentSelect || !taskSelect || !modeSelect) return;
     
     const dateVal = dateInput.value.trim();
     const absentVal = absentSelect.value.trim();
+    const taskVal = taskSelect.value.trim();
     const modeVal = modeSelect.value.trim();
     if (!dateVal || !absentVal) return;
     
     if (!covers[dateVal]) covers[dateVal] = {};
+    if (!covers[dateVal][absentVal]) covers[dateVal][absentVal] = {};
+    
+    let coverPayload = null;
     if (modeVal === 'single') {
       const singleSelect = tr.querySelector('.cover-single-select');
       const singleVal = singleSelect ? singleSelect.value.trim() : '';
       if (singleVal) {
-        covers[dateVal][absentVal] = singleVal;
+        coverPayload = singleVal;
       }
     } else {
       const tpSelect = tr.querySelector('.cover-tp-select');
@@ -1666,12 +1671,40 @@ function syncDomToMemory(key) {
       const tpVal = tpSelect ? tpSelect.value.trim() : '';
       const dsVal = dsSelect ? dsSelect.value.trim() : '';
       if (tpVal || dsVal) {
-        covers[dateVal][absentVal] = {};
-        if (tpVal) covers[dateVal][absentVal].tp = tpVal;
-        if (dsVal) covers[dateVal][absentVal].ds = dsVal;
+        coverPayload = {};
+        if (tpVal) coverPayload.tp = tpVal;
+        if (dsVal) coverPayload.ds = dsVal;
+      }
+    }
+    
+    if (coverPayload !== null) {
+      if (taskVal === 'all') {
+        covers[dateVal][absentVal] = coverPayload;
+      } else {
+        if (typeof covers[dateVal][absentVal] === 'string') {
+          const prev = covers[dateVal][absentVal];
+          covers[dateVal][absentVal] = { all: prev };
+        }
+        covers[dateVal][absentVal][taskVal] = coverPayload;
       }
     }
   });
+  
+  // 清理空項目，保持 JSON 結構清爽
+  Object.keys(covers).forEach(dVal => {
+    Object.keys(covers[dVal]).forEach(aVal => {
+      const item = covers[dVal][aVal];
+      if (typeof item === 'object' && item !== null) {
+        if (Object.keys(item).length === 0) {
+          delete covers[dVal][aVal];
+        }
+      }
+    });
+    if (Object.keys(covers[dVal]).length === 0) {
+      delete covers[dVal];
+    }
+  });
+  
   return covers;
 }
 
@@ -3202,7 +3235,7 @@ window.onCoverModeChange = function(selectEl) {
   }
 };
 
-window.addVisualCoverRow = function(date = '', absent = '', mode = 'single', tpVal = '', dsVal = '') {
+window.addVisualCoverRow = function(date = '', absent = '', taskKey = 'all', mode = 'single', tpVal = '', dsVal = '') {
   const tbody = document.getElementById('visual-covers-tbody');
   if (!tbody) return;
   
@@ -3213,6 +3246,24 @@ window.addVisualCoverRow = function(date = '', absent = '', mode = 'single', tpV
       <option value="">-</option>
       ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === absent ? 'selected' : ''}>${p.name}</option>`).join('')}
     </select>`;
+    
+  const taskOptionsHtml = [
+    { key: 'all', name: '全部工作' },
+    { key: 'mri', name: '🧲 門住急 MRI' },
+    { key: 'angio', name: '🏥 血管攝影' },
+    { key: 'erct', name: '🚨 急診 CT' },
+    { key: 'routine_ct', name: '📋 門住 CT 號碼' },
+    { key: 'ds_mri', name: '🏥 淡水健檢 MRI' },
+    { key: 'picc', name: '💉 PICC' },
+    { key: 'saturday', name: '📅 週六班' },
+    { key: 'sunday', name: '📅 週日 MRI' }
+  ].map(o => `<option value="${o.key}" ${o.key === taskKey ? 'selected' : ''}>${o.name}</option>`).join('');
+  
+  const taskSelect = `
+    <select class="cover-task-select" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
+      ${taskOptionsHtml}
+    </select>`;
+    
   const modeSelect = `
     <select class="cover-mode-select" onchange="onCoverModeChange(this)" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
       <option value="single" ${mode === 'single' ? 'selected' : ''}>單人代班</option>
@@ -3228,12 +3279,12 @@ window.addVisualCoverRow = function(date = '', absent = '', mode = 'single', tpV
   const advancedSelect = `
     <div class="cover-advanced-container" style="display:${mode === 'advanced' ? 'flex' : 'none'}; gap:4px; align-items:center; flex-wrap:wrap;">
       <span style="font-size:0.7rem; color:#64748b;">北:</span>
-      <select class="cover-tp-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:70px;">
+      <select class="cover-tp-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:60px;">
         <option value="">-</option>
         ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === tpVal && mode === 'advanced' ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
       <span style="font-size:0.7rem; color:#64748b; margin-left:4px;">淡:</span>
-      <select class="cover-ds-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:70px;">
+      <select class="cover-ds-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:60px;">
         <option value="">-</option>
         ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === dsVal && mode === 'advanced' ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
@@ -3243,6 +3294,7 @@ window.addVisualCoverRow = function(date = '', absent = '', mode = 'single', tpV
   tr.innerHTML = `
     <td>${dateInput}</td>
     <td>${absentSelect}</td>
+    <td>${taskSelect}</td>
     <td>${modeSelect}</td>
     <td>${singleSelect}${advancedSelect}</td>
     <td style="text-align:center;">${deleteBtn}</td>`;
@@ -3251,6 +3303,17 @@ window.addVisualCoverRow = function(date = '', absent = '', mode = 'single', tpV
 
 function renderLeavesAndCoversEditorSection(d) {
   const editing = isSectionEditing('leaves_covers');
+  const taskNames = {
+    'all': '全部工作',
+    'mri': '🧲 門住急 MRI',
+    'angio': '🏥 血管攝影',
+    'erct': '🚨 急診 CT',
+    'routine_ct': '📋 門住 CT 號碼',
+    'ds_mri': '🏥 淡水健檢 MRI',
+    'picc': '💉 PICC',
+    'saturday': '📅 週六班',
+    'sunday': '📅 週日 MRI'
+  };
   
   // 1. 唯讀預覽模式
   if (!editing) {
@@ -3287,19 +3350,43 @@ function renderLeavesAndCoversEditorSection(d) {
           Object.keys(dayCovers).forEach(absentDoc => {
             const coverVal = dayCovers[absentDoc];
             let coverText = '';
+            
             if (typeof coverVal === 'string') {
               coverText = `<span class="person ${personCls(coverVal)}">${coverVal}</span>`;
             } else if (typeof coverVal === 'object' && coverVal !== null) {
-              const parts = [];
-              if (coverVal.tp) parts.push(`<span class="loc loc-tp">台北</span><span class="person ${personCls(coverVal.tp)}">${coverVal.tp}</span>`);
-              if (coverVal.ds) parts.push(`<span class="loc loc-ds">淡水</span><span class="person ${personCls(coverVal.ds)}">${coverVal.ds}</span>`);
-              coverText = parts.join('、');
+              const knownTasks = ['mri', 'angio', 'erct', 'routine_ct', 'ds_mri', 'picc', 'saturday', 'sunday'];
+              const hasTaskKeys = Object.keys(coverVal).some(k => knownTasks.includes(k) || k === 'all');
+              
+              if (hasTaskKeys) {
+                const taskParts = [];
+                Object.keys(coverVal).forEach(tKey => {
+                  const tVal = coverVal[tKey];
+                  const tName = taskNames[tKey] || tKey;
+                  let tText = '';
+                  if (typeof tVal === 'string') {
+                    tText = `<span class="person ${personCls(tVal)}">${tVal}</span>`;
+                  } else if (typeof tVal === 'object' && tVal !== null) {
+                    const subParts = [];
+                    if (tVal.tp) subParts.push(`<span class="loc loc-tp">台北</span><span class="person ${personCls(tVal.tp)}">${tVal.tp}</span>`);
+                    if (tVal.ds) subParts.push(`<span class="loc loc-ds">淡水</span><span class="person ${personCls(tVal.ds)}">${tVal.ds}</span>`);
+                    tText = subParts.join('、');
+                  }
+                  taskParts.push(`<span style="background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1; font-size:0.75rem; margin-right:4px; display:inline-block; margin-top:2px;">${tName}: ${tText}</span>`);
+                });
+                coverText = taskParts.join(' ');
+              } else {
+                const parts = [];
+                if (coverVal.tp) parts.push(`<span class="loc loc-tp">台北</span><span class="person ${personCls(coverVal.tp)}">${coverVal.tp}</span>`);
+                if (coverVal.ds) parts.push(`<span class="loc loc-ds">淡水</span><span class="person ${personCls(coverVal.ds)}">${coverVal.ds}</span>`);
+                coverText = parts.join('、');
+              }
             }
-            activeCoversHtml += `<div style="padding:5px 10px; background:white; border:1px solid #e2e8f0; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
-              <strong style="color:var(--primary-color);">${dateStr}</strong>
+            
+            activeCoversHtml += `<div style="padding:8px 12px; background:white; border:1px solid #e2e8f0; border-radius:6px; display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; box-sizing:border-box;">
+              <strong style="color:var(--primary-color); min-width:35px;">${dateStr}</strong>
               <span class="person ${personCls(absentDoc)}" style="text-decoration:line-through; opacity:0.6;">${absentDoc}</span>
               <span style="color:#94a3b8;">→</span>
-              <span>${coverText}</span>
+              <div style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center;">${coverText}</div>
             </div>`;
             coverCount++;
           });
@@ -3317,7 +3404,7 @@ function renderLeavesAndCoversEditorSection(d) {
       </div>
       <div>
         <div style="font-weight:700; color:#475569; margin-bottom:8px; font-size:0.82rem; display:flex; align-items:center; gap:4px;">🔄 醫師代班明細：</div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">${activeCoversHtml}</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">${activeCoversHtml}</div>
       </div>`;
     sec.appendChild(container);
     return sec;
@@ -3348,14 +3435,15 @@ function renderLeavesAndCoversEditorSection(d) {
   
   const coversTableHtml = `<div>
     <div style="font-weight:700; color:#475569; margin-bottom:4px;">代班規則設定：</div>
-    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">請填寫日期與請假人，並設定代班人。代班模式支援「單人代班」或指定「台北/淡水」分院區。</div>
+    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">請填寫日期與請假人，並設定代班工作與代班醫師。代班模式支援「單人代班」或指定「台北/淡水」分院區。</div>
     <table class="covers-edit-table">
       <thead>
         <tr>
-          <th style="width: 20%;">請假日期 (M/D)</th>
-          <th style="width: 25%;">請假醫師</th>
-          <th style="width: 20%;">代班模式</th>
-          <th style="width: 30%;">代班設定</th>
+          <th style="width: 15%;">請假日期 (M/D)</th>
+          <th style="width: 20%;">請假醫師</th>
+          <th style="width: 20%;">代班工作</th>
+          <th style="width: 15%;">代班模式</th>
+          <th style="width: 25%;">代班設定</th>
           <th style="width: 5%; text-align:center;">操作</th>
         </tr>
       </thead>
@@ -3376,13 +3464,27 @@ function renderLeavesAndCoversEditorSection(d) {
     if (d.covers) {
       Object.keys(d.covers).forEach(dateStr => {
         const dayCovers = d.covers[dateStr];
-        if (dayCovers) {
+        if (dayCovers && typeof dayCovers === 'object') {
           Object.keys(dayCovers).forEach(absentDoc => {
             const val = dayCovers[absentDoc];
             if (typeof val === 'string') {
-              window.addVisualCoverRow(dateStr, absentDoc, 'single', val, '');
+              window.addVisualCoverRow(dateStr, absentDoc, 'all', 'single', val, '');
             } else if (typeof val === 'object' && val !== null) {
-              window.addVisualCoverRow(dateStr, absentDoc, 'advanced', val.tp || '', val.ds || '');
+              const knownTasks = ['mri', 'angio', 'erct', 'routine_ct', 'ds_mri', 'picc', 'saturday', 'sunday'];
+              const hasTaskKeys = Object.keys(val).some(k => knownTasks.includes(k) || k === 'all');
+              
+              if (hasTaskKeys) {
+                Object.keys(val).forEach(tKey => {
+                  const tVal = val[tKey];
+                  if (typeof tVal === 'string') {
+                    window.addVisualCoverRow(dateStr, absentDoc, tKey, 'single', tVal, '');
+                  } else if (typeof tVal === 'object' && tVal !== null) {
+                    window.addVisualCoverRow(dateStr, absentDoc, tKey, 'advanced', tVal.tp || '', tVal.ds || '');
+                  }
+                });
+              } else {
+                window.addVisualCoverRow(dateStr, absentDoc, 'all', 'advanced', val.tp || '', val.ds || '');
+              }
             }
           });
         }
