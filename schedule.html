@@ -553,6 +553,126 @@
       margin-left: -5px;
       border-color: transparent transparent #1e293b transparent;
     }
+
+    /* ── Section Edit Buttons ── */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .section-edit-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: auto;
+    }
+    .section-edit-btn:hover {
+      background: #f1f5f9;
+      color: var(--primary-color);
+      border-color: #94a3b8;
+    }
+    .section-edit-save-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      background: var(--primary-color);
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .section-edit-save-btn:hover {
+      background: #1d4ed8;
+    }
+    .section-edit-cancel-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #475569;
+      background: #e2e8f0;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .section-edit-cancel-btn:hover {
+      background: #cbd5e1;
+    }
+
+    /* ── Visual Covers Editor Table ── */
+    .covers-edit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-top: 8px;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      table-layout: auto !important;
+    }
+    .covers-edit-table th {
+      background: #e2e8f0;
+      color: #475569;
+      font-weight: 700;
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .covers-edit-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .covers-edit-table tr:last-child td {
+      border-bottom: none;
+    }
+    .covers-edit-btn-add {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      background: #eff6ff;
+      border: 1px dashed #3b82f6;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 10px;
+      transition: all 0.15s;
+    }
+    .covers-edit-btn-add:hover {
+      background: #dbeafe;
+      border-style: solid;
+    }
+    .covers-delete-btn {
+      color: #ef4444;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .covers-delete-btn:hover {
+      background: #fee2e2;
+    }
   </style>
 </head>
 <body>
@@ -1027,6 +1147,12 @@ let currentUser = null;
 let provider = null;
 
 let isEditMode = false;
+let activeEditSection = null;
+
+function isSectionEditing(key) {
+  if (activeEditSection === null) return false;
+  return activeEditSection === 'all' || activeEditSection === key;
+}
 
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY") {
   try {
@@ -1504,7 +1630,46 @@ function syncDomToMemory(key) {
   }
   NI_DATA[key].picc = picc;
   
-  // 8. Leaves
+  function getCoversFromVisualTable() {
+  const covers = {};
+  const tbody = document.getElementById('visual-covers-tbody');
+  if (!tbody) return null;
+  
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(tr => {
+    const dateInput = tr.querySelector('.cover-date-input');
+    const absentSelect = tr.querySelector('.cover-absent-select');
+    const modeSelect = tr.querySelector('.cover-mode-select');
+    if (!dateInput || !absentSelect || !modeSelect) return;
+    
+    const dateVal = dateInput.value.trim();
+    const absentVal = absentSelect.value.trim();
+    const modeVal = modeSelect.value.trim();
+    if (!dateVal || !absentVal) return;
+    
+    if (!covers[dateVal]) covers[dateVal] = {};
+    if (modeVal === 'single') {
+      const singleSelect = tr.querySelector('.cover-single-select');
+      const singleVal = singleSelect ? singleSelect.value.trim() : '';
+      if (singleVal) {
+        covers[dateVal][absentVal] = singleVal;
+      }
+    } else {
+      const tpSelect = tr.querySelector('.cover-tp-select');
+      const dsSelect = tr.querySelector('.cover-ds-select');
+      const tpVal = tpSelect ? tpSelect.value.trim() : '';
+      const dsVal = dsSelect ? dsSelect.value.trim() : '';
+      if (tpVal || dsVal) {
+        covers[dateVal][absentVal] = {};
+        if (tpVal) covers[dateVal][absentVal].tp = tpVal;
+        if (dsVal) covers[dateVal][absentVal].ds = dsVal;
+      }
+    }
+  });
+  return covers;
+}
+
+// 8. Leaves
   const leaves = {};
   PEOPLE.forEach(p => {
     const inputEl = document.getElementById(`ni-leaves-${p.name}`);
@@ -1518,12 +1683,10 @@ function syncDomToMemory(key) {
   });
   NI_DATA[key].leaves = leaves;
   
-  // 9. Covers (JSON Parsing)
-  const coversEl = document.getElementById('ni-covers-json');
-  if (coversEl) {
-    try {
-      NI_DATA[key].covers = JSON.parse(coversEl.value);
-    } catch (e) {}
+  // 9. Covers
+  const visualCovers = getCoversFromVisualTable();
+  if (visualCovers !== null) {
+    NI_DATA[key].covers = visualCovers;
   }
   
   // 10. Holidays
@@ -1938,12 +2101,14 @@ async function deleteSelectedTemplate() {
 }
 
 function toggleEditMode() {
+  activeEditSection = 'all';
   isEditMode = true;
   toggleEditUiState();
   render();
 }
 
 function cancelEditMode() {
+  activeEditSection = null;
   isEditMode = false;
   toggleEditUiState();
   render();
@@ -1955,10 +2120,45 @@ function toggleEditUiState() {
   
   if (isEditMode) {
     editBar.style.display = 'flex';
+    const label = editBar.querySelector('span');
+    if (label) {
+      if (activeEditSection === 'all') {
+        label.textContent = '⚠️ 正在全域排班編輯模式中...';
+      } else {
+        const secNameMap = {
+          'angio': '🏥 血管攝影室（神經介入）',
+          'erct': '🚨 急診 CT',
+          'routine_ct': '📋 門住 CT 號碼',
+          'mri': '🧲 門住急 MRI',
+          'ds_mri': '🏥 淡水健檢 / 神經 MRI',
+          'saturday': '📅 週六班',
+          'sunday': '📅 週日 MRI 加班',
+          'picc': '💉 PICC',
+          'leaves_covers': '⚙️ 請假與代班設定'
+        };
+        const name = secNameMap[activeEditSection] || '此區塊';
+        label.textContent = `⚠️ 正在局部編輯：${name}...`;
+      }
+    }
   } else {
     editBar.style.display = 'none';
   }
 }
+
+window.startSectionEdit = function(sectionKey) {
+  activeEditSection = sectionKey;
+  isEditMode = true;
+  toggleEditUiState();
+  render();
+};
+
+window.saveSectionEdit = function(sectionKey) {
+  saveAllSchedules();
+};
+
+window.cancelSectionEdit = function() {
+  cancelEditMode();
+};
 
 // 非同步載入雲端班表資料
 async function loadCloudSchedules() {
@@ -2945,12 +3145,29 @@ function renderNiTab(d) {
   root.appendChild(renderNotes(d.notes || ''));
 }
 
-function makeSection(icon, title, cls='') {
+function makeSection(icon, title, cls='', sectionKey=null) {
   const div = document.createElement('div');
   div.className = 'section-card' + (cls ? ' ' + cls : '');
   const h = document.createElement('div');
   h.className = 'section-title';
-  h.textContent = `${icon} ${title}`;
+  
+  if (sectionKey && currentUser) {
+    h.className = 'section-title section-header';
+    let btnHtml = '';
+    if (activeEditSection === null) {
+      btnHtml = `<button class="section-edit-btn" onclick="startSectionEdit('${sectionKey}')">✏️ 編輯</button>`;
+    } else if (activeEditSection === sectionKey) {
+      btnHtml = `
+        <div style="display:flex; gap:6px;">
+          <button class="section-edit-save-btn" onclick="saveSectionEdit('${sectionKey}')">💾 儲存</button>
+          <button class="section-edit-cancel-btn" onclick="cancelSectionEdit()">❌ 取消</button>
+        </div>`;
+    }
+    h.innerHTML = `<span>${icon} ${title}</span>${btnHtml}`;
+  } else {
+    h.textContent = `${icon} ${title}`;
+  }
+  
   div.appendChild(h);
   return div;
 }
@@ -2965,13 +3182,143 @@ function makeEditInput(id, currentValue) {
   return `<input type="text" id="${id}" value="${currentValue || ''}" style="width:100%; font-size:0.8rem; padding:2px; box-sizing:border-box;">`;
 }
 
+window.onCoverModeChange = function(selectEl) {
+  const row = selectEl.closest('tr');
+  const mode = selectEl.value;
+  const singleContainer = row.querySelector('.cover-single-container');
+  const advancedContainer = row.querySelector('.cover-advanced-container');
+  if (mode === 'single') {
+    if (singleContainer) singleContainer.style.display = 'block';
+    if (advancedContainer) advancedContainer.style.display = 'none';
+  } else {
+    if (singleContainer) singleContainer.style.display = 'none';
+    if (advancedContainer) advancedContainer.style.display = 'flex';
+  }
+};
+
+window.addVisualCoverRow = function(date = '', absent = '', mode = 'single', tpVal = '', dsVal = '') {
+  const tbody = document.getElementById('visual-covers-tbody');
+  if (!tbody) return;
+  
+  const tr = document.createElement('tr');
+  const dateInput = `<input type="text" class="cover-date-input" value="${date}" placeholder="如: 7/17" style="width:90%; padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem; box-sizing:border-box;">`;
+  const absentSelect = `
+    <select class="cover-absent-select" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
+      <option value="">-</option>
+      ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === absent ? 'selected' : ''}>${p.name}</option>`).join('')}
+    </select>`;
+  const modeSelect = `
+    <select class="cover-mode-select" onchange="onCoverModeChange(this)" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
+      <option value="single" ${mode === 'single' ? 'selected' : ''}>單人代班</option>
+      <option value="advanced" ${mode === 'advanced' ? 'selected' : ''}>指定分院區</option>
+    </select>`;
+  const singleSelect = `
+    <div class="cover-single-container" style="display:${mode === 'single' ? 'block' : 'none'};">
+      <select class="cover-single-select" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
+        <option value="">-</option>
+        ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === tpVal && mode === 'single' ? 'selected' : ''}>${p.name}</option>`).join('')}
+      </select>
+    </div>`;
+  const advancedSelect = `
+    <div class="cover-advanced-container" style="display:${mode === 'advanced' ? 'flex' : 'none'}; gap:4px; align-items:center; flex-wrap:wrap;">
+      <span style="font-size:0.7rem; color:#64748b;">北:</span>
+      <select class="cover-tp-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:70px;">
+        <option value="">-</option>
+        ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === tpVal && mode === 'advanced' ? 'selected' : ''}>${p.name}</option>`).join('')}
+      </select>
+      <span style="font-size:0.7rem; color:#64748b; margin-left:4px;">淡:</span>
+      <select class="cover-ds-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:70px;">
+        <option value="">-</option>
+        ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === dsVal && mode === 'advanced' ? 'selected' : ''}>${p.name}</option>`).join('')}
+      </select>
+    </div>`;
+  const deleteBtn = `<button type="button" class="covers-delete-btn" onclick="this.closest('tr').remove()">🗑️ 刪除</button>`;
+  
+  tr.innerHTML = `
+    <td>${dateInput}</td>
+    <td>${absentSelect}</td>
+    <td>${modeSelect}</td>
+    <td>${singleSelect}${advancedSelect}</td>
+    <td style="text-align:center;">${deleteBtn}</td>`;
+  tbody.appendChild(tr);
+};
+
 function renderLeavesAndCoversEditorSection(d) {
-  if (!isEditMode) {
-    const f = document.createDocumentFragment();
-    return f;
+  const editing = isSectionEditing('leaves_covers');
+  
+  // 1. 唯讀預覽模式
+  if (!editing) {
+    const sec = makeSection('⚙️', '請假與代班明細總覽', 'full-width', 'leaves_covers');
+    const container = document.createElement('div');
+    container.style.marginTop = '12px';
+    container.style.padding = '16px';
+    container.style.background = '#f8fafc';
+    container.style.border = '1px solid #e2e8f0';
+    container.style.borderRadius = '8px';
+    container.style.fontSize = '0.85rem';
+    
+    let activeLeavesHtml = '';
+    let leaveCount = 0;
+    if (d.leaves) {
+      Object.keys(d.leaves).forEach(name => {
+        const dates = d.leaves[name];
+        if (dates && dates.length > 0) {
+          activeLeavesHtml += `<div style="padding:5px 10px; background:white; border:1px solid #e2e8f0; border-radius:6px; font-weight:600;"><span class="person ${personCls(name)}">${name}</span>：${dates.join(', ')}</div>`;
+          leaveCount++;
+        }
+      });
+    }
+    if (leaveCount === 0) {
+      activeLeavesHtml = `<div style="color:#94a3b8; font-style:italic;">本月無請假紀錄</div>`;
+    }
+    
+    let activeCoversHtml = '';
+    let coverCount = 0;
+    if (d.covers) {
+      Object.keys(d.covers).sort().forEach(dateStr => {
+        const dayCovers = d.covers[dateStr];
+        if (dayCovers) {
+          Object.keys(dayCovers).forEach(absentDoc => {
+            const coverVal = dayCovers[absentDoc];
+            let coverText = '';
+            if (typeof coverVal === 'string') {
+              coverText = `<span class="person ${personCls(coverVal)}">${coverVal}</span>`;
+            } else if (typeof coverVal === 'object' && coverVal !== null) {
+              const parts = [];
+              if (coverVal.tp) parts.push(`<span class="loc loc-tp">台北</span><span class="person ${personCls(coverVal.tp)}">${coverVal.tp}</span>`);
+              if (coverVal.ds) parts.push(`<span class="loc loc-ds">淡水</span><span class="person ${personCls(coverVal.ds)}">${coverVal.ds}</span>`);
+              coverText = parts.join('、');
+            }
+            activeCoversHtml += `<div style="padding:5px 10px; background:white; border:1px solid #e2e8f0; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
+              <strong style="color:var(--primary-color);">${dateStr}</strong>
+              <span class="person ${personCls(absentDoc)}" style="text-decoration:line-through; opacity:0.6;">${absentDoc}</span>
+              <span style="color:#94a3b8;">→</span>
+              <span>${coverText}</span>
+            </div>`;
+            coverCount++;
+          });
+        }
+      });
+    }
+    if (coverCount === 0) {
+      activeCoversHtml = `<div style="color:#94a3b8; font-style:italic;">本月無代班紀錄</div>`;
+    }
+    
+    container.innerHTML = `
+      <div style="margin-bottom:15px;">
+        <div style="font-weight:700; color:#475569; margin-bottom:8px; font-size:0.82rem; display:flex; align-items:center; gap:4px;">✈️ 醫師請假日程：</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">${activeLeavesHtml}</div>
+      </div>
+      <div>
+        <div style="font-weight:700; color:#475569; margin-bottom:8px; font-size:0.82rem; display:flex; align-items:center; gap:4px;">🔄 醫師代班明細：</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">${activeCoversHtml}</div>
+      </div>`;
+    sec.appendChild(container);
+    return sec;
   }
   
-  const sec = makeSection('⚙️', '請假與代班設定 (Leaves & Covers) — 僅在編輯模式顯示', 'full-width');
+  // 2. 編輯模式下的視覺化表格
+  const sec = makeSection('⚙️', '請假與代班設定 (Leaves & Covers)', 'full-width', 'leaves_covers');
   const container = document.createElement('div');
   container.style.marginTop = '12px';
   container.style.padding = '16px';
@@ -2980,7 +3327,6 @@ function renderLeavesAndCoversEditorSection(d) {
   container.style.borderRadius = '8px';
   container.style.fontSize = '0.88rem';
   
-  // 1. 生成請假編輯 HTML
   let leavesHtml = `<div style="margin-bottom: 20px;">
     <div style="font-weight:700; color:#475569; margin-bottom:8px;">醫師請假日期設定 (請輸入半形逗號分隔日期，如 7/17, 7/18)：</div>
     <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">`;
@@ -2994,25 +3340,60 @@ function renderLeavesAndCoversEditorSection(d) {
   });
   leavesHtml += `</div></div>`;
   
-  // 2. 生成代班 JSON 編輯 HTML
-  const currentCoversStr = d.covers ? JSON.stringify(d.covers, null, 2) : '{}';
-  const coversHtml = `<div>
-    <div style="font-weight:700; color:#475569; margin-bottom:4px;">代班規則設定 (Covers JSON 格式)：</div>
-    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">支援指定日期、請假醫師與被代班項目的對應（若整天由同一人代班，可以直接輸入醫師姓名）。</div>
-    <textarea id="ni-covers-json" style="width:100%; min-height:180px; font-family:monospace; font-size:0.8rem; padding:10px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; resize:vertical;">${currentCoversStr}</textarea>
+  const coversTableHtml = `<div>
+    <div style="font-weight:700; color:#475569; margin-bottom:4px;">代班規則設定：</div>
+    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">請填寫日期與請假人，並設定代班人。代班模式支援「單人代班」或指定「台北/淡水」分院區。</div>
+    <table class="covers-edit-table">
+      <thead>
+        <tr>
+          <th style="width: 20%;">請假日期 (M/D)</th>
+          <th style="width: 25%;">請假醫師</th>
+          <th style="width: 20%;">代班模式</th>
+          <th style="width: 30%;">代班設定</th>
+          <th style="width: 5%; text-align:center;">操作</th>
+        </tr>
+      </thead>
+      <tbody id="visual-covers-tbody">
+      </tbody>
+    </table>
+    <button type="button" class="covers-edit-btn-add" onclick="addVisualCoverRow()">➕ 新增代班設定</button>
   </div>`;
   
-  container.innerHTML = leavesHtml + coversHtml;
+  container.innerHTML = leavesHtml + coversTableHtml;
   sec.appendChild(container);
+  
+  // 載入當前代班資料
+  setTimeout(() => {
+    const tbody = document.getElementById('visual-covers-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (d.covers) {
+      Object.keys(d.covers).forEach(dateStr => {
+        const dayCovers = d.covers[dateStr];
+        if (dayCovers) {
+          Object.keys(dayCovers).forEach(absentDoc => {
+            const val = dayCovers[absentDoc];
+            if (typeof val === 'string') {
+              window.addVisualCoverRow(dateStr, absentDoc, 'single', val, '');
+            } else if (typeof val === 'object' && val !== null) {
+              window.addVisualCoverRow(dateStr, absentDoc, 'advanced', val.tp || '', val.ds || '');
+            }
+          });
+        }
+      });
+    }
+  }, 20);
+  
   return sec;
 }
 
 function renderAngio(data) {
-  const sec = makeSection('🏥', '血管攝影室（神經介入）', 'full-width');
+  const editing = isSectionEditing('angio');
+  const sec = makeSection('🏥', '血管攝影室（神經介入）', 'full-width', 'angio');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
-  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
+  const noteColHeader = editing ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
       <th style="width: 10%;">星期</th>
@@ -3026,7 +3407,7 @@ function renderAngio(data) {
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    if (isEditMode) {
+    if (editing) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${makeEditSelect(`ni-angio-${idx}-tp_dsa`, row.tp_dsa)}</td>
@@ -3056,11 +3437,12 @@ function renderAngio(data) {
 }
 
 function renderErCt(data) {
-  const sec = makeSection('🚨', '急診 CT（Neuro ER CT）');
+  const editing = isSectionEditing('erct');
+  const sec = makeSection('🚨', '急診 CT（Neuro ER CT）', '', 'erct');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
-  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
+  const noteColHeader = editing ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
       <th style="width: 15%;">星期</th>
@@ -3071,7 +3453,7 @@ function renderErCt(data) {
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    if (isEditMode) {
+    if (editing) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${makeEditSelect(`ni-erct-${idx}-tp`, row.tp)}</td>
@@ -3097,11 +3479,12 @@ function renderErCt(data) {
 }
 
 function renderRoutineCt(data) {
-  const sec = makeSection('📋', '門住 CT 號碼分配');
+  const editing = isSectionEditing('routine_ct');
+  const sec = makeSection('📋', '門住 CT 號碼分配', '', 'routine_ct');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
-  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
+  const noteColHeader = editing ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
       <th style="width: 25%;">醫師</th>
@@ -3112,7 +3495,7 @@ function renderRoutineCt(data) {
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    if (isEditMode) {
+    if (editing) {
       tr.innerHTML = `
         <td>${renderPerson(row.person)}</td>
         <td>${makeEditInput(`ni-ct-${idx}-tp`, row.tp)}</td>
@@ -3138,7 +3521,8 @@ function renderRoutineCt(data) {
 }
 
 function renderMri(data) {
-  const sec = makeSection('🧲', '門住急 MRI', 'full-width');
+  const editing = isSectionEditing('mri');
+  const sec = makeSection('🧲', '門住急 MRI', 'full-width', 'mri');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
@@ -3166,7 +3550,7 @@ function renderMri(data) {
       : `<span class="loc loc-ds">淡水</span>`;
     let cells = `<td class="dow">${label}</td>`;
     data[side].forEach((r, idx) => {
-      if (isEditMode) {
+      if (editing) {
         cells += `<td>
           ${makeEditInput(`ni-mri-${side}-${idx}-person`, r.person)}
           <div style="margin-top:4px;">${makeEditInput(`ni-mri-${side}-${idx}-note`, r.note)}</div>
@@ -3189,11 +3573,12 @@ function renderMri(data) {
 }
 
 function renderDsMriDaily(data) {
-  const sec = makeSection('🏥', '淡水健檢 / 神經 MRI 解釋');
+  const editing = isSectionEditing('ds_mri');
+  const sec = makeSection('🏥', '淡水健檢 / 神經 MRI 解釋', '', 'ds_mri');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
-  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
+  const noteColHeader = editing ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
       <th style="width: 20%;">星期</th>
@@ -3203,7 +3588,7 @@ function renderDsMriDaily(data) {
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    if (isEditMode) {
+    if (editing) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${makeEditSelect(`ni-dsmri-${idx}-person`, row.person)}</td>
@@ -3227,13 +3612,14 @@ function renderDsMriDaily(data) {
 }
 
 function renderSaturday(data) {
-  const sec = makeSection('📅', '週六班（北淡 MRI + 急 CT）');
+  const editing = isSectionEditing('saturday');
+  const sec = makeSection('📅', '週六班（北淡 MRI + 急 CT）', '', 'saturday');
   const list = document.createElement('div');
   list.className = 'sat-list';
   data.forEach((row, idx) => {
     const card = document.createElement('div');
     card.className = 'sat-card';
-    if (isEditMode) {
+    if (editing) {
       card.innerHTML = `
         <div class="sat-date">${row.date}</div>
         <div style="margin-top:4px; width:100%;">${makeEditSelect(`ni-sat-${idx}-person`, row.person)}</div>
@@ -3275,13 +3661,13 @@ function renderSundayMri(data) {
   }
   if (!activeData) activeData = [];
 
-  const sec = makeSection('📅', '週日 MRI 加班');
+  const sec = makeSection('📅', '週日 MRI 加班', '', 'sunday');
   const list = document.createElement('div');
   list.className = 'sat-list';
   activeData.forEach((row, idx) => {
     const card = document.createElement('div');
     card.className = 'sat-card';
-    if (isEditMode) {
+    if (editing) {
       card.innerHTML = `
         <div class="sat-date">${row.date}</div>
         <div style="margin-top:4px; width:100%;">${makeEditSelect(`ni-sun-${idx}-person`, row.person)}</div>
@@ -3300,11 +3686,12 @@ function renderSundayMri(data) {
 }
 
 function renderPicc(data) {
-  const sec = makeSection('💉', 'PICC');
+  const editing = isSectionEditing('picc');
+  const sec = makeSection('💉', 'PICC', '', 'picc');
   const t = document.createElement('table');
   t.className = 'ni-table';
   t.style.marginTop = '0';
-  const noteColHeader = isEditMode ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
+  const noteColHeader = editing ? '<th style="width: 180px;">備注</th>' : '<th style="width: 55px;">💬</th>';
   t.innerHTML = `
     <thead><tr>
       <th style="width: 15%;">星期</th>
@@ -3315,7 +3702,7 @@ function renderPicc(data) {
   const tbody = t.querySelector('tbody');
   data.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    if (isEditMode) {
+    if (editing) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${makeEditSelect(`ni-picc-${idx}-tp`, row.tp)}</td>
@@ -3652,19 +4039,15 @@ async function saveAllSchedules() {
       }
     });
     
-    // Covers (JSON Parsing)
+    // Covers (Visual Table Parsing)
     let covers = {};
-    const coversEl = document.getElementById('ni-covers-json');
-    if (coversEl) {
-      try {
-        covers = JSON.parse(coversEl.value);
-      } catch (e) {
-        alert("代班規則的 JSON 格式錯誤，請檢查是否有遺漏引號、逗號或括號！\n錯誤原因: " + e.message);
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = "💾 儲存修改";
-        }
-        return;
+    const visualCovers = getCoversFromVisualTable();
+    if (visualCovers !== null) {
+      covers = visualCovers;
+    } else {
+      // 雙向 Fallback 鎖：若 DOM 未渲染，則使用記憶體中的資料
+      if (NI_DATA[key] && NI_DATA[key].covers) {
+        covers = NI_DATA[key].covers;
       }
     }
     
