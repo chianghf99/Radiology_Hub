@@ -683,6 +683,78 @@ async function handleCreateNewMonth() {
   }
 }
 
+function getCoversFromVisualTable() {
+  const covers = {};
+  const tbody = document.getElementById('visual-covers-tbody');
+  if (!tbody) return null;
+  
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(tr => {
+    const dateInput = tr.querySelector('.cover-date-input');
+    const absentSelect = tr.querySelector('.cover-absent-select');
+    const taskSelect = tr.querySelector('.cover-task-select');
+    const modeSelect = tr.querySelector('.cover-mode-select');
+    if (!dateInput || !absentSelect || !taskSelect || !modeSelect) return;
+    
+    const dateVal = dateInput.value.trim();
+    const absentVal = absentSelect.value.trim();
+    const taskVal = taskSelect.value.trim();
+    const modeVal = modeSelect.value.trim();
+    if (!dateVal || !absentVal) return;
+    
+    if (!covers[dateVal]) covers[dateVal] = {};
+    if (!covers[dateVal][absentVal]) covers[dateVal][absentVal] = {};
+    
+    let coverPayload = null;
+    if (modeVal === 'single') {
+      const singleSelect = tr.querySelector('.cover-single-select');
+      const singleVal = singleSelect ? singleSelect.value.trim() : '';
+      if (singleVal) {
+        coverPayload = singleVal;
+      }
+    } else {
+      const tpSelect = tr.querySelector('.cover-tp-select');
+      const dsSelect = tr.querySelector('.cover-ds-select');
+      const tpVal = tpSelect ? tpSelect.value.trim() : '';
+      const dsVal = dsSelect ? dsSelect.value.trim() : '';
+      if (tpVal || dsVal) {
+        coverPayload = {};
+        if (tpVal) coverPayload.tp = tpVal;
+        if (dsVal) coverPayload.ds = dsVal;
+      }
+    }
+    
+    if (coverPayload !== null) {
+      if (taskVal === 'all') {
+        covers[dateVal][absentVal] = coverPayload;
+      } else {
+        if (typeof covers[dateVal][absentVal] === 'string') {
+          const prev = covers[dateVal][absentVal];
+          covers[dateVal][absentVal] = { all: prev };
+        }
+        covers[dateVal][absentVal][taskVal] = coverPayload;
+      }
+    }
+  });
+  
+  // 清理空項目，保持 JSON 結構清爽
+  Object.keys(covers).forEach(dVal => {
+    Object.keys(covers[dVal]).forEach(aVal => {
+      const item = covers[dVal][aVal];
+      if (typeof item === 'object' && item !== null) {
+        if (Object.keys(item).length === 0) {
+          delete covers[dVal][aVal];
+        }
+      }
+    });
+    if (Object.keys(covers[dVal]).length === 0) {
+      delete covers[dVal];
+    }
+  });
+  
+  return covers;
+}
+
 function syncDomToMemory(key) {
   if (!NI_DATA[key]) return;
   
@@ -807,79 +879,7 @@ function syncDomToMemory(key) {
   }
   NI_DATA[key].picc = picc;
   
-  function getCoversFromVisualTable() {
-  const covers = {};
-  const tbody = document.getElementById('visual-covers-tbody');
-  if (!tbody) return null;
-  
-  const rows = tbody.querySelectorAll('tr');
-  rows.forEach(tr => {
-    const dateInput = tr.querySelector('.cover-date-input');
-    const absentSelect = tr.querySelector('.cover-absent-select');
-    const taskSelect = tr.querySelector('.cover-task-select');
-    const modeSelect = tr.querySelector('.cover-mode-select');
-    if (!dateInput || !absentSelect || !taskSelect || !modeSelect) return;
-    
-    const dateVal = dateInput.value.trim();
-    const absentVal = absentSelect.value.trim();
-    const taskVal = taskSelect.value.trim();
-    const modeVal = modeSelect.value.trim();
-    if (!dateVal || !absentVal) return;
-    
-    if (!covers[dateVal]) covers[dateVal] = {};
-    if (!covers[dateVal][absentVal]) covers[dateVal][absentVal] = {};
-    
-    let coverPayload = null;
-    if (modeVal === 'single') {
-      const singleSelect = tr.querySelector('.cover-single-select');
-      const singleVal = singleSelect ? singleSelect.value.trim() : '';
-      if (singleVal) {
-        coverPayload = singleVal;
-      }
-    } else {
-      const tpSelect = tr.querySelector('.cover-tp-select');
-      const dsSelect = tr.querySelector('.cover-ds-select');
-      const tpVal = tpSelect ? tpSelect.value.trim() : '';
-      const dsVal = dsSelect ? dsSelect.value.trim() : '';
-      if (tpVal || dsVal) {
-        coverPayload = {};
-        if (tpVal) coverPayload.tp = tpVal;
-        if (dsVal) coverPayload.ds = dsVal;
-      }
-    }
-    
-    if (coverPayload !== null) {
-      if (taskVal === 'all') {
-        covers[dateVal][absentVal] = coverPayload;
-      } else {
-        if (typeof covers[dateVal][absentVal] === 'string') {
-          const prev = covers[dateVal][absentVal];
-          covers[dateVal][absentVal] = { all: prev };
-        }
-        covers[dateVal][absentVal][taskVal] = coverPayload;
-      }
-    }
-  });
-  
-  // 清理空項目，保持 JSON 結構清爽
-  Object.keys(covers).forEach(dVal => {
-    Object.keys(covers[dVal]).forEach(aVal => {
-      const item = covers[dVal][aVal];
-      if (typeof item === 'object' && item !== null) {
-        if (Object.keys(item).length === 0) {
-          delete covers[dVal][aVal];
-        }
-      }
-    });
-    if (Object.keys(covers[dVal]).length === 0) {
-      delete covers[dVal];
-    }
-  });
-  
-  return covers;
-}
-
-// 8. Leaves
+  // 8. Leaves
   const leaves = {};
   PEOPLE.forEach(p => {
     const inputEl = document.getElementById(`ni-leaves-${p.name}`);
