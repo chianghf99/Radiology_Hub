@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      alert("⚠️ 發現 JavaScript 執行錯誤！\n訊息: " + message + "\n檔案: " + source + "\n行號: " + lineno + "\n列號: " + colno + "\nError: " + (error ? error.stack : '無'));
+      return false;
+    };
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>神經放射線班表</title>
@@ -3262,7 +3268,7 @@ function renderLeavesAndCoversEditorSection(d) {
     if (d.leaves) {
       Object.keys(d.leaves).forEach(name => {
         const dates = d.leaves[name];
-        if (dates && dates.length > 0) {
+        if (dates && Array.isArray(dates) && dates.length > 0) {
           activeLeavesHtml += `<div style="padding:5px 10px; background:white; border:1px solid #e2e8f0; border-radius:6px; font-weight:600;"><span class="person ${personCls(name)}">${name}</span>：${dates.join(', ')}</div>`;
           leaveCount++;
         }
@@ -3277,7 +3283,7 @@ function renderLeavesAndCoversEditorSection(d) {
     if (d.covers) {
       Object.keys(d.covers).sort().forEach(dateStr => {
         const dayCovers = d.covers[dateStr];
-        if (dayCovers) {
+        if (dayCovers && typeof dayCovers === 'object') {
           Object.keys(dayCovers).forEach(absentDoc => {
             const coverVal = dayCovers[absentDoc];
             let coverText = '';
