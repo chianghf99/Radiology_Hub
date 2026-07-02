@@ -1,0 +1,5 @@
+exclude:
+  - "A21030000I-D20021-001.csv"
+  - "活頁簿1.xlsx"
+  - "醫材與健保設定資料.xlsx"
+  - "contrast"
