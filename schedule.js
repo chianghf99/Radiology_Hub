@@ -2375,11 +2375,12 @@ function renderNiTab(d) {
   root.appendChild(renderSaturday(d.saturday));
   root.appendChild(renderSundayMri(d.mri_sunday));
   if (d.picc) root.appendChild(renderPicc(d.picc));
-  root.appendChild(renderLeavesAndCoversEditorSection(d));
   root.appendChild(renderNotes(d.notes || ''));
+  root.appendChild(renderLeavesAndCoversEditorSection(d));
 }
 
 let activeCoverSection = null;
+let isLeavesCoversExpanded = false;
 
 function makeSection(icon, title, cls='', sectionKey=null) {
   const div = document.createElement('div');
@@ -2523,6 +2524,42 @@ function renderLeavesAndCoversEditorSection(d) {
   // 1. 唯讀預覽模式
   if (!editing) {
     const sec = makeSection('⚙️', '請假與代班明細總覽', 'full-width', 'leaves_covers');
+    
+    // 建立展開/收合按鈕
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'toggle-collapse-btn';
+    toggleBtn.style.cssText = `
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    `;
+    toggleBtn.onmouseover = () => {
+      toggleBtn.style.background = '#f1f5f9';
+      toggleBtn.style.borderColor = '#94a3b8';
+    };
+    toggleBtn.onmouseout = () => {
+      toggleBtn.style.background = '#f8fafc';
+      toggleBtn.style.borderColor = '#cbd5e1';
+    };
+    toggleBtn.innerHTML = isLeavesCoversExpanded ? '📁 收合請假與代班明細' : '📂 展開請假與代班明細';
+    toggleBtn.onclick = () => {
+      isLeavesCoversExpanded = !isLeavesCoversExpanded;
+      render();
+    };
+    sec.appendChild(toggleBtn);
+
     const container = document.createElement('div');
     container.style.marginTop = '12px';
     container.style.padding = '16px';
@@ -2530,6 +2567,7 @@ function renderLeavesAndCoversEditorSection(d) {
     container.style.border = '1px solid #e2e8f0';
     container.style.borderRadius = '8px';
     container.style.fontSize = '0.85rem';
+    container.style.display = isLeavesCoversExpanded ? 'block' : 'none';
     
     let activeLeavesHtml = '';
     let leaveCount = 0;
