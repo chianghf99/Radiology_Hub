@@ -89,6 +89,7 @@ function activateScripts(container) {
         });
         if (oldScript.src) {
             newScript.src = oldScript.src;
+            newScript.async = false; // Force sequential execution order for external scripts
         } else {
             newScript.textContent = oldScript.textContent;
         }
