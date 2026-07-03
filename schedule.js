@@ -1920,24 +1920,28 @@ function getDoctorTasksForToday(a) {
 // ════════════════════════════════════════════════════
 //  姓名渲染與小備註 helper
 // ════════════════════════════════════════════════════
-function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = null, location = null) {
+function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = null, location = null, dow = null) {
   if (!raw) return '—';
 
   function formatName(name) {
     const cls = personCls(name);
     const baseHtml = `<span class="person ${cls}">${name}</span>`;
+    
+    let isCovered = false;
+    let coverSuffix = '';
+    let hasActiveCover = false;
+    let dateStr = '';
+    
     if (targetDate) {
-      const year = targetDate.getFullYear();
-      const month = targetDate.getMonth() + 1;
-      const day = targetDate.getDate();
+      const parsedDate = typeof targetDate === 'string' ? new Date(MONTH_KEYS[currentIdx].split('-')[0], MONTH_KEYS[currentIdx].split('-')[1] - 1, targetDate.split('/')[1]) : targetDate;
+      const year = parsedDate.getFullYear();
+      const month = parsedDate.getMonth() + 1;
+      const day = parsedDate.getDate();
       const monthKey = `${year}-${String(month).padStart(2, '0')}`;
       const d = NI_DATA[monthKey];
       
-      const dateStr = `${month}/${day}`;
+      dateStr = `${month}/${day}`;
       
-      // Check if this doctor is covered by someone else today
-      let coverSuffix = '';
-      let hasActiveCover = false;
       if (d && d.covers && d.covers[dateStr] && d.covers[dateStr][name]) {
         const cover = d.covers[dateStr][name];
         let coverName = '';
@@ -1973,13 +1977,33 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
       }
 
       if (d && d.leaves && d.leaves[name] && d.leaves[name].includes(dateStr)) {
-        return `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span><span style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;">(休)</span>${coverSuffix}`;
-      }
-      if (hasActiveCover) {
-        return `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span>${coverSuffix}`;
+        isCovered = true;
       }
     }
-    return baseHtml;
+    
+    let finalHtml = baseHtml;
+    if (isCovered) {
+      finalHtml = `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span><span style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;">(休)</span>${coverSuffix}`;
+    } else if (hasActiveCover) {
+      finalHtml = `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span>${coverSuffix}`;
+    }
+    
+    // 如果處於該區塊的請假代班編輯模式，且 name 是有效醫師，渲染 🔄 按鈕
+    if (activeCoverSection && (activeCoverSection === taskKey || (activeCoverSection === 'sunday' && taskKey === 'sunday'))) {
+      const cleanName = name.replace(/AM|PM/g, '').trim();
+      const isValidDoc = PEOPLE.some(p => p.name === cleanName);
+      if (isValidDoc) {
+        const tDateVal = targetDate ? (typeof targetDate === 'string' ? targetDate : `${targetDate.getMonth()+1}/${targetDate.getDate()}`) : '';
+        const escapedName = cleanName.replace(/'/g, "\\'");
+        const escapedTask = taskKey ? taskKey.replace(/'/g, "\\'") : '';
+        const escapedLoc = location ? location.replace(/'/g, "\\'") : '';
+        const escapedDow = dow ? dow.replace(/'/g, "\\'") : '';
+        
+        finalHtml += `<span class="set-cover-btn" onclick="openCellCoverModal('${escapedTask}', '${escapedLoc}', '${escapedName}', '${tDateVal}', '${escapedDow}')" style="cursor:pointer; margin-left:4px; font-size:0.75rem; background:#eff6ff; border:1px solid #bfdbfe; padding:1px 4px; border-radius:3px; display:inline-block;" title="設定代班">🔄</span>`;
+      }
+    }
+    
+    return finalHtml;
   }
 
   if (raw.includes('AM') || raw.includes('PM')) {
@@ -2355,6 +2379,8 @@ function renderNiTab(d) {
   root.appendChild(renderNotes(d.notes || ''));
 }
 
+let activeCoverSection = null;
+
 function makeSection(icon, title, cls='', sectionKey=null) {
   const div = document.createElement('div');
   div.className = 'section-card' + (cls ? ' ' + cls : '');
@@ -2364,14 +2390,22 @@ function makeSection(icon, title, cls='', sectionKey=null) {
   if (sectionKey && currentUser) {
     h.className = 'section-title section-header';
     let btnHtml = '';
-    if (activeEditSection === null) {
-      btnHtml = `<button class="section-edit-btn" onclick="startSectionEdit('${sectionKey}')">✏️ 編輯</button>`;
+    const supportCoverSections = ['angio', 'erct', 'mri', 'ds_mri', 'picc', 'saturday', 'sunday'];
+    
+    if (activeEditSection === null && activeCoverSection === null) {
+      const editBtn = `<button class="section-edit-btn" onclick="startSectionEdit('${sectionKey}')">✏️ 編輯</button>`;
+      const coverBtn = supportCoverSections.includes(sectionKey)
+        ? `<button class="section-edit-btn" onclick="enterSectionCover('${sectionKey}')" style="background:#f0fdf4; border-color:#bbf7d0; color:#16a34a;">🔄 設定代班</button>`
+        : '';
+      btnHtml = `<div style="display:flex; gap:6px;">${editBtn}${coverBtn}</div>`;
     } else if (activeEditSection === sectionKey) {
       btnHtml = `
         <div style="display:flex; gap:6px;">
           <button class="section-edit-save-btn" onclick="saveSectionEdit('${sectionKey}')">💾 儲存</button>
           <button class="section-edit-cancel-btn" onclick="cancelSectionEdit()">❌ 取消</button>
         </div>`;
+    } else if (activeCoverSection === sectionKey) {
+      btnHtml = `<button class="section-edit-cancel-btn" style="background:#ef4444; color:white; border:none;" onclick="exitSectionCover()">❌ 完成</button>`;
     }
     h.innerHTML = `<span>${icon} ${title}</span>${btnHtml}`;
   } else {
@@ -2697,10 +2731,10 @@ function renderAngio(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.tp_dsa)}</td>
-        <td>${renderPerson(row.tp_tae)}</td>
-        <td>${renderPerson(row.ds_dsa)}</td>
-        <td>${renderPerson(row.ds_tae)}</td>
+        <td>${renderPerson(row.tp_dsa, true, null, 'angio', 'tp_dsa', row.dow)}</td>
+        <td>${renderPerson(row.tp_tae, true, null, 'angio', 'tp_tae', row.dow)}</td>
+        <td>${renderPerson(row.ds_dsa, true, null, 'angio', 'ds_dsa', row.dow)}</td>
+        <td>${renderPerson(row.ds_tae, true, null, 'angio', 'ds_tae', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
@@ -2741,8 +2775,8 @@ function renderErCt(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.tp)}</td>
-        <td>${renderPerson(row.ds)}</td>
+        <td>${renderPerson(row.tp, true, null, 'erct', 'tp', row.dow)}</td>
+        <td>${renderPerson(row.ds, true, null, 'erct', 'ds', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
@@ -2835,7 +2869,7 @@ function renderMri(data) {
           <div style="margin-top:4px;">${makeEditInput(`ni-mri-${side}-${idx}-note`, r.note)}</div>
         </td>`;
       } else {
-        cells += `<td>${renderPerson(r.person, false)}${r.note ? noteHtml(r.note) : ''}</td>`;
+        cells += `<td>${renderPerson(r.person, false, null, 'mri', side, ['週一', '週二', '週三', '週四', '週五'][idx])}${r.note ? noteHtml(r.note) : ''}</td>`;
       }
     });
     tr.innerHTML = cells;
@@ -2875,7 +2909,7 @@ function renderDsMriDaily(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.person)}</td>
+        <td>${renderPerson(row.person, true, null, 'ds_mri', 'ds', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
@@ -2904,10 +2938,9 @@ function renderSaturday(data) {
         <div style="margin-top:4px; width:100%;">${makeEditSelect(`ni-sat-${idx}-person`, row.person)}</div>
         <div style="margin-top:4px; width:100%;">${makeEditInput(`ni-sat-${idx}-note`, row.note)}</div>`;
     } else {
-      const pc = personCls(row.person);
       card.innerHTML = `
         <div class="sat-date">${row.date}</div>
-        <div class="sat-person person ${pc}">${row.person}</div>
+        <div class="sat-person">${renderPerson(row.person, true, row.date, 'saturday', 'all', '週六')}</div>
         ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
     }
     list.appendChild(card);
@@ -2953,10 +2986,9 @@ function renderSundayMri(data) {
         <div style="margin-top:4px; width:100%;">${makeEditSelect(`ni-sun-${idx}-person`, row.person)}</div>
         <div style="margin-top:4px; width:100%;">${makeEditInput(`ni-sun-${idx}-note`, row.note)}</div>`;
     } else {
-      const pc = personCls(row.person);
       card.innerHTML = `
         <div class="sat-date">${row.date}</div>
-        <div class="sat-person person ${pc}">${row.person}</div>
+        <div class="sat-person">${renderPerson(row.person, true, row.date, 'sunday', 'all', '週日')}</div>
         ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
     }
     list.appendChild(card);
@@ -2991,8 +3023,8 @@ function renderPicc(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.tp)}</td>
-        <td>${renderPerson(row.ds)}</td>
+        <td>${renderPerson(row.tp, true, null, 'picc', 'tp', row.dow)}</td>
+        <td>${renderPerson(row.ds, true, null, 'picc', 'ds', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
@@ -3604,3 +3636,252 @@ function renderTabContent() {
 // ════════════════════════════════════════════════════
 render();
 setViewMode(viewMode);
+
+// ════════════════════════════════════════════════════
+//  儲存格快速設定請假代班 UI 邏輯
+// ════════════════════════════════════════════════════
+window.enterSectionCover = function(key) {
+  if (activeEditSection || activeCoverSection) {
+    alert("請先完成或取消目前的編輯狀態！");
+    return;
+  }
+  activeCoverSection = key;
+  
+  // 顯示浮動提示列，引導使用者
+  const bar = document.getElementById('floating-edit-bar');
+  if (bar) {
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      <span style="font-weight: 700; color: #16a34a; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+        🔄 正在設定「請假代班」模式：點選以下醫師名字旁邊的 🔄 按鈕即可進行代班設定
+      </span>
+      <button onclick="exitSectionCover()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #ef4444; color: white; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+        ❌ 完成設定
+      </button>`;
+  }
+  render();
+};
+
+window.exitSectionCover = function() {
+  activeCoverSection = null;
+  const bar = document.getElementById('floating-edit-bar');
+  if (bar) {
+    bar.style.display = 'none';
+  }
+  render();
+};
+
+let currentCellCoverData = null; // 暫存當前點選的格子資訊
+
+const originalTaskNames = {
+  'all': '全部工作',
+  'mri': '🧲 門住急 MRI',
+  'angio': '🏥 血管攝影',
+  'erct': '🚨 急診 CT',
+  'ds_mri': '🏥 淡水健檢 MRI',
+  'picc': '💉 PICC',
+  'saturday': '📅 週六班',
+  'sunday': '📅 週日 MRI'
+};
+
+window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
+  currentCellCoverData = { taskKey, location, name, targetDate, dow };
+  
+  const modal = document.getElementById('cellCoverModal');
+  const title = document.getElementById('cellCoverModalTitle');
+  const absentDocInput = document.getElementById('cellCoverAbsentDoc');
+  const dateSelect = document.getElementById('cellCoverDateSelect');
+  const doctorSelect = document.getElementById('cellCoverDoctorSelect');
+  
+  if (!modal || !title || !absentDocInput || !dateSelect || !doctorSelect) return;
+  
+  title.textContent = `🔄 設定請假代班 [${originalTaskNames[taskKey] || taskKey}]`;
+  absentDocInput.value = name;
+  
+  // 1. 初始化日期選單
+  dateSelect.innerHTML = '';
+  const monthKey = MONTH_KEYS[currentIdx];
+  
+  if (targetDate) {
+    const opt = document.createElement('option');
+    opt.value = targetDate;
+    opt.textContent = targetDate;
+    dateSelect.appendChild(opt);
+    dateSelect.disabled = true;
+  } else {
+    dateSelect.disabled = false;
+    const dates = getDatesForDayOfWeek(monthKey, dow);
+    dates.forEach(dStr => {
+      const opt = document.createElement('option');
+      opt.value = dStr;
+      opt.textContent = dStr;
+      dateSelect.appendChild(opt);
+    });
+  }
+  
+  // 2. 初始化代班醫師選單
+  doctorSelect.innerHTML = '<option value="">- (無代班/取消)</option>';
+  PEOPLE.forEach(p => {
+    if (p.name !== name) {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name;
+      doctorSelect.appendChild(opt);
+    }
+  });
+  
+  // 3. 預載當前已有的代班設定
+  const preselectCover = () => {
+    const selDate = dateSelect.value;
+    const d = NI_DATA[monthKey];
+    let existingCover = '';
+    
+    if (d && d.covers && d.covers[selDate] && d.covers[selDate][name]) {
+      const cover = d.covers[selDate][name];
+      if (typeof cover === 'string') {
+        if (taskKey === 'all') existingCover = cover;
+      } else if (typeof cover === 'object') {
+        if (taskKey && cover[taskKey]) {
+          const taskCover = cover[taskKey];
+          if (typeof taskCover === 'string') {
+            existingCover = taskCover;
+          } else if (typeof taskCover === 'object') {
+            if (location === 'tp' && taskCover.tp) {
+              existingCover = taskCover.tp;
+            } else if (location === 'ds' && taskCover.ds) {
+              existingCover = taskCover.ds;
+            }
+          }
+        }
+      }
+    }
+    doctorSelect.value = existingCover;
+  };
+  
+  dateSelect.onchange = preselectCover;
+  preselectCover();
+  
+  modal.style.display = 'block';
+};
+
+window.closeCellCoverModal = function() {
+  const modal = document.getElementById('cellCoverModal');
+  if (modal) modal.style.display = 'none';
+  currentCellCoverData = null;
+};
+
+window.submitCellCover = function() {
+  if (!currentCellCoverData) return;
+  const { taskKey, location, name, targetDate, dow } = currentCellCoverData;
+  
+  const dateSelect = document.getElementById('cellCoverDateSelect');
+  const doctorSelect = document.getElementById('cellCoverDoctorSelect');
+  if (!dateSelect || !doctorSelect) return;
+  
+  const dateVal = dateSelect.value;
+  const coverDoc = doctorSelect.value;
+  
+  const monthKey = MONTH_KEYS[currentIdx];
+  if (!NI_DATA[monthKey]) {
+    NI_DATA[monthKey] = {};
+  }
+  if (!NI_DATA[monthKey].covers) {
+    NI_DATA[monthKey].covers = {};
+  }
+  if (!NI_DATA[monthKey].leaves) {
+    NI_DATA[monthKey].leaves = {};
+  }
+  
+  const covers = NI_DATA[monthKey].covers;
+  const leaves = NI_DATA[monthKey].leaves;
+  
+  // 1. 寫入或清除 Covers 設定
+  if (!coverDoc) {
+    // 刪除此項代班
+    if (covers[dateVal] && covers[dateVal][name]) {
+      const item = covers[dateVal][name];
+      if (typeof item === 'string') {
+        if (taskKey === 'all') {
+          delete covers[dateVal][name];
+        }
+      } else if (typeof item === 'object') {
+        if (taskKey && item[taskKey]) {
+          if (typeof item[taskKey] === 'string') {
+            delete item[taskKey];
+          } else if (typeof item[taskKey] === 'object') {
+            if (location === 'tp' || location === 'ds') {
+              delete item[taskKey][location];
+              if (Object.keys(item[taskKey]).length === 0) {
+                delete item[taskKey];
+              }
+            } else {
+              delete item[taskKey];
+            }
+          }
+        }
+        if (Object.keys(item).length === 0) {
+          delete covers[dateVal][name];
+        }
+      }
+      if (Object.keys(covers[dateVal]).length === 0) {
+        delete covers[dateVal];
+      }
+    }
+  } else {
+    // 新增或更新代班
+    if (!covers[dateVal]) covers[dateVal] = {};
+    if (!covers[dateVal][name]) covers[dateVal][name] = {};
+    
+    const existing = covers[dateVal][name];
+    if (taskKey === 'all') {
+      covers[dateVal][name] = coverDoc;
+    } else {
+      let targetObj = existing;
+      if (typeof existing === 'string') {
+        targetObj = { all: existing };
+        covers[dateVal][name] = targetObj;
+      }
+      
+      if (location === 'tp' || location === 'ds') {
+        if (!targetObj[taskKey]) targetObj[taskKey] = {};
+        if (typeof targetObj[taskKey] === 'string') {
+          targetObj[taskKey] = { tp: targetObj[taskKey] };
+        }
+        targetObj[taskKey][location] = coverDoc;
+      } else {
+        targetObj[taskKey] = coverDoc;
+      }
+    }
+    
+    // 同步加入 Leaves
+    if (!leaves[name]) leaves[name] = [];
+    if (!leaves[name].includes(dateVal)) {
+      leaves[name].push(dateVal);
+    }
+  }
+  
+  // 自動更新並顯示頂部的黃色修改浮動列，讓使用者可以點選儲存同步雲端
+  hasLocalChanges = true;
+  updateFloatingEditBar();
+  
+  closeCellCoverModal();
+  render();
+};
+
+function getDatesForDayOfWeek(monthKey, dowString) {
+  if (!monthKey) return [];
+  const [year, month] = monthKey.split('-').map(Number);
+  const dowMap = { '週一': 1, '週二': 2, '週三': 3, '週四': 4, '週五': 5, '週六': 6, '週日': 0, '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5, '周六': 6, '周日': 0 };
+  const targetDay = dowMap[dowString];
+  if (targetDay === undefined) return [];
+  
+  const dates = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month - 1, d);
+    if (dateObj.getDay() === targetDay) {
+      dates.push(`${month}/${d}`);
+    }
+  }
+  return dates;
+}
