@@ -1417,8 +1417,7 @@ async function loadCloudSchedules() {
   }
 }
 
-// 在網頁載入後背景執行
-window.addEventListener('DOMContentLoaded', () => {
+function initSchedulePage() {
   // 初始化全域氣泡 Tooltip 容器
   const gt = document.createElement('div');
   gt.id = 'global-tooltip';
@@ -1511,7 +1510,13 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   loadCloudSchedules();
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initSchedulePage);
+} else {
+  initSchedulePage();
+}
 
 let autoFilterTime = true;
 try {

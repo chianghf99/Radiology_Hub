@@ -556,8 +556,7 @@
         navigator.clipboard.writeText(el.value);
     }
 
-    // --- Google Sheet Statistics Integration ---
-    document.addEventListener("DOMContentLoaded", () => {
+    function initCASPage() {
         // 自動帶入今天日期 (格式 YYYY/MM/DD)
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -567,7 +566,13 @@
 
         // 初始化 Stent Size 選項為 Wallstent 的尺寸
         updateStentSizeOptions("Wallstent");
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener("DOMContentLoaded", initCASPage);
+    } else {
+        initCASPage();
+    }
 
     function updateStatDiagnosis(side) {
         const diagSelect = document.getElementById("stat_diagnosis");

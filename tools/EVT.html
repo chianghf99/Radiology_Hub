@@ -461,8 +461,7 @@
 <script>
     // ★ 部署 GAS Web App 後，把 URL 貼在這裡
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbylIPMwrxRKcUAQHvwot6r9Q-ljayDf1t-VQGYBlb55EQdlRz2KCRyFyEuLT7kldS23/exec';
-    // 初始化 Flatpickr 24小時制選擇器
-    document.addEventListener('DOMContentLoaded', function() {
+    function initEVTPage() {
         flatpickr(".datetime-picker", {
             enableTime: true,
             dateFormat: "Y-m-d H:i", // 年-月-日 24時:分
@@ -490,7 +489,13 @@
                 }
             });
         }
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initEVTPage);
+    } else {
+        initEVTPage();
+    }
     
     // 自動計算功能優化
     function initAutoCalcs() {
