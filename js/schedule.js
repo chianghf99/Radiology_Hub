@@ -3962,3 +3962,5 @@ function getDatesForDayOfWeek(monthKey, dowString) {
   }
   return dates;
 }
+
+// Force rebuild trigger to clear deployment locks
