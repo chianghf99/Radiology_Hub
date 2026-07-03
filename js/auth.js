@@ -45,9 +45,29 @@ if (template) {
 
 // Global flag to prevent double initialization
 let isInitialized = false;
+// Track whether we've resolved the first auth check
+let authResolved = false;
+
+// Show a loading spinner immediately to avoid flash of login gate
+function showLoadingSpinner() {
+    document.body.innerHTML = '';
+    document.body.className = 'auth-gate-active';
+    const spinner = document.createElement('div');
+    spinner.id = 'auth-loading';
+    spinner.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:16px; color:#94a3b8; font-family:inherit;">
+            <div style="width:40px; height:40px; border:3px solid #334155; border-top-color:#6366f1; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+            <span style="font-size:0.95rem;">驗證登入狀態中...</span>
+        </div>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    `;
+    document.body.appendChild(spinner);
+}
+showLoadingSpinner();
 
 // Listen to Auth State
 onAuthStateChanged(auth, async (user) => {
+    authResolved = true;
     if (user) {
         const isAuthorized = await checkUserAuthorization(user);
         if (isAuthorized) {

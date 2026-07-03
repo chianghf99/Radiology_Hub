@@ -1453,8 +1453,6 @@ function initSchedulePage() {
     tooltip.style.display = 'block';
     
     const rect = trigger.getBoundingClientRect();
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     
     const tooltipHeight = tooltip.offsetHeight;
     const tooltipWidth = tooltip.offsetWidth;
@@ -1465,28 +1463,27 @@ function initSchedulePage() {
       showBelow = true;
     }
     
-    // 計算置中 Left 位置，並套用邊界防禦避免超出左右螢幕
-    let leftPos = rect.left + scrollLeft + rect.width / 2 - tooltipWidth / 2;
-    const maxLeft = document.documentElement.clientWidth + scrollLeft - tooltipWidth - 10;
-    if (leftPos < scrollLeft + 10) {
-      leftPos = scrollLeft + 10;
+    // position:fixed → 直接用 viewport 座標，不加 scroll offset
+    let leftPos = rect.left + rect.width / 2 - tooltipWidth / 2;
+    const maxLeft = document.documentElement.clientWidth - tooltipWidth - 10;
+    if (leftPos < 10) {
+      leftPos = 10;
     } else if (leftPos > maxLeft) {
       leftPos = maxLeft;
     }
     
     // 表格最右邊的備註欄氣泡 (帶有 tooltip-right class)，改用靠右對齊 (防止超出右邊界被裁剪)
     if (trigger.classList.contains('tooltip-right')) {
-      leftPos = rect.right + scrollLeft - tooltipWidth;
-      // 確保右側防禦
-      if (leftPos < scrollLeft + 10) leftPos = scrollLeft + 10;
+      leftPos = rect.right - tooltipWidth;
+      if (leftPos < 10) leftPos = 10;
     }
     
     let topPos = 0;
     if (showBelow) {
-      topPos = rect.bottom + scrollTop + 8;
+      topPos = rect.bottom + 8;
       tooltip.className = 'global-note-tooltip arrow-top';
     } else {
-      topPos = rect.top + scrollTop - tooltipHeight - 8;
+      topPos = rect.top - tooltipHeight - 8;
       tooltip.className = 'global-note-tooltip arrow-bottom';
     }
     
