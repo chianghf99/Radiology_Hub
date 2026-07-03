@@ -185,7 +185,7 @@ function addBackToHomeIfNeeded() {
     const firstContainer = document.querySelector('.report-container') || document.querySelector('main') || document.body.firstChild;
     if (firstContainer && firstContainer.parentNode) {
         const backLink = document.createElement('a');
-        backLink.href = 'index.html';
+        backLink.href = '../index.html';
         backLink.className = 'back-link';
         backLink.innerHTML = '← 返回 Hub 首頁';
         backLink.style.marginBottom = '20px';
