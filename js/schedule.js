@@ -852,7 +852,18 @@ function syncDomToMemory(key) {
 
   // Sunday MRI Overtime (varies)
   const mri_sunday = [];
-  const originalSun = NI_DATA[key].mri_sunday || [];
+  let originalSun = NI_DATA[key].mri_sunday || [];
+  // 若雲端沒有 mri_sunday 欄位（舊文件），重新從月份計算出所有週日日期
+  if (originalSun.length === 0 && key && /^\d{4}-\d{2}$/.test(key)) {
+    const [ys, ms] = key.split('-');
+    const yr = parseInt(ys), mo = parseInt(ms);
+    const days = new Date(yr, mo, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      if (new Date(yr, mo - 1, d).getDay() === 0) {
+        originalSun.push({ date: `${mo}/${d}`, person: '', note: '' });
+      }
+    }
+  }
   originalSun.forEach((row, i) => {
     const el_person = document.getElementById(`ni-sun-${i}-person`);
     const el_note = document.getElementById(`ni-sun-${i}-note`);
@@ -3343,7 +3354,18 @@ async function saveAllSchedules() {
 
     // Sunday MRI Overtime (varies)
     const mri_sunday = [];
-    const originalSun = NI_DATA[key] ? (NI_DATA[key].mri_sunday || []) : [];
+    let originalSun = NI_DATA[key] ? (NI_DATA[key].mri_sunday || []) : [];
+    // 若雲端沒有 mri_sunday 欄位（舊文件），重新從月份計算出所有週日日期
+    if (originalSun.length === 0 && key && /^\d{4}-\d{2}$/.test(key)) {
+      const [ys, ms] = key.split('-');
+      const yr = parseInt(ys), mo = parseInt(ms);
+      const days = new Date(yr, mo, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        if (new Date(yr, mo - 1, d).getDay() === 0) {
+          originalSun.push({ date: `${mo}/${d}`, person: '', note: '' });
+        }
+      }
+    }
     originalSun.forEach((row, i) => {
       const el_person = document.getElementById(`ni-sun-${i}-person`);
       const el_note = document.getElementById(`ni-sun-${i}-note`);
