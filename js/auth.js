@@ -104,6 +104,7 @@ async function checkUserAuthorization(user) {
 function showPageContent(user) {
     if (isInitialized) return;
     isInitialized = true;
+    window.currentUser = user;
 
     // Reset body classes and clear any auth gates
     document.body.innerHTML = '';

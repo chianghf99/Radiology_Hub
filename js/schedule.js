@@ -320,7 +320,7 @@ const firebaseConfig = {
 };
 
 let db = null;
-let currentUser = null;
+let currentUser = window.currentUser || null;
 let provider = null;
 
 let isEditMode = false;
@@ -3791,7 +3791,9 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
     dateSelect.disabled = true;
   } else {
     dateSelect.disabled = false;
-    const dates = getDatesForDayOfWeek(monthKey, dow);
+    const dates = (taskKey === 'routine_ct' || !dow)
+      ? getAllDatesInMonth(monthKey)
+      : getDatesForDayOfWeek(monthKey, dow);
     dates.forEach(dStr => {
       const opt = document.createElement('option');
       opt.value = dStr;
@@ -4056,6 +4058,17 @@ function getDatesForDayOfWeek(monthKey, dowString) {
     if (dateObj.getDay() === targetDay) {
       dates.push(`${month}/${d}`);
     }
+  }
+  return dates;
+}
+
+function getAllDatesInMonth(monthKey) {
+  if (!monthKey) return [];
+  const [year, month] = monthKey.split('-').map(Number);
+  const dates = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    dates.push(`${month}/${d}`);
   }
   return dates;
 }
