@@ -1355,7 +1355,8 @@ function toggleEditUiState() {
           'saturday': '📅 週六班',
           'sunday': '📅 週日 MRI 加班',
           'picc': '💉 PICC',
-          'leaves_covers': '⚙️ 請假與代班設定'
+          'leaves_covers': '⚙️ 請假與代班設定',
+          'covers': '請假代班設定'
         };
         const name = secNameMap[activeEditSection] || '此區塊';
         label.textContent = `⚠️ 正在局部編輯：${name}...`;
@@ -1617,7 +1618,15 @@ const DOW_LABEL    = { 1:'週一', 2:'週二', 3:'週三', 4:'週四', 5:'週五
 //  換月與換 Tab 邏輯
 // ════════════════════════════════════════════════════
 function changeMonth(dir) {
+  if (isEditMode) {
+    if (!confirm("您有未儲存的排班或代班修改，切換月份將會遺失這些修改，確定要切換嗎？")) {
+      return;
+    }
+    cancelEditMode();
+  }
   currentIdx = Math.max(0, Math.min(MONTH_KEYS.length - 1, currentIdx + dir));
+  activeCoverSection = null;
+  isLeavesCoversExpanded = false;
   render();
 }
 
@@ -3734,10 +3743,7 @@ window.enterSectionCover = function(key) {
 
 window.exitSectionCover = function() {
   activeCoverSection = null;
-  const bar = document.getElementById('floating-edit-bar');
-  if (bar) {
-    bar.style.display = 'none';
-  }
+  toggleEditUiState();
   render();
 };
 
@@ -3930,9 +3936,10 @@ window.submitCellCover = function() {
     }
   }
   
-  // 自動更新並顯示頂部的黃色修改浮動列，讓使用者可以點選儲存同步雲端
-  hasLocalChanges = true;
-  updateFloatingEditBar();
+  // 啟用局部編輯模式的浮動列，讓使用者能點擊「儲存修改」同步至雲端
+  activeEditSection = 'covers';
+  isEditMode = true;
+  toggleEditUiState();
   
   closeCellCoverModal();
   render();
