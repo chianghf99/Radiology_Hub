@@ -1385,6 +1385,14 @@ window.cancelSectionEdit = function() {
 async function loadCloudSchedules() {
   if (!db) return;
   try {
+    // 等待 compat SDK 的登入狀態恢復（避免 session 尚未恢復時被 Firestore rules 拒絕）
+    await new Promise((resolve) => {
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+
     const querySnapshot = await db.collection("schedules").get();
     let hasNewData = false;
     querySnapshot.forEach((doc) => {
