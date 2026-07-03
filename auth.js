@@ -79,23 +79,6 @@ async function checkUserAuthorization(user) {
     return false;
 }
 
-// Function to activate and execute scripts in the cloned template
-function activateScripts(container) {
-    const scripts = container.querySelectorAll('script');
-    scripts.forEach(oldScript => {
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach(attr => {
-            newScript.setAttribute(attr.name, attr.value);
-        });
-        if (oldScript.src) {
-            newScript.src = oldScript.src;
-            newScript.async = false; // Force sequential execution order for external scripts
-        } else {
-            newScript.textContent = oldScript.textContent;
-        }
-        oldScript.parentNode.replaceChild(newScript, oldScript);
-    });
-}
 
 // Reveal page content to authorized users
 function showPageContent(user) {
@@ -110,7 +93,6 @@ function showPageContent(user) {
     // Append original page content
     if (contentClone) {
         document.body.appendChild(contentClone.cloneNode(true));
-        activateScripts(document.body);
     }
 
     // Add back to home link if we are not on the index page
