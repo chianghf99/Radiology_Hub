@@ -30,8 +30,10 @@
             .grid-2, .grid-3 { grid-template-columns: 1fr; }
         }
     </style>
+    <script type="module" src="auth.js"></script>
 </head>
 <body>
+    <template id="page-content">
 
     <div class="report-container">
         <a href="index.html" class="back-link">← 返回首頁</a>
@@ -153,5 +155,6 @@ IMP: Successful echo-guided insertion of the ${device} PICC tube via ${side} ${v
         // Initial call
         updateReport();
     </script>
+    </template>
 </body>
 </html>

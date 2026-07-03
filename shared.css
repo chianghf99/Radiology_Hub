@@ -211,3 +211,208 @@ button:hover   { opacity: 0.85; }
     margin-bottom: 30px;
     font-size: 1.8rem;
 }
+
+/* ============================================
+   Access Control & Whitelist Styles
+   ============================================ */
+body {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+body.auth-checked {
+    opacity: 1;
+}
+body.auth-gate-active {
+    opacity: 1;
+    background-color: var(--primary-color) !important;
+}
+
+#auth-gate-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    font-family: 'Inter', "Microsoft JhengHei", sans-serif;
+    color: white;
+    text-align: center;
+    background-color: var(--primary-color);
+}
+
+.auth-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    margin: 20px auto;
+}
+
+.auth-logo {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+}
+
+.auth-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    color: white;
+}
+
+.auth-subtitle {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 30px;
+    color: #e0e0e0;
+}
+
+.auth-btn-google {
+    background-color: white;
+    color: var(--primary-color);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    width: 100%;
+}
+
+.auth-btn-google:hover {
+    background-color: #f7f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.auth-btn-google svg {
+    width: 20px;
+    height: 20px;
+}
+
+.auth-error-card {
+    background: rgba(231, 76, 60, 0.2);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 25px;
+    color: #fadbd8;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.auth-btn-logout {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 0.9rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.auth-btn-logout:hover {
+    background: white;
+    color: var(--primary-color);
+}
+
+/* 管理員介面樣式 */
+.admin-panel {
+    margin-top: 40px;
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+}
+
+.admin-panel h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 2px solid #f0f4f8;
+    padding-bottom: 12px;
+}
+
+.admin-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.admin-form input[type="email"] {
+    flex: 1;
+    min-width: 250px;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.admin-form button {
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.admin-table th, .admin-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.admin-table th {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.admin-table tr:hover {
+    background-color: #fafafa;
+}
+
+.btn-revoke {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-revoke:hover {
+    opacity: 0.85;
+}
+
