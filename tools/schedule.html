@@ -171,10 +171,27 @@
         </select>
       </div>
       
-      <div class="modal-section">
+      <!-- 單一代班模式 -->
+      <div class="modal-section" id="cellCoverSingleSection">
         <label class="modal-label">代班醫師</label>
         <select id="cellCoverDoctorSelect" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; background:white; color:#1e293b; cursor:pointer;">
         </select>
+      </div>
+
+      <!-- 台北/淡水分開代班模式 -->
+      <div class="modal-section" id="cellCoverDoubleSection" style="display:none;">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label class="modal-label">台北代班</label>
+            <select id="cellCoverDoctorSelectTp" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; background:white; color:#1e293b; cursor:pointer;">
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label class="modal-label">淡水代班</label>
+            <select id="cellCoverDoctorSelectDs" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; background:white; color:#1e293b; cursor:pointer;">
+            </select>
+          </div>
+        </div>
       </div>
       
       <div style="display:flex; gap:10px; margin-top:20px;">

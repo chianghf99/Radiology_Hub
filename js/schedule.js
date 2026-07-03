@@ -2421,7 +2421,7 @@ function makeSection(icon, title, cls='', sectionKey=null) {
   if (sectionKey && currentUser) {
     h.className = 'section-title section-header';
     let btnHtml = '';
-    const supportCoverSections = ['angio', 'erct', 'mri', 'ds_mri', 'picc', 'saturday', 'sunday'];
+    const supportCoverSections = ['angio', 'erct', 'mri', 'ds_mri', 'picc', 'saturday', 'sunday', 'routine_ct'];
     
     if (activeEditSection === null && activeCoverSection === null) {
       const editBtn = `<button class="section-edit-btn" onclick="startSectionEdit('${sectionKey}')">✏️ 編輯</button>`;
@@ -2884,7 +2884,7 @@ function renderRoutineCt(data) {
         <td>${makeEditInput(`ni-ct-${idx}-note`, row.note)}</td>`;
     } else {
       tr.innerHTML = `
-        <td>${renderPerson(row.person)}</td>
+        <td>${renderPerson(row.person, true, null, 'routine_ct', 'all', null)}</td>
         <td style="text-align:center;font-weight:600;">${row.tp}</td>
         <td style="text-align:center;font-weight:600;">${row.ds}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
@@ -3769,6 +3769,11 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
   const dateSelect = document.getElementById('cellCoverDateSelect');
   const doctorSelect = document.getElementById('cellCoverDoctorSelect');
   
+  const singleSec = document.getElementById('cellCoverSingleSection');
+  const doubleSec = document.getElementById('cellCoverDoubleSection');
+  const doctorSelectTp = document.getElementById('cellCoverDoctorSelectTp');
+  const doctorSelectDs = document.getElementById('cellCoverDoctorSelectDs');
+  
   if (!modal || !title || !absentDocInput || !dateSelect || !doctorSelect) return;
   
   title.textContent = `🔄 設定請假代班 [${originalTaskNames[taskKey] || taskKey}]`;
@@ -3795,43 +3800,94 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
     });
   }
   
-  // 2. 初始化代班醫師選單
+  // 2. 初始化代班選單（單一與雙院區）
   doctorSelect.innerHTML = '<option value="">- (無代班/取消)</option>';
+  if (doctorSelectTp && doctorSelectDs) {
+    doctorSelectTp.innerHTML = '<option value="">- (無代班/取消)</option>';
+    doctorSelectDs.innerHTML = '<option value="">- (無代班/取消)</option>';
+  }
+  
   PEOPLE.forEach(p => {
     if (p.name !== name) {
       const opt = document.createElement('option');
       opt.value = p.name;
       opt.textContent = p.name;
       doctorSelect.appendChild(opt);
+      
+      if (doctorSelectTp && doctorSelectDs) {
+        const opt1 = document.createElement('option');
+        opt1.value = p.name;
+        opt1.textContent = p.name;
+        doctorSelectTp.appendChild(opt1);
+        
+        const opt2 = document.createElement('option');
+        opt2.value = p.name;
+        opt2.textContent = p.name;
+        doctorSelectDs.appendChild(opt2);
+      }
     }
   });
   
-  // 3. 預載當前已有的代班設定
+  // 3. 根據 taskKey 決定單/雙選單的顯示與預載
+  const isDoubleSelect = taskKey === 'routine_ct';
+  if (isDoubleSelect) {
+    if (singleSec) singleSec.style.display = 'none';
+    if (doubleSec) doubleSec.style.display = 'block';
+  } else {
+    if (singleSec) singleSec.style.display = 'block';
+    if (doubleSec) doubleSec.style.display = 'none';
+  }
+  
   const preselectCover = () => {
     const selDate = dateSelect.value;
     const d = NI_DATA[monthKey];
-    let existingCover = '';
     
-    if (d && d.covers && d.covers[selDate] && d.covers[selDate][name]) {
-      const cover = d.covers[selDate][name];
-      if (typeof cover === 'string') {
-        if (taskKey === 'all') existingCover = cover;
-      } else if (typeof cover === 'object') {
-        if (taskKey && cover[taskKey]) {
+    if (isDoubleSelect) {
+      let existingTp = '';
+      let existingDs = '';
+      if (d && d.covers && d.covers[selDate] && d.covers[selDate][name]) {
+        const cover = d.covers[selDate][name];
+        if (cover && typeof cover === 'object' && cover[taskKey]) {
           const taskCover = cover[taskKey];
           if (typeof taskCover === 'string') {
-            existingCover = taskCover;
+            existingTp = taskCover;
+            existingDs = taskCover;
           } else if (typeof taskCover === 'object') {
-            if (location === 'tp' && taskCover.tp) {
-              existingCover = taskCover.tp;
-            } else if (location === 'ds' && taskCover.ds) {
-              existingCover = taskCover.ds;
+            existingTp = taskCover.tp || '';
+            existingDs = taskCover.ds || '';
+          }
+        } else if (typeof cover === 'string') {
+          existingTp = cover;
+          existingDs = cover;
+        }
+      }
+      if (doctorSelectTp && doctorSelectDs) {
+        doctorSelectTp.value = existingTp;
+        doctorSelectDs.value = existingDs;
+      }
+    } else {
+      let existingCover = '';
+      if (d && d.covers && d.covers[selDate] && d.covers[selDate][name]) {
+        const cover = d.covers[selDate][name];
+        if (typeof cover === 'string') {
+          if (taskKey === 'all') existingCover = cover;
+        } else if (typeof cover === 'object') {
+          if (taskKey && cover[taskKey]) {
+            const taskCover = cover[taskKey];
+            if (typeof taskCover === 'string') {
+              existingCover = taskCover;
+            } else if (typeof taskCover === 'object') {
+              if (location === 'tp' && taskCover.tp) {
+                existingCover = taskCover.tp;
+              } else if (location === 'ds' && taskCover.ds) {
+                existingCover = taskCover.ds;
+              }
             }
           }
         }
       }
+      doctorSelect.value = existingCover;
     }
-    doctorSelect.value = existingCover;
   };
   
   dateSelect.onchange = preselectCover;
@@ -3851,88 +3907,129 @@ window.submitCellCover = function() {
   const { taskKey, location, name, targetDate, dow } = currentCellCoverData;
   
   const dateSelect = document.getElementById('cellCoverDateSelect');
-  const doctorSelect = document.getElementById('cellCoverDoctorSelect');
-  if (!dateSelect || !doctorSelect) return;
+  if (!dateSelect) return;
   
   const dateVal = dateSelect.value;
-  const coverDoc = doctorSelect.value;
-  
   const monthKey = MONTH_KEYS[currentIdx];
-  if (!NI_DATA[monthKey]) {
-    NI_DATA[monthKey] = {};
-  }
-  if (!NI_DATA[monthKey].covers) {
-    NI_DATA[monthKey].covers = {};
-  }
-  if (!NI_DATA[monthKey].leaves) {
-    NI_DATA[monthKey].leaves = {};
-  }
+  
+  if (!NI_DATA[monthKey]) NI_DATA[monthKey] = {};
+  if (!NI_DATA[monthKey].covers) NI_DATA[monthKey].covers = {};
+  if (!NI_DATA[monthKey].leaves) NI_DATA[monthKey].leaves = {};
   
   const covers = NI_DATA[monthKey].covers;
   const leaves = NI_DATA[monthKey].leaves;
   
-  // 1. 寫入或清除 Covers 設定
-  if (!coverDoc) {
-    // 刪除此項代班
-    if (covers[dateVal] && covers[dateVal][name]) {
-      const item = covers[dateVal][name];
-      if (typeof item === 'string') {
-        if (taskKey === 'all') {
-          delete covers[dateVal][name];
-        }
-      } else if (typeof item === 'object') {
-        if (taskKey && item[taskKey]) {
-          if (typeof item[taskKey] === 'string') {
-            delete item[taskKey];
-          } else if (typeof item[taskKey] === 'object') {
-            if (location === 'tp' || location === 'ds') {
-              delete item[taskKey][location];
-              if (Object.keys(item[taskKey]).length === 0) {
-                delete item[taskKey];
-              }
-            } else {
-              delete item[taskKey];
-            }
+  const isDoubleSelect = taskKey === 'routine_ct';
+  
+  if (isDoubleSelect) {
+    const doctorSelectTp = document.getElementById('cellCoverDoctorSelectTp');
+    const doctorSelectDs = document.getElementById('cellCoverDoctorSelectDs');
+    if (!doctorSelectTp || !doctorSelectDs) return;
+    
+    const coverTp = doctorSelectTp.value;
+    const coverDs = doctorSelectDs.value;
+    
+    if (!coverTp && !coverDs) {
+      // 兩院區皆取消代班，則從 covers 中移除此工作
+      if (covers[dateVal] && covers[dateVal][name]) {
+        const item = covers[dateVal][name];
+        if (typeof item === 'object') {
+          delete item[taskKey];
+          if (Object.keys(item).length === 0) {
+            delete covers[dateVal][name];
           }
         }
-        if (Object.keys(item).length === 0) {
-          delete covers[dateVal][name];
+        if (Object.keys(covers[dateVal]).length === 0) {
+          delete covers[dateVal];
         }
       }
-      if (Object.keys(covers[dateVal]).length === 0) {
-        delete covers[dateVal];
-      }
-    }
-  } else {
-    // 新增或更新代班
-    if (!covers[dateVal]) covers[dateVal] = {};
-    if (!covers[dateVal][name]) covers[dateVal][name] = {};
-    
-    const existing = covers[dateVal][name];
-    if (taskKey === 'all') {
-      covers[dateVal][name] = coverDoc;
     } else {
+      // 新增或更新雙院區代班
+      if (!covers[dateVal]) covers[dateVal] = {};
+      if (!covers[dateVal][name]) covers[dateVal][name] = {};
+      
+      const existing = covers[dateVal][name];
       let targetObj = existing;
       if (typeof existing === 'string') {
         targetObj = { all: existing };
         covers[dateVal][name] = targetObj;
       }
       
-      if (location === 'tp' || location === 'ds') {
-        if (!targetObj[taskKey]) targetObj[taskKey] = {};
-        if (typeof targetObj[taskKey] === 'string') {
-          targetObj[taskKey] = { tp: targetObj[taskKey] };
-        }
-        targetObj[taskKey][location] = coverDoc;
-      } else {
-        targetObj[taskKey] = coverDoc;
+      targetObj[taskKey] = { tp: coverTp, ds: coverDs };
+      
+      // 同步加入 Leaves
+      if (!leaves[name]) leaves[name] = [];
+      if (!leaves[name].includes(dateVal)) {
+        leaves[name].push(dateVal);
       }
     }
+  } else {
+    const doctorSelect = document.getElementById('cellCoverDoctorSelect');
+    if (!doctorSelect) return;
+    const coverDoc = doctorSelect.value;
     
-    // 同步加入 Leaves
-    if (!leaves[name]) leaves[name] = [];
-    if (!leaves[name].includes(dateVal)) {
-      leaves[name].push(dateVal);
+    if (!coverDoc) {
+      // 刪除此單一代班
+      if (covers[dateVal] && covers[dateVal][name]) {
+        const item = covers[dateVal][name];
+        if (typeof item === 'string') {
+          if (taskKey === 'all') {
+            delete covers[dateVal][name];
+          }
+        } else if (typeof item === 'object') {
+          if (taskKey && item[taskKey]) {
+            if (typeof item[taskKey] === 'string') {
+              delete item[taskKey];
+            } else if (typeof item[taskKey] === 'object') {
+              if (location === 'tp' || location === 'ds') {
+                delete item[taskKey][location];
+                if (Object.keys(item[taskKey]).length === 0) {
+                  delete item[taskKey];
+                }
+              } else {
+                delete item[taskKey];
+              }
+            }
+          }
+          if (Object.keys(item).length === 0) {
+            delete covers[dateVal][name];
+          }
+        }
+        if (Object.keys(covers[dateVal]).length === 0) {
+          delete covers[dateVal];
+        }
+      }
+    } else {
+      // 新增或更新單一代班
+      if (!covers[dateVal]) covers[dateVal] = {};
+      if (!covers[dateVal][name]) covers[dateVal][name] = {};
+      
+      const existing = covers[dateVal][name];
+      if (taskKey === 'all') {
+        covers[dateVal][name] = coverDoc;
+      } else {
+        let targetObj = existing;
+        if (typeof existing === 'string') {
+          targetObj = { all: existing };
+          covers[dateVal][name] = targetObj;
+        }
+        
+        if (location === 'tp' || location === 'ds') {
+          if (!targetObj[taskKey]) targetObj[taskKey] = {};
+          if (typeof targetObj[taskKey] === 'string') {
+            targetObj[taskKey] = { tp: targetObj[taskKey] };
+          }
+          targetObj[taskKey][location] = coverDoc;
+        } else {
+          targetObj[taskKey] = coverDoc;
+        }
+      }
+      
+      // 同步加入 Leaves
+      if (!leaves[name]) leaves[name] = [];
+      if (!leaves[name].includes(dateVal)) {
+        leaves[name].push(dateVal);
+      }
     }
   }
   
