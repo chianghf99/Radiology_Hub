@@ -165,10 +165,18 @@
         <input type="text" id="cellCoverAbsentDoc" readonly style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; background:#f1f5f9; color:#64748b;">
       </div>
       
-      <div class="modal-section">
+      <!-- 單選請假日期 -->
+      <div class="modal-section" id="cellCoverDateSelectContainer">
         <label class="modal-label">請假日期</label>
         <select id="cellCoverDateSelect" style="padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; width:100%; font-size:0.88rem; box-sizing:border-box; background:white; color:#1e293b; cursor:pointer;">
         </select>
+      </div>
+
+      <!-- 複選請假日期網格 -->
+      <div class="modal-section" id="cellCoverDateMultiContainer" style="display:none;">
+        <label class="modal-label">請假日期 (可複選)</label>
+        <div id="cellCoverDateGrid" style="display:grid; grid-template-columns: repeat(6, 1fr); gap: 6px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; max-height: 180px; overflow-y: auto;">
+        </div>
       </div>
       
       <!-- 單一代班模式 -->

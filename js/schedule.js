@@ -2421,7 +2421,7 @@ function makeSection(icon, title, cls='', sectionKey=null) {
   if (sectionKey && currentUser) {
     h.className = 'section-title section-header';
     let btnHtml = '';
-    const supportCoverSections = ['angio', 'erct', 'mri', 'ds_mri', 'picc', 'saturday', 'sunday', 'routine_ct'];
+    const supportCoverSections = ['angio', 'erct', 'mri', 'ds_mri', 'picc', 'routine_ct'];
     
     if (activeEditSection === null && activeCoverSection === null) {
       const editBtn = `<button class="section-edit-btn" onclick="startSectionEdit('${sectionKey}')">✏️ 編輯</button>`;
@@ -3774,32 +3774,90 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
   const doctorSelectTp = document.getElementById('cellCoverDoctorSelectTp');
   const doctorSelectDs = document.getElementById('cellCoverDoctorSelectDs');
   
+  const dateSelectContainer = document.getElementById('cellCoverDateSelectContainer');
+  const dateMultiContainer = document.getElementById('cellCoverDateMultiContainer');
+  const dateGrid = document.getElementById('cellCoverDateGrid');
+  
   if (!modal || !title || !absentDocInput || !dateSelect || !doctorSelect) return;
   
   title.textContent = `🔄 設定請假代班 [${originalTaskNames[taskKey] || taskKey}]`;
   absentDocInput.value = name;
   
-  // 1. 初始化日期選單
-  dateSelect.innerHTML = '';
   const monthKey = MONTH_KEYS[currentIdx];
+  const isDoubleSelect = taskKey === 'routine_ct';
   
-  if (targetDate) {
-    const opt = document.createElement('option');
-    opt.value = targetDate;
-    opt.textContent = targetDate;
-    dateSelect.appendChild(opt);
-    dateSelect.disabled = true;
+  // 1. 初始化日期部分 (單選 vs 複選)
+  if (isDoubleSelect) {
+    if (dateSelectContainer) dateSelectContainer.style.display = 'none';
+    if (dateMultiContainer) dateMultiContainer.style.display = 'block';
+    
+    if (dateGrid) {
+      dateGrid.innerHTML = '';
+      const dates = getAllDatesInMonth(monthKey);
+      dates.forEach(dStr => {
+        const [m, d] = dStr.split('/');
+        const label = document.createElement('label');
+        label.className = 'date-pill-checkbox';
+        label.style = 'display:flex; align-items:center; gap: 4px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; font-size: 0.8rem; font-weight: 600; justify-content: center; user-select: none;';
+        
+        // 檢查此日期是否已有此醫師的 CT 代班
+        let isChecked = false;
+        const curData = NI_DATA[monthKey];
+        if (curData && curData.covers && curData.covers[dStr] && curData.covers[dStr][name]) {
+          const cover = curData.covers[dStr][name];
+          if (cover && typeof cover === 'object' && cover[taskKey]) {
+            isChecked = true;
+          } else if (typeof cover === 'string' && taskKey === 'all') {
+            isChecked = true;
+          }
+        }
+        
+        label.innerHTML = `
+          <input type="checkbox" value="${dStr}" ${isChecked ? 'checked' : ''} style="cursor:pointer; margin: 0;">
+          <span>${d} 日</span>
+        `;
+        
+        const checkbox = label.querySelector('input');
+        const updateStyle = () => {
+          if (checkbox.checked) {
+            label.style.background = '#eff6ff';
+            label.style.borderColor = '#3b82f6';
+            label.style.color = '#1d4ed8';
+          } else {
+            label.style.background = 'white';
+            label.style.borderColor = '#cbd5e1';
+            label.style.color = 'inherit';
+          }
+        };
+        checkbox.onchange = updateStyle;
+        updateStyle();
+        
+        dateGrid.appendChild(label);
+      });
+    }
   } else {
-    dateSelect.disabled = false;
-    const dates = (taskKey === 'routine_ct' || !dow)
-      ? getAllDatesInMonth(monthKey)
-      : getDatesForDayOfWeek(monthKey, dow);
-    dates.forEach(dStr => {
+    if (dateSelectContainer) dateSelectContainer.style.display = 'block';
+    if (dateMultiContainer) dateMultiContainer.style.display = 'none';
+    
+    dateSelect.innerHTML = '';
+    if (targetDate) {
       const opt = document.createElement('option');
-      opt.value = dStr;
-      opt.textContent = dStr;
+      opt.value = targetDate;
+      opt.textContent = targetDate;
       dateSelect.appendChild(opt);
-    });
+      dateSelect.disabled = true;
+    } else {
+      dateSelect.disabled = false;
+      const dates = (!dow)
+        ? getAllDatesInMonth(monthKey)
+        : getDatesForDayOfWeek(monthKey, dow);
+      dates.forEach(dStr => {
+        const opt = document.createElement('option');
+        opt.value = dStr;
+        opt.textContent = dStr;
+        dateSelect.appendChild(opt);
+      });
+    }
   }
   
   // 2. 初始化代班選單（單一與雙院區）
@@ -3831,7 +3889,6 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
   });
   
   // 3. 根據 taskKey 決定單/雙選單的顯示與預載
-  const isDoubleSelect = taskKey === 'routine_ct';
   if (isDoubleSelect) {
     if (singleSec) singleSec.style.display = 'none';
     if (doubleSec) doubleSec.style.display = 'block';
@@ -3841,26 +3898,25 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
   }
   
   const preselectCover = () => {
-    const selDate = dateSelect.value;
-    const d = NI_DATA[monthKey];
-    
     if (isDoubleSelect) {
       let existingTp = '';
       let existingDs = '';
-      if (d && d.covers && d.covers[selDate] && d.covers[selDate][name]) {
-        const cover = d.covers[selDate][name];
-        if (cover && typeof cover === 'object' && cover[taskKey]) {
-          const taskCover = cover[taskKey];
-          if (typeof taskCover === 'string') {
-            existingTp = taskCover;
-            existingDs = taskCover;
-          } else if (typeof taskCover === 'object') {
-            existingTp = taskCover.tp || '';
-            existingDs = taskCover.ds || '';
+      const dates = getAllDatesInMonth(monthKey);
+      for (let dStr of dates) {
+        const curData = NI_DATA[monthKey];
+        if (curData && curData.covers && curData.covers[dStr] && curData.covers[dStr][name]) {
+          const cover = curData.covers[dStr][name];
+          if (cover && typeof cover === 'object' && cover[taskKey]) {
+            const taskCover = cover[taskKey];
+            if (typeof taskCover === 'string') {
+              existingTp = taskCover;
+              existingDs = taskCover;
+            } else if (typeof taskCover === 'object') {
+              existingTp = taskCover.tp || '';
+              existingDs = taskCover.ds || '';
+            }
+            break;
           }
-        } else if (typeof cover === 'string') {
-          existingTp = cover;
-          existingDs = cover;
         }
       }
       if (doctorSelectTp && doctorSelectDs) {
@@ -3868,6 +3924,8 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
         doctorSelectDs.value = existingDs;
       }
     } else {
+      const selDate = dateSelect.value;
+      const d = NI_DATA[monthKey];
       let existingCover = '';
       if (d && d.covers && d.covers[selDate] && d.covers[selDate][name]) {
         const cover = d.covers[selDate][name];
@@ -3911,7 +3969,6 @@ window.submitCellCover = function() {
   const dateSelect = document.getElementById('cellCoverDateSelect');
   if (!dateSelect) return;
   
-  const dateVal = dateSelect.value;
   const monthKey = MONTH_KEYS[currentIdx];
   
   if (!NI_DATA[monthKey]) NI_DATA[monthKey] = {};
@@ -3931,8 +3988,44 @@ window.submitCellCover = function() {
     const coverTp = doctorSelectTp.value;
     const coverDs = doctorSelectDs.value;
     
-    if (!coverTp && !coverDs) {
-      // 兩院區皆取消代班，則從 covers 中移除此工作
+    // 獲取網格中所有的勾選狀態
+    const dateGrid = document.getElementById('cellCoverDateGrid');
+    const checkboxes = dateGrid ? dateGrid.querySelectorAll('input[type="checkbox"]') : [];
+    
+    checkboxes.forEach(cb => {
+      const dateVal = cb.value;
+      const isChecked = cb.checked;
+      
+      if (isChecked) {
+        if (!coverTp && !coverDs) {
+          // 勾選了但沒指派人，視為取消該日期的 CT 代班
+          removeCtCover(dateVal);
+        } else {
+          // 新增或更新該日期的 CT 代班
+          if (!covers[dateVal]) covers[dateVal] = {};
+          if (!covers[dateVal][name]) covers[dateVal][name] = {};
+          
+          let targetObj = covers[dateVal][name];
+          if (typeof targetObj === 'string') {
+            targetObj = { all: targetObj };
+            covers[dateVal][name] = targetObj;
+          }
+          targetObj[taskKey] = { tp: coverTp, ds: coverDs };
+          
+          // 同步加入 leaves
+          if (!leaves[name]) leaves[name] = [];
+          if (!leaves[name].includes(dateVal)) {
+            leaves[name].push(dateVal);
+          }
+        }
+      } else {
+        // 未勾選，視為取消該日期的 CT 代班
+        removeCtCover(dateVal);
+      }
+    });
+    
+    // 輔助函數：從指定日期移除該醫師的 CT 代班
+    function removeCtCover(dateVal) {
       if (covers[dateVal] && covers[dateVal][name]) {
         const item = covers[dateVal][name];
         if (typeof item === 'object') {
@@ -3945,30 +4038,36 @@ window.submitCellCover = function() {
           delete covers[dateVal];
         }
       }
-    } else {
-      // 新增或更新雙院區代班
-      if (!covers[dateVal]) covers[dateVal] = {};
-      if (!covers[dateVal][name]) covers[dateVal][name] = {};
       
-      const existing = covers[dateVal][name];
-      let targetObj = existing;
-      if (typeof existing === 'string') {
-        targetObj = { all: existing };
-        covers[dateVal][name] = targetObj;
-      }
-      
-      targetObj[taskKey] = { tp: coverTp, ds: coverDs };
-      
-      // 同步加入 Leaves
-      if (!leaves[name]) leaves[name] = [];
-      if (!leaves[name].includes(dateVal)) {
-        leaves[name].push(dateVal);
+      // 同步從 leaves 中移除該日期，如果該日期沒有其他代班項目的話
+      if (leaves[name] && leaves[name].includes(dateVal)) {
+        let hasOtherCovers = false;
+        if (covers[dateVal] && covers[dateVal][name]) {
+          const item = covers[dateVal][name];
+          if (typeof item === 'string') {
+            hasOtherCovers = true;
+          } else if (typeof item === 'object') {
+            // 除了 routine_ct 之外還有其他代班
+            const keys = Object.keys(item).filter(k => k !== taskKey);
+            if (keys.length > 0) {
+              hasOtherCovers = true;
+            }
+          }
+        }
+        if (!hasOtherCovers) {
+          leaves[name] = leaves[name].filter(d => d !== dateVal);
+          if (leaves[name].length === 0) {
+            delete leaves[name];
+          }
+        }
       }
     }
   } else {
+    // 一般單選流程
     const doctorSelect = document.getElementById('cellCoverDoctorSelect');
     if (!doctorSelect) return;
     const coverDoc = doctorSelect.value;
+    const dateVal = dateSelect.value;
     
     if (!coverDoc) {
       // 刪除此單一代班
@@ -3999,6 +4098,28 @@ window.submitCellCover = function() {
         }
         if (Object.keys(covers[dateVal]).length === 0) {
           delete covers[dateVal];
+        }
+      }
+      
+      // 同步自 leaves 中移除
+      if (leaves[name] && leaves[name].includes(dateVal)) {
+        let hasOtherCovers = false;
+        if (covers[dateVal] && covers[dateVal][name]) {
+          const item = covers[dateVal][name];
+          if (typeof item === 'string') {
+            hasOtherCovers = true;
+          } else if (typeof item === 'object') {
+            const keys = Object.keys(item).filter(k => k !== taskKey);
+            if (keys.length > 0) {
+              hasOtherCovers = true;
+            }
+          }
+        }
+        if (!hasOtherCovers) {
+          leaves[name] = leaves[name].filter(d => d !== dateVal);
+          if (leaves[name].length === 0) {
+            delete leaves[name];
+          }
         }
       }
     } else {
