@@ -215,10 +215,6 @@ button:hover   { opacity: 0.85; }
 /* ============================================
    Access Control & Whitelist Styles
    ============================================ */
-body {
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-}
 body.auth-checked {
     opacity: 1;
 }
