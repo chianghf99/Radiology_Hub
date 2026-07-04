@@ -320,6 +320,30 @@ const firebaseConfig = {
 };
 
 let db = null;
+
+function getDb() {
+  if (db) return db;
+  if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    try {
+      if (firebase.apps.length === 0) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      db = firebase.firestore();
+      if (!provider) {
+        provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().onAuthStateChanged((user) => {
+          currentUser = user;
+          updateAdminControlBar();
+          render();
+        });
+      }
+      return db;
+    } catch (e) {
+      console.error("Firebase Lazy Init Error:", e);
+    }
+  }
+  return null;
+}
 let currentUser = window.currentUser || null;
 let provider = null;
 
@@ -462,7 +486,7 @@ async function saveHolidaysFromModal() {
     }
   });
 
-  if (!db) {
+  if (!getDb()) {
     alert("雲端資料庫尚未初始化");
     return;
   }
@@ -647,7 +671,7 @@ async function handleCreateNewMonth() {
   
   const evt = {};
   
-  if (!db) {
+  if (!getDb()) {
     alert("雲端資料庫尚未初始化");
     return;
   }
@@ -1021,7 +1045,7 @@ function applyTemplateToMemory(key, templateData) {
 }
 
 async function loadTemplatesList() {
-  if (!db) return;
+  if (!getDb()) return;
   const selectEl = document.getElementById('templateSelect');
   if (!selectEl) return;
   
@@ -1066,7 +1090,7 @@ async function loadTemplatesList() {
 }
 
 async function saveCurrentAsTemplate() {
-  if (!db) {
+  if (!getDb()) {
     alert("雲端資料庫尚未初始化");
     return;
   }
@@ -1224,7 +1248,7 @@ async function saveCurrentAsTemplate() {
 }
 
 async function applyTemplateToCurrent() {
-  if (!db) {
+  if (!getDb()) {
     alert("雲端資料庫尚未初始化");
     return;
   }
@@ -1296,7 +1320,7 @@ async function applyTemplateToCurrent() {
 }
 
 async function deleteSelectedTemplate() {
-  if (!db) return;
+  if (!getDb()) return;
   
   const selectEl = document.getElementById('templateSelect');
   if (!selectEl) return;
@@ -1396,7 +1420,7 @@ window.cancelSectionEdit = function() {
 
 // 非同步載入雲端班表資料
 async function loadCloudSchedules() {
-  if (!db) return;
+  if (!getDb()) return;
   try {
     // 等待 compat SDK 的登入狀態恢復（避免 session 尚未恢復時被 Firestore rules 拒絕）
     await new Promise((resolve) => {
@@ -3200,7 +3224,7 @@ async function saveNotes() {
   const key = MONTH_KEYS[currentIdx];
   const notesVal = document.getElementById('notesInput').value;
 
-  if (!db) {
+  if (!getDb()) {
     alert("雲端資料庫尚未初始化");
     return;
   }
@@ -3234,7 +3258,7 @@ async function saveNotes() {
 
 async function saveAllSchedules() {
   const key = MONTH_KEYS[currentIdx];
-  if (!db) {
+  if (!getDb()) {
     alert("雲端資料庫尚未初始化");
     return;
   }
@@ -4169,10 +4193,20 @@ window.submitCellCover = function() {
     }
   }
   
-  // 啟用局部編輯模式的浮動列，讓使用者能點擊「儲存修改」同步至雲端
-  activeEditSection = 'covers';
-  isEditMode = true;
-  toggleEditUiState();
+  // 直接自動儲存到雲端
+  if (getDb()) {
+    db.collection("schedules").doc(monthKey).update({
+      "ni.covers": covers,
+      "ni.leaves": leaves
+    }).then(() => {
+      console.log("代班資料已自動儲存至雲端");
+    }).catch(err => {
+      console.error("同步至雲端失敗:", err);
+      alert("⚠️ 儲存至雲端失敗：" + err.message);
+    });
+  } else {
+    alert("⚠️ 雲端資料庫尚未初始化（您可能尚未登入），代班修改僅暫存於本機。");
+  }
   
   closeCellCoverModal();
   render();
