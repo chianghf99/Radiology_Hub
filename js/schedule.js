@@ -1341,29 +1341,41 @@ function toggleEditUiState() {
   
   if (isEditMode) {
     editBar.style.display = 'flex';
-    const label = editBar.querySelector('span');
-    if (label) {
-      if (activeEditSection === 'all') {
-        label.textContent = '⚠️ 正在全域排班編輯模式中...';
-      } else {
-        const secNameMap = {
-          'angio': '🏥 血管攝影室（神經介入）',
-          'erct': '🚨 急診 CT',
-          'routine_ct': '📋 門住 CT 號碼',
-          'mri': '🧲 門住急 MRI',
-          'ds_mri': '🏥 淡水健檢 / 神經 MRI',
-          'saturday': '📅 週六班',
-          'sunday': '📅 週日 MRI 加班',
-          'picc': '💉 PICC',
-          'leaves_covers': '⚙️ 請假與代班設定',
-          'covers': '請假代班設定'
-        };
-        const name = secNameMap[activeEditSection] || '此區塊';
-        label.textContent = `⚠️ 正在局部編輯：${name}...`;
-      }
-    }
+    const secNameMap = {
+      'angio': '🏥 血管攝影室（神經介入）',
+      'erct': '🚨 急診 CT',
+      'routine_ct': '📋 門住 CT 號碼',
+      'mri': '🧲 門住急 MRI',
+      'ds_mri': '🏥 淡水健檢 / 神經 MRI',
+      'saturday': '📅 週六班',
+      'sunday': '📅 週日 MRI 加班',
+      'picc': '💉 PICC',
+      'leaves_covers': '⚙️ 請假與代班設定',
+      'covers': '請假代班設定'
+    };
+    const name = secNameMap[activeEditSection] || '此區塊';
+    const titleText = activeEditSection === 'all'
+      ? '⚠️ 正在全域排班編輯模式中...'
+      : `⚠️ 正在局部編輯：${name}...`;
+      
+    editBar.innerHTML = `
+      <span style="font-weight: 700; color: #b45309; margin-right: 12px;">${titleText}</span>
+      <button id="saveEditBtn" onclick="saveAllSchedules()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #10b981; color: white; cursor: pointer; margin-right: 6px;">💾 儲存修改</button>
+      <button id="cancelEditBtn" onclick="cancelEditMode()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer;">❌ 取消編輯</button>
+    `;
+  } else if (activeCoverSection) {
+    editBar.style.display = 'flex';
+    editBar.innerHTML = `
+      <span style="font-weight: 700; color: #16a34a; font-size: 0.88rem; display: flex; align-items: center; gap: 6px; margin-right: 12px;">
+        🔄 正在設定「請假代班」模式：點選以下醫師名字旁邊的 🔄 按鈕即可進行代班設定
+      </span>
+      <button onclick="exitSectionCover()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #ef4444; color: white; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+        ❌ 完成設定
+      </button>
+    `;
   } else {
     editBar.style.display = 'none';
+    editBar.innerHTML = '';
   }
 }
 
@@ -3732,19 +3744,7 @@ window.enterSectionCover = function(key) {
     return;
   }
   activeCoverSection = key;
-  
-  // 顯示浮動提示列，引導使用者
-  const bar = document.getElementById('floating-edit-bar');
-  if (bar) {
-    bar.style.display = 'flex';
-    bar.innerHTML = `
-      <span style="font-weight: 700; color: #16a34a; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-        🔄 正在設定「請假代班」模式：點選以下醫師名字旁邊的 🔄 按鈕即可進行代班設定
-      </span>
-      <button onclick="exitSectionCover()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #ef4444; color: white; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
-        ❌ 完成設定
-      </button>`;
-  }
+  toggleEditUiState();
   render();
 };
 
