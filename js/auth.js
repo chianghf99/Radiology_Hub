@@ -65,9 +65,18 @@ function showLoadingSpinner() {
 }
 showLoadingSpinner();
 
+// 安全 Fallback：若 Firebase 在 5 秒內未回應，直接顯示登入頁（避免永遠空白）
+const authTimeout = setTimeout(() => {
+    if (!authResolved) {
+        console.warn('Firebase auth timeout, showing login gate');
+        showLoginGate();
+    }
+}, 5000);
+
 // Listen to Auth State
 onAuthStateChanged(auth, async (user) => {
     authResolved = true;
+    clearTimeout(authTimeout);
     if (user) {
         const isAuthorized = await checkUserAuthorization(user);
         if (isAuthorized) {
