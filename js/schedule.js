@@ -1437,6 +1437,24 @@ async function loadCloudSchedules() {
       if (monthKey.startsWith("template")) return;
       const data = doc.data();
       if (data.ni) {
+        if (data.ni.covers) {
+          Object.keys(data.ni.covers).forEach(dateStr => {
+            const dayCovers = data.ni.covers[dateStr];
+            if (dayCovers && typeof dayCovers === 'object') {
+              Object.keys(dayCovers).forEach(absentDoc => {
+                const coverVal = dayCovers[absentDoc];
+                if (coverVal && typeof coverVal === 'object') {
+                  if ('ct' in coverVal) {
+                    if (!coverVal.routine_ct) {
+                      coverVal.routine_ct = coverVal.ct;
+                    }
+                    delete coverVal.ct;
+                  }
+                }
+              });
+            }
+          });
+        }
         NI_DATA[monthKey] = data.ni;
         hasNewData = true;
       }
