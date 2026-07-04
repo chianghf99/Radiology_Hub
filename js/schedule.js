@@ -2380,7 +2380,7 @@ function renderTodayCard(key) {
       <div style="font-size:0.72rem;font-weight:700;color:var(--text-sub);margin-bottom:5px;">門住 CT 號碼分配</div>
       <div class="today-ct-pills">`;
     a.routine_ct.forEach(r => {
-      const formattedPerson = renderPerson(r.person, true, targetDate, 'ct');
+      const formattedPerson = renderPerson(r.person, true, targetDate, 'routine_ct', 'all', null);
       gridHtml += `<span class="today-ct-pill">${formattedPerson} 台北 ${r.tp} / 淡水 ${r.ds}</span>`;
     });
     gridHtml += `</div></div>`;
@@ -3419,16 +3419,23 @@ async function saveAllSchedules() {
     
     // Leaves
     const leaves = {};
-    PEOPLE.forEach(p => {
-      const inputEl = document.getElementById(`ni-leaves-${p.name}`);
-      if (inputEl) {
-        const val = inputEl.value;
-        const parts = val.split(',').map(x => x.trim()).filter(Boolean);
-        if (parts.length > 0) {
-          leaves[p.name] = parts;
+    const hasLeavesDom = PEOPLE.some(p => document.getElementById(`ni-leaves-${p.name}`));
+    if (hasLeavesDom) {
+      PEOPLE.forEach(p => {
+        const inputEl = document.getElementById(`ni-leaves-${p.name}`);
+        if (inputEl) {
+          const val = inputEl.value;
+          const parts = val.split(',').map(x => x.trim()).filter(Boolean);
+          if (parts.length > 0) {
+            leaves[p.name] = parts;
+          }
         }
+      });
+    } else {
+      if (NI_DATA[key] && NI_DATA[key].leaves) {
+        Object.assign(leaves, NI_DATA[key].leaves);
       }
-    });
+    }
     
     // Covers (Visual Table Parsing)
     let covers = {};
@@ -4006,7 +4013,10 @@ window.submitCellCover = function() {
           if (!covers[dateVal][name]) covers[dateVal][name] = {};
           
           let targetObj = covers[dateVal][name];
-          if (typeof targetObj === 'string') {
+          if (!targetObj) {
+            targetObj = {};
+            covers[dateVal][name] = targetObj;
+          } else if (typeof targetObj === 'string') {
             targetObj = { all: targetObj };
             covers[dateVal][name] = targetObj;
           }
@@ -4132,7 +4142,10 @@ window.submitCellCover = function() {
         covers[dateVal][name] = coverDoc;
       } else {
         let targetObj = existing;
-        if (typeof existing === 'string') {
+        if (!targetObj) {
+          targetObj = {};
+          covers[dateVal][name] = targetObj;
+        } else if (typeof existing === 'string') {
           targetObj = { all: existing };
           covers[dateVal][name] = targetObj;
         }
