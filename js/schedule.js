@@ -355,22 +355,8 @@ function isSectionEditing(key) {
   return activeEditSection === 'all' || activeEditSection === key;
 }
 
-if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY") {
-  try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    provider = new firebase.auth.GoogleAuthProvider();
-    
-    // 監聽登入狀態
-    firebase.auth().onAuthStateChanged((user) => {
-      currentUser = user;
-      updateAdminControlBar();
-      render(); // 當登入狀態改變時，重新渲染畫面以更新編輯按鈕與介面
-    });
-  } catch (e) {
-    console.error("Firebase 初始化與監聽失敗:", e);
-  }
-}
+// 主動初始化 Firebase（確保 db 在頁面載入時即刻就緒，避免 getDb() lazy-init race condition）
+getDb();
 
 function updateAdminControlBar() {
   updateModalAuthStatus();
