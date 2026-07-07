@@ -3828,12 +3828,33 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
     
     if (dateGrid) {
       dateGrid.innerHTML = '';
+      
+      // 1-1. 插入「一」到「日」的星期 Header
+      const daysOfWeekText = ['一', '二', '三', '四', '五', '六', '日'];
+      daysOfWeekText.forEach(dayText => {
+        const cell = document.createElement('div');
+        cell.style = 'text-align: center; font-size: 0.75rem; font-weight: bold; color: #64748b; padding: 4px 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 4px;';
+        cell.textContent = dayText;
+        dateGrid.appendChild(cell);
+      });
+
+      // 1-2. 根據 monthKey 取得該月 1 號是星期幾，以計算前方空白天數
+      const [year, month] = monthKey.split('-').map(Number);
+      const firstDayOfWeek = new Date(year, month - 1, 1).getDay(); // 0 是日，1 是一
+      const emptyDays = (firstDayOfWeek === 0) ? 6 : (firstDayOfWeek - 1);
+
+      // 1-3. 插入空白格使 1 號能對齊正確的星期
+      for (let i = 0; i < emptyDays; i++) {
+        const emptyCell = document.createElement('div');
+        dateGrid.appendChild(emptyCell);
+      }
+
+      // 1-4. 渲染每個月的日期格子
       const dates = getAllDatesInMonth(monthKey);
       dates.forEach(dStr => {
         const [m, d] = dStr.split('/');
         const label = document.createElement('label');
         label.className = 'date-pill-checkbox';
-        label.style = 'display:flex; align-items:center; gap: 4px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; font-size: 0.8rem; font-weight: 600; justify-content: center; user-select: none;';
         
         // 檢查此日期是否已有此醫師的 CT 代班
         let isChecked = false;
@@ -3847,23 +3868,53 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
           }
         }
         
+        // 根據星期幾為週末日期加上紅色/藍色配色
+        const dNum = Number(d);
+        const curDateObj = new Date(year, month - 1, dNum);
+        const curDow = curDateObj.getDay(); // 0=日, 6=六
+        let textColor = '#1e293b';
+        if (curDow === 6) {
+          textColor = '#2563eb'; // 藍色
+        } else if (curDow === 0) {
+          textColor = '#dc2626'; // 紅色
+        }
+
+        label.style = `display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1; padding: 4px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: ${textColor}; transition: all 0.2s ease; position: relative; user-select: none; min-height: 38px;`;
+        
         label.innerHTML = `
-          <input type="checkbox" value="${dStr}" ${isChecked ? 'checked' : ''} style="cursor:pointer; margin: 0;">
-          <span>${d} 日</span>
+          <input type="checkbox" value="${dStr}" ${isChecked ? 'checked' : ''} style="display: none;">
+          <span style="font-size: 0.95rem;">${d}</span>
         `;
         
         const checkbox = label.querySelector('input');
         const updateStyle = () => {
           if (checkbox.checked) {
-            label.style.background = '#eff6ff';
-            label.style.borderColor = '#3b82f6';
-            label.style.color = '#1d4ed8';
+            label.style.background = 'var(--primary-color, #2563eb)';
+            label.style.borderColor = 'var(--primary-color, #2563eb)';
+            label.style.color = 'white';
+            label.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)';
           } else {
             label.style.background = 'white';
-            label.style.borderColor = '#cbd5e1';
-            label.style.color = 'inherit';
+            label.style.borderColor = '#e2e8f0';
+            label.style.color = textColor;
+            label.style.boxShadow = 'none';
           }
         };
+
+        label.addEventListener('mouseenter', () => {
+          if (!checkbox.checked) {
+            label.style.background = '#f1f5f9';
+            label.style.borderColor = '#cbd5e1';
+          }
+        });
+
+        label.addEventListener('mouseleave', () => {
+          if (!checkbox.checked) {
+            label.style.background = 'white';
+            label.style.borderColor = '#e2e8f0';
+          }
+        });
+        
         checkbox.onchange = updateStyle;
         updateStyle();
         
