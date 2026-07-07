@@ -32,3 +32,6 @@
 
 ## 2. Medical Domain Knowledge (醫療領域專業術語)
 - **PF (Plain Film)**：為「一般 X 光片」（常規 X 光診斷報告）的縮寫。此為一項**完全獨立**的工作項目，切勿與 CT（電腦斷層）或 MR/MRI（磁振造影）等其他影像報告工作混淆。班表備註中的「PF 代班」專指 X 光片的代班工作。
+
+## 3. Git Deployment Rules (Git 部署與 Actions 規則)
+- **不需要在推送後驗證 Git Job 狀態**：每次修改完成並成功 `git push` 後，直接向使用者回報修改內容與完成即可，無需主動執行監測或等待 GitHub Actions (CI/CD 狀態) 的終端機指令（如 `curl` API 或 `sleep` 查詢等），由使用者自行至 GitHub 確認。
