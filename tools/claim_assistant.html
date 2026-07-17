@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫療影像文字解析與勾選申報小助手 - 龍素月專用版</title>
+    <!-- 載入 Tailwind CSS 進行現代化 UI 設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 載入 Tesseract.js 作為備用 OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* 正在編輯的儲存格發光效果 */
+        [contenteditable="true"]:focus {
+            outline: 2px solid #2980b9;
+            background-color: #f0f7ff;
+            color: #0f172a !important;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700 min-h-screen flex flex-col">
+
+<!-- 頂部導覽列，融合 Radiology Hub 經典配色與漸層 -->
+<header class="bg-gradient-to-r from-[#1a3a5c] to-[#2980b9] text-white border-b border-blue-900/10 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-white/10 rounded-xl border border-white/20">
+                <i class="fa-solid fa-bolt-lightning text-2xl text-amber-300 animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide text-white flex items-center gap-2">
+                    醫療影像文字快速申報助手
+                    <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded border border-white/30">100% 準確純文字貼入版</span>
+                </h1>
+                <p class="text-xs text-blue-100">專為 PACS/HIS 系統複製之表格文字設計，自動識別 CT、XA 儀器與自動智慧格式化</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 text-xs bg-emerald-500/20 text-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-400/30">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>本地安全性保障：醫療資料絕對不會上傳至任何雲端</span>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 flex flex-col gap-4">
+    <!-- 返回首頁連結 -->
+    <div>
+        <a href="../index.html" class="inline-flex items-center gap-1.5 text-sm font-semibold text-[#2980b9] hover:text-[#1a3a5c] transition-colors">
+            <i class="fa-solid fa-arrow-left"></i> 返回首頁
+        </a>
+    </div>
+
+    <!-- 主要功能區塊 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- 左側輸入源與前處理控制面板 -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- PACS 數據導出教學指南 -->
+            <div class="bg-indigo-50/40 p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col gap-3">
+                <h3 class="text-sm font-bold text-[#1a3a5c] flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-[#2980b9]"></i> PACS 數據導出 SOP
+                </h3>
+                <ol class="space-y-2.5 text-xs text-slate-600 list-decimal list-inside pl-1">
+                    <li>點擊連結：<a href="microsoft-edge:http://10.13.54.220/dicomweb" class="text-[#2980b9] hover:underline font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1" title="點擊將直接喚醒並使用 Microsoft Edge 開啟此網址"><i class="fa-brands fa-edge text-sky-500"></i>10.13.54.220/dicomweb (直接用 Edge 開啟)</a></li>
+                    <li>在查詢欄位中輸入患者的 <strong class="text-slate-900">病歷號</strong> 並搜尋。</li>
+                    <li>在查詢結果列表上點擊 <strong class="text-slate-900">滑鼠右鍵</strong>，點選 <span class="bg-slate-100 text-amber-700 px-1.5 py-0.5 rounded font-mono font-semibold border border-slate-200 text-[11px]">export to microsoft excel</span>。</li>
+                    <li>在匯出的 Excel 檔案中，<strong class="text-slate-900">選取近期檢查項目</strong> 範圍並複製 (<kbd class="bg-slate-200 px-1 py-0.5 rounded text-slate-700 font-mono">Ctrl+C</kbd>)。</li>
+                    <li>回到本網頁，切換至「純文字貼入」，直接按 <kbd class="bg-slate-200 px-1 py-0.5 rounded text-slate-700 font-mono">Ctrl+V</kbd> 貼上。</li>
+                </ol>
+            </div>
+
+            <!-- 輸入方式雙分頁標籤（預設為文字貼入） -->
+            <div class="bg-slate-200/60 p-1.5 rounded-xl border border-slate-200 flex">
+                <button id="tabBtnText" onclick="switchTab('text')" class="flex-1 py-2 text-sm font-medium rounded-lg text-center transition-all bg-[#1a3a5c] text-white shadow-sm">
+                    <i class="fa-solid fa-keyboard mr-1.5"></i>純文字貼入 (推薦・100% 準確)
+                </button>
+                <button id="tabBtnOcr" onclick="switchTab('ocr')" class="flex-1 py-2 text-sm font-medium rounded-lg text-center transition-all text-slate-500 hover:text-slate-700">
+                    <i class="fa-solid fa-camera mr-1.5"></i>影像備用辨識 (OCR)
+                </button>
+            </div>
+
+            <!-- 分頁 1: 系統純文字貼入 (主打功能) -->
+            <div id="textSection" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-paste text-[#2980b9]"></i>1. 直接貼入 HIS/PACS 系統文字
+                    </h2>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">自動監聽貼上</span>
+                </div>
+                <p class="text-xs text-slate-500">
+                    直接選取醫療系統（例如 HIS 表格）中整段多列文字，按 <kbd class="bg-slate-100 px-1 py-0.5 rounded border border-slate-200 text-slate-700 font-mono">Ctrl+C</kbd> 複製，並直接在下方輸入框 <kbd class="bg-slate-100 px-1 py-0.5 rounded border border-slate-200 text-slate-700 font-mono">Ctrl+V</kbd> 貼上。系統會自動解析！
+                </p>
+                
+                <!-- 貼上文字專用文字區域 -->
+                <textarea id="rawTextPasteBox" oninput="autoParseTextOnInput()" class="w-full h-44 p-3 bg-slate-50 text-slate-800 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none custom-scrollbar" placeholder="請將整行或多行病歷表格文字複製並貼在此處...&#10;系統支援 Tab 分隔字元並會自動提取資訊。"></textarea>
+                
+                <div class="flex gap-2">
+                    <button onclick="parseRawPastedText()" class="flex-1 bg-[#1a3a5c] hover:bg-[#152e49] active:scale-[0.98] text-white font-bold text-xs py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all">
+                        <i class="fa-solid fa-bolt"></i>立即解析並匯入表格
+                    </button>
+                    <button onclick="clearPasteBox()" class="px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs transition-colors border border-slate-300">
+                        清除
+                    </button>
+                </div>
+            </div>
+
+            <!-- 分頁 2: 影像辨識與前處理濾鏡 (備用功能) -->
+            <div id="ocrSection" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-file-image text-[#2980b9]"></i>1. 載入檢查報告截圖 (備用)
+                    </h2>
+                    <span class="text-xs text-indigo-600 flex items-center gap-1.5 font-medium">
+                        <i class="fa-solid fa-sliders"></i>前處理優化已啟用
+                    </span>
+                </div>
+
+                <!-- 拖放與點擊上傳區 -->
+                <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-[#2980b9] bg-slate-50 hover:bg-indigo-50/20 rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[140px] group">
+                    <input type="file" id="fileInput" class="hidden" accept="image/*">
+                    <div class="p-2.5 bg-slate-200/60 rounded-full shadow-sm text-slate-500 group-hover:text-[#2980b9] group-hover:scale-110 transition-all mb-2 border border-slate-300">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700">點擊上傳 或 拖放截圖至此</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">支援任何尺寸的 PNG, JPG</p>
+                    <div class="mt-2.5 px-2.5 py-1 bg-indigo-50 text-[#1a3a5c] rounded text-[11px] border border-indigo-100">
+                        💡 點選網頁直接按 <kbd class="bg-white px-1 py-0.5 rounded shadow-sm border border-slate-200 text-slate-700">Ctrl+V</kbd> 貼上截圖！
+                    </div>
+                </div>
+
+                <!-- 影像前處理預覽與設定 -->
+                <div id="previewContainer" class="hidden border border-slate-200 rounded-xl bg-slate-50 p-3 flex flex-col gap-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold text-[#1a3a5c] uppercase tracking-wider">影像濾鏡處理（白底黑字最容易辨識）</span>
+                        <button onclick="clearImage()" class="text-xs text-rose-600 hover:text-rose-500 flex items-center gap-1 font-semibold">
+                            <i class="fa-solid fa-trash-can"></i>清除
+                        </button>
+                    </div>
+
+                    <!-- 濾鏡參數手動調整 -->
+                    <div class="grid grid-cols-2 gap-3 p-2 bg-white rounded-lg text-xs border border-slate-200">
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-600">
+                            <input type="checkbox" id="filterInvert" checked onchange="processImagePreview()" class="rounded bg-slate-50 border-slate-300 text-[#2980b9] focus:ring-0">
+                            <span>深色系統反相</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-600">
+                            <input type="checkbox" id="filterGrayscale" checked onchange="processImagePreview()" class="rounded bg-slate-50 border-slate-300 text-[#2980b9] focus:ring-0">
+                            <span>轉換灰階</span>
+                        </label>
+                        <div class="col-span-2 flex items-center gap-2 border-t border-slate-100 pt-2 mt-1">
+                            <span class="text-slate-500 shrink-0">文字對比度:</span>
+                            <input type="range" id="filterContrast" min="0" max="100" value="70" oninput="processImagePreview()" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#2980b9]">
+                        </div>
+                    </div>
+
+                    <!-- 處理後的可視化預覽 -->
+                    <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-white flex flex-col items-center justify-center">
+                        <div class="text-[10px] text-slate-400 py-1 bg-slate-50 w-full text-center border-b border-slate-200">👇 OCR 將讀取下方經過「銳利白底黑字化」的影像</div>
+                        <canvas id="previewCanvas" class="max-w-full max-h-[160px] object-contain bg-white"></canvas>
+                    </div>
+                </div>
+
+                <!-- OCR 狀態與進度 -->
+                <div id="ocrProgress" class="hidden p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span id="progressStatus" class="text-xs font-semibold text-[#1a3a5c]">正在初始化辨識引擎...</span>
+                        <span id="progressPercent" class="text-xs font-bold text-[#1a3a5c]">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-200">
+                        <div id="progressBar" class="bg-[#2980b9] h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2"><i class="fa-solid fa-spinner animate-spin mr-1 text-[#2980b9]"></i>辨識完成後會自動提取 CT 與 XA 的日期、存取編號、檢查號與說明。</p>
+                </div>
+            </div>
+
+            <!-- 輸出格式與範本設定 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-cog text-[#2980b9]"></i>2. 輸出格式與範本設定
+                </h2>
+                <div class="space-y-4 text-xs">
+                    <div>
+                        <label class="block text-slate-500 mb-1 font-semibold">申報輸出範本格式</label>
+                        <select id="templateSelector" onchange="updateOutputText()" class="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="compact">標準申報格式 (日期 | 存取編號 | 檢查號 | 說明)</option>
+                            <option value="simple">簡短格式 (日期 | 存取編號 | 檢查號)</option>
+                            <option value="standard">逐行詳細核對格式 (含病歷號與姓名)</option>
+                            <option value="raw">Tab 鍵分隔純文字清單</option>
+                            <option value="custom">自訂格式 (請在下方設定)</option>
+                        </select>
+                    </div>
+
+                    <div id="customTemplateDiv" class="hidden">
+                        <label class="block text-slate-500 mb-1 font-semibold">自訂範本變數</label>
+                        <input type="text" id="customTemplateInput" oninput="updateOutputText()" value="[{date}] 病歷:{chartNo} 姓名:{name} 案號:{accNo} 代碼:{code} ({desc})" class="w-full border border-slate-200 rounded-lg p-2 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                        <p class="text-[10px] text-slate-400 mt-1">支援變數: {date} 日期, {chartNo} 病歷號, {name} 姓名, {accNo} 存取編號, {code} 檢查號, {desc} 說明</p>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-[11px] text-slate-400">數據狀態：<b class="text-[#2980b9] font-medium">隨時可回復重設</b></span>
+                        <button onclick="loadDemoData()" class="text-[#2980b9] hover:text-[#1a3a5c] font-semibold underline">載入龍素月原始數據</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側數據表格與輸出區域 -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- 表格主體 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col flex-grow">
+                <!-- 表格控制頭部 -->
+                <div class="p-4 border-b border-slate-150 bg-slate-50/50 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-[#2980b9]"></i>3. 篩選與勾選檢查項目
+                        </h2>
+                        <p class="text-[11px] text-slate-500 mt-0.5">點擊任何欄位格可直接修改文字。修改過的欄位會顯示為 <span class="text-amber-600 font-semibold">橘黃字</span></p>
+                    </div>
+                    <!-- 篩選器與快捷鍵 -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <div class="bg-slate-100 p-1 rounded-lg flex border border-slate-200">
+                            <button onclick="filterTable('ALL')" id="filterAll" class="px-2.5 py-1 rounded transition-all text-slate-500">全部項目</button>
+                            <button onclick="filterTable('CT_XA')" id="filterCtxa" class="px-2.5 py-1 rounded transition-all bg-[#1a3a5c] text-white shadow-sm font-medium">僅 CT & XA</button>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="selectAll(true)" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2 py-1 rounded-lg transition-colors shadow-sm">全選當前</button>
+                            <button onclick="selectAll(false)" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2 py-1 rounded-lg transition-colors shadow-sm">全不選</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 表格主容器 -->
+                <div class="overflow-x-auto custom-scrollbar flex-grow max-h-[420px]">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold sticky top-0 z-10">
+                                <th class="py-3 px-3 text-center w-10">選擇</th>
+                                <th class="py-3 px-3 w-20 text-center">日期</th>
+                                <th class="py-3 px-3 w-32">病歷號/姓名</th>
+                                <th class="py-3 px-3 w-28">存取編號</th>
+                                <th class="py-3 px-3 w-20">檢查號</th>
+                                <th class="py-3 px-2 text-center w-14">儀器</th>
+                                <th class="py-3 px-3">檢查說明</th>
+                                <th class="py-3 px-3 text-center w-10">刪除</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="divide-y divide-slate-100 bg-white">
+                            <!-- JS 動態寫入內容 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 表格底部新增按鈕 -->
+                <div class="p-3 bg-slate-50/50 border-t border-slate-150 flex justify-between items-center text-xs">
+                    <span id="showingCountsText" class="text-slate-500 font-medium">正在顯示: 0 筆記錄</span>
+                    <button onclick="addNewRow()" class="bg-white hover:bg-slate-50 text-[#2980b9] border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium shadow-sm transition-all">
+                        <i class="fa-solid fa-plus"></i>手動新增一列
+                    </button>
+                </div>
+            </div>
+
+            <!-- 輸出申報文字區域 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-regular fa-clipboard text-emerald-650 font-bold"></i>4. 複製產出申報給付文字
+                    </h2>
+                    <span id="selectedCount" class="text-xs bg-slate-100 text-[#1a3a5c] font-semibold px-2.5 py-1 rounded-full border border-slate-200">已選 0 筆</span>
+                </div>
+                
+                <div class="relative">
+                    <textarea id="outputText" readonly class="w-full h-28 p-3 bg-slate-50 text-slate-800 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none custom-scrollbar" placeholder="請勾選上方表格中欲申報的檢查項目項目..."></textarea>
+                    
+                    <!-- 空白狀態提示 -->
+                    <div id="emptyTextState" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/95 rounded-xl pointer-events-none transition-all">
+                        <i class="fa-regular fa-square-check text-slate-400 text-xl mb-1.5"></i>
+                        <p class="text-xs text-slate-500 font-medium">請在上方表格勾選任何一筆數據以產生代碼格式</p>
+                    </div>
+                </div>
+
+                <div class="mt-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <p class="text-[11px] text-slate-500"><i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i>請在貼到申報系統前，再次核對病歷內容。</p>
+                    <button id="copyBtn" onclick="copyResultText()" class="w-full sm:w-auto bg-[#27ae60] hover:bg-[#219653] active:scale-95 text-white font-bold text-xs px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all">
+                        <i class="fa-regular fa-copy"></i>複製申報文字
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- 客製化彈出式通知提示 -->
+<div id="toastNotification" class="fixed bottom-6 right-6 transform translate-y-10 opacity-0 bg-slate-900 text-white text-xs font-semibold py-3 px-5 rounded-xl shadow-xl flex items-center gap-2.5 transition-all duration-300 z-50 pointer-events-none border border-slate-800">
+    <div id="toastIcon" class="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+        <i class="fa-solid fa-check text-xs"></i>
+    </div>
+    <span id="toastMessage">成功操作</span>
+</div>
+
+<script>
+    // 預置演示數據（使用您最新提供的「龍素月」完整數據資料）
+    const initialDemoData = [
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/16", time: "16:38:09", accNo: "2150160465", code: "76000-e", physician: "4175 劉令嫻", modality: "CR", desc: "I-TS-AP Chest 1 view", selected: false, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/16", time: "11:19:37", accNo: "2150160398", code: "79101", physician: "5380 魏士揚", modality: "XA", desc: "I-TS-CAROTID STENTING", selected: true, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/16", time: "11:19:37", accNo: "2150160399", code: "79128", physician: "5380 魏士揚", modality: "XA", desc: "I-TS-Therapeutic embolization – Neurointervention", selected: true, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/16", time: "11:19:37", accNo: "2150160422", code: "61130", physician: "5380 魏士揚", modality: "Echo", desc: "I-TS-INTRA-OPERATIVE ECHO 術中超音波", selected: false, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/14", time: "09:37:33", accNo: "2150158215", code: "71243", physician: "4826 林新曜", modality: "XA", desc: "I-TS-VERTEBRAL ARTERIOGRAPHY", selected: true, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/14", time: "09:37:33", accNo: "2150158216", code: "71253", physician: "4826 林新曜", modality: "XA", desc: "I-TS-INTERNAL CAROTID ARTERIOGRAPHY(BOTH SIDE)", selected: true, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/13", time: "12:57:11", accNo: "2150157548", code: "76000-d", physician: "5689 張澤霖", modality: "CR", desc: "E-TS-PA Chest 1 view", selected: false, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/13", time: "12:48:54", accNo: "2150157536", code: "79993-19", physician: "5689 張澤霖", modality: "CT", desc: "E-TS-Brain CTA C.T.WITH & WITHOUT CONTRAST MEDIUM", selected: true, edited: false },
+        { chartNo: "16549897", name: "龍素月", birthday: "1965/1/1", gender: "F", date: "2026/7/12", time: "03:02:51", accNo: "1150256949", code: "79994-01", physician: "5928 簡士超", modality: "CT", desc: "E-TP-Brain C.T. WITHOUT ENHANCEMENT", selected: true, edited: false }
+    ];
+
+    let itemsList = [];
+    let currentFilter = 'CT_XA'; // 預設只顯示 CT & XA 項目
+    let originalImage = null;   // 快照儲存以便重複調整濾鏡
+
+    window.onload = function() {
+        clearTable(); // 預設清空，使用者開啟時為空白乾淨狀態
+        setupDragAndDrop();
+        setupPasteEvent();
+    };
+
+    // 清空表格
+    function clearTable() {
+        itemsList = [];
+        renderTable();
+    }
+
+    // 載入/還原 Demo 數據
+    function loadDemoData() {
+        itemsList = JSON.parse(JSON.stringify(initialDemoData));
+        renderTable();
+        showToast("已載入龍素月檢查項目範例數據！", "info");
+    }
+
+    // 分頁切換
+    function switchTab(tab) {
+        const tabOcr = document.getElementById('tabBtnOcr');
+        const tabText = document.getElementById('tabBtnText');
+        const sectionOcr = document.getElementById('ocrSection');
+        const sectionText = document.getElementById('textSection');
+
+        if (tab === 'ocr') {
+            tabOcr.className = "flex-1 py-2 text-sm font-medium rounded-lg text-center transition-all bg-[#1a3a5c] text-white shadow-sm";
+            tabText.className = "flex-1 py-2 text-sm font-medium rounded-lg text-center transition-all text-slate-500 hover:text-slate-700";
+            sectionOcr.classList.remove('hidden');
+            sectionText.classList.add('hidden');
+        } else {
+            tabOcr.className = "flex-1 py-2 text-sm font-medium rounded-lg text-center transition-all text-slate-500 hover:text-slate-700";
+            tabText.className = "flex-1 py-2 text-sm font-medium rounded-lg text-center transition-all bg-[#1a3a5c] text-white shadow-sm";
+            sectionOcr.classList.add('hidden');
+            sectionText.classList.remove('hidden');
+        }
+    }
+
+    // 清除貼入框文字
+    function clearPasteBox() {
+        document.getElementById('rawTextPasteBox').value = '';
+    }
+
+    // 設定拖放事件
+    function setupDragAndDrop() {
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-[#2980b9]', 'bg-indigo-50/20');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-[#2980b9]', 'bg-indigo-50/20');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-[#2980b9]', 'bg-indigo-50/20');
+            if (e.dataTransfer.files.length > 0) {
+                handleImageFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageFile(e.target.files[0]);
+            }
+        });
+    }
+
+    // 設定全域貼上 (Ctrl+V) 事件，自動分辨是貼圖片還是貼文字
+    function setupPasteEvent() {
+        document.addEventListener('paste', (e) => {
+            const activeEl = document.activeElement;
+            // 如果焦點就在文字貼上框，交給文字貼上框的專用邏輯
+            if (activeEl && activeEl.id === 'rawTextPasteBox') {
+                return;
+            }
+
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {
+                    // 若貼入的是圖片，自動切到 OCR 分頁並辨識
+                    switchTab('ocr');
+                    const blob = item.getAsFile();
+                    handleImageFile(blob);
+                    break;
+                } else if (item.kind === 'string' && item.type === 'text/plain') {
+                    // 若在外面貼上純文字，自動填入文字貼上區並解析
+                    item.getAsString((text) => {
+                        // 檢查文字是否看起來像醫療表格數據
+                        if (text.includes('\t') || text.match(/\d{8}/)) {
+                            switchTab('text');
+                            document.getElementById('rawTextPasteBox').value = text;
+                            parseRawPastedText();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    // 清除預覽與重置狀態
+    function clearImage() {
+        document.getElementById('fileInput').value = '';
+        originalImage = null;
+        document.getElementById('previewContainer').classList.add('hidden');
+        document.getElementById('ocrProgress').classList.add('hidden');
+        showToast("已清除截圖，您可以貼上新的圖片", "info");
+    }
+
+    // 處理圖片檔案
+    function handleImageFile(file) {
+        if (!file.type.startsWith('image/')) {
+            showToast("錯誤：請上傳合法的圖片檔案！", "error");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                originalImage = img;
+                document.getElementById('previewContainer').classList.remove('hidden');
+                processImagePreview();
+                runOcrOnCanvas();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 對醫療影像進行反相與去雜訊預處理
+    function processImagePreview() {
+        if (!originalImage) return;
+
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = originalImage.naturalWidth;
+        canvas.height = originalImage.naturalHeight;
+        ctx.drawImage(originalImage, 0, 0);
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        const invert = document.getElementById('filterInvert').checked;
+        const grayscale = document.getElementById('filterGrayscale').checked;
+        const contrastVal = parseInt(document.getElementById('filterContrast').value);
+
+        const factor = (259 * (contrastVal + 255)) / (255 * (259 - contrastVal));
+
+        for (let i = 0; i < data.length; i += 4) {
+            let r = data[i];
+            let g = data[i+1];
+            let b = data[i+2];
+
+            if (grayscale) {
+                const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                r = g = b = gray;
+            }
+
+            if (contrastVal > 0) {
+                r = Math.round(factor * (r - 128) + 128);
+                g = Math.round(factor * (g - 128) + 128);
+                b = Math.round(factor * (b - 128) + 128);
+            }
+
+            if (invert) {
+                r = 255 - r;
+                g = 255 - g;
+                b = 255 - b;
+            }
+
+            data[i] = Math.max(0, Math.min(255, r));
+            data[i+1] = Math.max(0, Math.min(255, g));
+            data[i+2] = Math.max(0, Math.min(255, b));
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 呼叫 Tesseract.js 進行醫療影像 OCR
+    async function runOcrOnCanvas() {
+        const canvas = document.getElementById('previewCanvas');
+        const progressDiv = document.getElementById('ocrProgress');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+
+        progressDiv.classList.remove('hidden');
+
+        try {
+            progressStatus.innerText = "正在載入辨識引擎與字庫...";
+            progressBar.style.width = "15%";
+            progressPercent.innerText = "15%";
+
+            const worker = await Tesseract.createWorker('chi_tra+eng', 1, {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        progressStatus.innerText = `正在讀取報告並過濾欄位... (${progress}%)`;
+                        progressBar.style.width = `${progress}%`;
+                        progressPercent.innerText = `${progress}%`;
+                    }
+                }
+            });
+
+            const result = await worker.recognize(canvas);
+            await worker.terminate();
+
+            progressStatus.innerText = "影像讀取完成！";
+            progressBar.style.width = "100%";
+            progressPercent.innerText = "100%";
+
+            const parsedRows = parseHospitalOcrText(result.data.text);
+            
+            if (parsedRows.length === 0) {
+                showToast("影像清晰度不足，已為您新增空白欄位，建議使用純文字貼入分頁！", "warning");
+                addNewRow();
+            } else {
+                itemsList = parsedRows;
+                currentFilter = 'CT_XA';
+                updateFilterUI();
+                renderTable();
+                showToast(`OCR 辨識完成！成功提取 ${parsedRows.length} 筆項目。`, "success");
+            }
+
+            setTimeout(() => {
+                progressDiv.classList.add('hidden');
+            }, 1500);
+
+        } catch (error) {
+            console.error(error);
+            progressStatus.innerText = "影像讀取出錯，建議直接使用右側純文字貼入。";
+            progressBar.classList.add('bg-rose-500');
+            showToast("辨識載入失敗，建議改用純文字貼入分頁", "error");
+        }
+    }
+
+    // 解析從醫院系統貼入的表格資料 (Tab 分隔的純文字)
+    function parseRawPastedText() {
+        const rawText = document.getElementById('rawTextPasteBox').value.trim();
+        if (!rawText) {
+            showToast("請先貼上一些系統文字內容！", "warning");
+            return;
+        }
+
+        const lines = rawText.split('\n');
+        const parsedRows = [];
+        let successCount = 0;
+
+        lines.forEach(line => {
+            const cleanLine = line.trim();
+            // 跳過長度不足或是表格欄位標題行
+            if (cleanLine.length < 15 || cleanLine.startsWith("病歷號") || cleanLine.includes("轉診醫師")) return;
+
+            // 切分 Tab 鍵，醫院表格複製通常為 Tab \t 分隔
+            const cols = cleanLine.split('\t');
+
+            if (cols.length >= 8) {
+                // 自動對齊您的格式：病歷號、姓名、生日、性別、檢查日期、檢查時間、存取編號、檢查號、轉診醫師、檢查說明
+                const chartNo = cols[0] ? cols[0].trim() : "";
+                const name = cols[1] ? cols[1].trim() : "";
+                const birthday = cols[2] ? cols[2].trim() : "";
+                const gender = cols[3] ? cols[3].trim() : "";
+                const date = cols[4] ? cols[4].trim() : "";
+                const time = cols[5] ? cols[5].trim() : "";
+                const accNo = cols[6] ? cols[6].trim() : "";
+                const code = cols[7] ? cols[7].trim() : "";
+                const physician = cols[8] ? cols[8].trim() : "";
+                const desc = cols[9] ? cols[9].trim() : "";
+
+                // 智慧判斷 Modality 儀器類型 (優先看代碼與說明)
+                let modality = "其他";
+                const upperDesc = desc.toUpperCase();
+                const cleanCode = code.trim();
+
+                // 判斷 CT
+                if (upperDesc.includes("C.T.") || upperDesc.includes("CTA") || upperDesc.includes("COMPUTED TOMOGRAPHY") || cleanCode === "79993-19" || cleanCode === "79994-01") {
+                    modality = "CT";
+                } 
+                // 判斷 XA / 介入性治療
+                else if (
+                    cleanCode === "79101" || cleanCode === "79128" || cleanCode === "71243" || cleanCode === "71253" ||
+                    upperDesc.includes("STENTING") || upperDesc.includes("EMBOLIZATION") || 
+                    upperDesc.includes("ARTERIOGRAPHY") || upperDesc.includes("ANGIOGRAPHY") || 
+                    upperDesc.includes("NEUROINTERVENTION")
+                ) {
+                    modality = "XA";
+                }
+                // 判斷一般 X 光
+                else if (upperDesc.includes("CHEST 1 VIEW") || cleanCode.startsWith("76000")) {
+                    modality = "CR";
+                }
+                // 判斷超音波
+                else if (upperDesc.includes("ECHO") || cleanCode === "61130") {
+                    modality = "Echo";
+                }
+
+                // 預設篩選勾選邏輯：如果是 CT 與 XA 就直接打勾
+                const isCtxa = (modality === "CT" || modality === "XA");
+
+                parsedRows.push({
+                    chartNo: chartNo,
+                    name: name,
+                    birthday: birthday,
+                    gender: gender,
+                    date: date,
+                    time: time,
+                    accNo: accNo,
+                    code: code,
+                    physician: physician,
+                    desc: desc,
+                    modality: modality,
+                    selected: isCtxa,
+                    edited: false
+                });
+                successCount++;
+            }
+        });
+
+        if (parsedRows.length === 0) {
+            showToast("無法成功切分欄位，請確認貼入內容是否有完整 10 列欄位。", "error");
+        } else {
+            itemsList = parsedRows;
+            currentFilter = 'CT_XA'; // 預設只看 CT & XA
+            updateFilterUI();
+            renderTable();
+            showToast(`成功解析！共匯入 ${successCount} 筆項目，已自動偵測儀器類型。`, "success");
+        }
+    }
+
+    // 貼上文字輸入框即時智慧監聽 (減少點選步驟)
+    function autoParseTextOnInput() {
+        const textVal = document.getElementById('rawTextPasteBox').value;
+        if (textVal.split('\n').length > 1 && textVal.includes('\t')) {
+            parseRawPastedText();
+        }
+    }
+
+    // 智慧分析與模糊格式容錯處理 (OCR 備用)
+    function parseHospitalOcrText(text) {
+        const lines = text.split('\n');
+        const results = [];
+
+        lines.forEach(line => {
+            const cleanLine = line.trim();
+            if (cleanLine.length < 15 || cleanLine.includes("病歷號") || cleanLine.includes("生日")) return;
+
+            // 1. 抓取日期
+            const dateRegex = /\b(20\d{2})[/\-.](\d{1,2})[/\-.](\d{1,2})\b/g;
+            const dates = cleanLine.match(dateRegex) || [];
+            let examDate = dates[0] || "請補填日期";
+
+            // 2. 抓取 10 碼存取編號 Accession Number
+            let accNo = "";
+            const accMatch = cleanLine.match(/\b([125][0-9O]{9})\b/);
+            if (accMatch) {
+                accNo = accMatch[0].replace(/O/g, "0"); // 修正 O 轉 0 錯誤
+            } else {
+                accNo = "請補填存取編號";
+            }
+
+            // 3. 抓取檢查號
+            const codeRegex = /\b(\d{5}-\w+|\d{8}|\d{5}-\d{2}|\d{5})\b/;
+            const codeMatch = cleanLine.match(codeRegex);
+            const code = codeMatch ? codeMatch[0] : "請補填檢查號";
+
+            // 4. 分析儀器
+            let modality = "其他";
+            const upperLine = cleanLine.toUpperCase();
+            if (upperLine.includes("CT") || upperLine.includes("C.T.")) {
+                modality = "CT";
+            } else if (upperLine.includes("XA") || upperLine.includes("ANGIOGRAPHY") || upperLine.includes("EMBOLIZATION") || upperLine.includes("STENTING")) {
+                modality = "XA";
+            } else if (upperLine.includes("CR")) {
+                modality = "CR";
+            }
+
+            // 5. 擷取說明
+            let desc = "";
+            const descMatch = cleanLine.match(/(I-TS-|E-TS-|CT\s|Chest\s|Brain\s|WITHOUT\s)[^\t\n]+/i);
+            if (descMatch) {
+                desc = descMatch[0];
+            } else {
+                desc = "請修正檢查說明";
+            }
+
+            results.push({
+                chartNo: "16549897",
+                name: "龍素月",
+                birthday: "1965/1/1",
+                gender: "F",
+                date: examDate,
+                time: "00:00:00",
+                accNo: accNo,
+                code: code,
+                physician: "未知",
+                desc: desc,
+                modality: modality,
+                selected: (modality === "CT" || modality === "XA"),
+                edited: true
+            });
+        });
+
+        return results;
+    }
+
+    // 動態繪製可編輯表格
+    function renderTable() {
+        const tbody = document.getElementById('dataTableBody');
+        tbody.innerHTML = '';
+
+        let displayedCount = 0;
+
+        itemsList.forEach((item, index) => {
+            // 根據篩選狀態來隱藏或顯示
+            const isCtxa = item.modality === 'CT' || item.modality === 'XA';
+            if (currentFilter === 'CT_XA' && !isCtxa) return;
+
+            displayedCount++;
+            const tr = document.createElement('tr');
+            tr.className = `hover:bg-slate-50 transition-colors ${item.selected ? 'bg-indigo-50/50' : ''}`;
+
+            tr.innerHTML = `
+                <td class="py-3 px-3 text-center">
+                    <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleRowSelection(${index}, this.checked)" class="w-4 h-4 text-[#2980b9] rounded bg-white border-slate-300 focus:ring-offset-0 focus:ring-0 cursor-pointer">
+                </td>
+                <td class="py-3 px-3 text-center">
+                    <div contenteditable="true" onblur="updateRowData(${index}, 'date', this.innerText)" class="px-1.5 py-0.5 rounded border border-transparent hover:border-slate-300 hover:bg-slate-50 font-mono ${item.edited ? 'text-amber-600 font-semibold' : 'text-slate-800'}">${item.date}</div>
+                </td>
+                <td class="py-3 px-3">
+                    <div class="text-slate-500 font-semibold">${item.chartNo} <span class="text-slate-800 font-bold">${item.name}</span></div>
+                    <div class="text-[10px] text-slate-400 font-mono">${item.birthday} (${item.gender})</div>
+                </td>
+                <td class="py-3 px-3">
+                    <div contenteditable="true" onblur="updateRowData(${index}, 'accNo', this.innerText)" class="px-1.5 py-0.5 rounded border border-transparent hover:border-slate-300 hover:bg-slate-50 font-mono font-bold ${item.edited ? 'text-amber-600 font-semibold' : 'text-slate-900'}">${item.accNo}</div>
+                </td>
+                <td class="py-3 px-3">
+                    <div contenteditable="true" onblur="updateRowData(${index}, 'code', this.innerText)" class="px-1.5 py-0.5 rounded border border-transparent hover:border-slate-300 hover:bg-slate-50 font-mono ${item.edited ? 'text-amber-600 font-semibold' : 'text-slate-700'}">${item.code}</div>
+                </td>
+                <td class="py-3 px-2 text-center">
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${getModalityClass(item.modality)}">${item.modality}</span>
+                </td>
+                <td class="py-3 px-3">
+                    <div contenteditable="true" onblur="updateRowData(${index}, 'desc', this.innerText)" class="px-1.5 py-0.5 rounded border border-transparent hover:border-slate-300 hover:bg-slate-50 ${item.edited ? 'text-amber-600 font-semibold' : 'text-slate-600'}">${item.desc}</div>
+                </td>
+                <td class="py-3 px-3 text-center">
+                    <button onclick="deleteRow(${index})" class="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors" title="刪除此行">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('showingCountsText').innerText = `正在顯示: ${displayedCount} 筆項目`;
+
+        if (displayedCount === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="8" class="py-8 text-center text-slate-400">
+                    <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                    沒有符合篩選條件的檢查項目。
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        updateOutputText();
+    }
+
+    // 取得不同儀器類型的標籤顏色
+    function getModalityClass(modality) {
+        switch(modality.toUpperCase()) {
+            case 'CT': return 'bg-purple-50 text-purple-700 border border-purple-200';
+            case 'XA': return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
+            case 'CR': return 'bg-amber-50 text-amber-700 border border-amber-200';
+            case 'ECHO': return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+            default: return 'bg-slate-100 text-slate-600 border border-slate-200';
+        }
+    }
+
+    // 當表格內容被手動修改時，將狀態標記為 edited 並更新結果
+    function updateRowData(index, field, value) {
+        const cleanVal = value.trim();
+        if (itemsList[index][field] !== cleanVal) {
+            itemsList[index][field] = cleanVal;
+            itemsList[index].edited = true;
+            renderTable(); // 重新繪製以套用修改字樣
+        }
+    }
+
+    // 切換選中狀態
+    function toggleRowSelection(index, isChecked) {
+        itemsList[index].selected = isChecked;
+        renderTable(); 
+    }
+
+    // 全選或不選
+    function selectAll(checked) {
+        itemsList.forEach(item => {
+            const isCtxa = item.modality === 'CT' || item.modality === 'XA';
+            if (currentFilter === 'CT_XA') {
+                if (isCtxa) item.selected = checked;
+            } else {
+                item.selected = checked;
+            }
+        });
+        renderTable();
+        showToast(checked ? "已勾選所有顯示的項目" : "已取消勾選項目", "info");
+    }
+
+    // 刪除一列
+    function deleteRow(index) {
+        itemsList.splice(index, 1);
+        renderTable();
+        showToast("已將該項目從清單中移除", "warning");
+    }
+
+    // 手動新增一筆空白列
+    function addNewRow() {
+        itemsList.push({
+            chartNo: "16549897",
+            name: "龍素月",
+            birthday: "1965/1/1",
+            gender: "F",
+            date: new Date().toISOString().slice(0, 10).replace(/-/g, '/'),
+            time: "12:00:00",
+            accNo: "請輸入存取編號",
+            code: "請輸入代碼",
+            physician: "手動新增",
+            modality: "CT",
+            desc: "手動輸入描述",
+            selected: true,
+            edited: true
+        });
+        renderTable();
+        showToast("已手動新增一筆可編輯欄位", "success");
+    }
+
+    // 切換篩選
+    function filterTable(filterType) {
+        currentFilter = filterType;
+        updateFilterUI();
+        renderTable();
+    }
+
+    // 更新篩選按鈕高亮
+    function updateFilterUI() {
+        const btnAll = document.getElementById('filterAll');
+        const btnCtxa = document.getElementById('filterCtxa');
+
+        if (currentFilter === 'ALL') {
+            btnAll.className = "px-2.5 py-1 rounded transition-all bg-[#1a3a5c] text-white shadow-sm font-medium";
+            btnCtxa.className = "px-2.5 py-1 rounded transition-all text-slate-500";
+        } else {
+            btnAll.className = "px-2.5 py-1 rounded transition-all text-slate-500";
+            btnCtxa.className = "px-2.5 py-1 rounded transition-all bg-[#1a3a5c] text-white shadow-sm font-medium";
+        }
+    }
+
+    // 產生格式化申報文字
+    function updateOutputText() {
+        const outputTextArea = document.getElementById('outputText');
+        const emptyState = document.getElementById('emptyTextState');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        const templateType = document.getElementById('templateSelector').value;
+        const customTemplate = document.getElementById('customTemplateInput').value;
+        
+        const customTemplateDiv = document.getElementById('customTemplateDiv');
+        if (templateType === 'custom') {
+            customTemplateDiv.classList.remove('hidden');
+        } else {
+            customTemplateDiv.classList.add('hidden');
+        }
+
+        // 篩選出勾選中的項目
+        const selectedItems = itemsList.filter(item => item.selected);
+        selectedCountSpan.innerText = `已選 ${selectedItems.length} 筆`;
+
+        if (selectedItems.length === 0) {
+            outputTextArea.value = '';
+            emptyState.classList.remove('opacity-0', 'pointer-events-none');
+            return;
+        }
+
+        emptyState.classList.add('opacity-0', 'pointer-events-none');
+        let generatedText = "";
+
+        selectedItems.forEach((item, index) => {
+            if (templateType === 'compact') {
+                generatedText += `${item.date} | 存取編號: ${item.accNo} | 檢查號: ${item.code} | 說明: ${item.desc}\n`;
+            } else if (templateType === 'simple') {
+                generatedText += `${item.date} | ${item.accNo} | ${item.code}\n`;
+            } else if (templateType === 'standard') {
+                generatedText += `[申報項目 ${index + 1}]\n`;
+                generatedText += `患者資訊：${item.chartNo} ${item.name} (${item.gender})\n`;
+                generatedText += `檢查日期：${item.date} ${item.time}\n`;
+                generatedText += `存取編號：${item.accNo}\n`;
+                generatedText += `檢查代號：${item.code}\n`;
+                generatedText += `名稱說明：${item.desc}\n`;
+                generatedText += `----------------------------------------\n`;
+            } else if (templateType === 'raw') {
+                generatedText += `${item.chartNo}\t${item.name}\t${item.date}\t${item.accNo}\t${item.code}\t${item.desc}\n`;
+            } else if (templateType === 'custom') {
+                let temp = customTemplate;
+                temp = temp.replace(/{date}/g, item.date);
+                temp = temp.replace(/{chartNo}/g, item.chartNo);
+                temp = temp.replace(/{name}/g, item.name);
+                temp = temp.replace(/{accNo}/g, item.accNo);
+                temp = temp.replace(/{code}/g, item.code);
+                temp = temp.replace(/{desc}/g, item.desc);
+                generatedText += temp + "\n";
+            }
+        });
+
+        outputTextArea.value = generatedText.trim();
+    }
+
+    // 複製結果純文字
+    function copyResultText() {
+        const outputTextArea = document.getElementById('outputText');
+        if (!outputTextArea.value) {
+            showToast("請先勾選欲導出的項目！", "warning");
+            return;
+        }
+
+        outputTextArea.select();
+        document.execCommand('copy');
+        
+        showToast("📋 申報給付文字已複製到剪貼簿！", "success");
+    }
+
+    // 氣泡通知提示
+    function showToast(message, type = "success") {
+        const toast = document.getElementById('toastNotification');
+        const toastMsg = document.getElementById('toastMessage');
+        const toastIcon = document.getElementById('toastIcon');
+
+        toastMsg.innerText = message;
+
+        if (type === "success") {
+            toastIcon.className = "w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white";
+            toastIcon.innerHTML = `<i class="fa-solid fa-check text-xs"></i>`;
+        } else if (type === "warning") {
+            toastIcon.className = "w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-white";
+            toastIcon.innerHTML = `<i class="fa-solid fa-exclamation text-xs"></i>`;
+        } else if (type === "error") {
+            toastIcon.className = "w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-white";
+            toastIcon.innerHTML = `<i class="fa-solid fa-xmark text-xs"></i>`;
+        } else {
+            toastIcon.className = "w-5 h-5 rounded-full bg-[#2980b9] flex items-center justify-center text-white";
+            toastIcon.innerHTML = `<i class="fa-solid fa-info text-xs"></i>`;
+        }
+
+        toast.classList.remove('opacity-0', 'translate-y-10');
+        toast.classList.add('opacity-100', 'translate-y-0');
+
+        setTimeout(() => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-10');
+        }, 3000);
+    }
+</script>
+
+</body>
+</html>
