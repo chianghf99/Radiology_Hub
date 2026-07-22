@@ -89,12 +89,12 @@ const NI_DATA = {
       { dow: '週四', tp_dsa: '謝棖智',            tp_tae: '謝棖智',              ds_dsa: '鄭宇凡',                   ds_tae: '魏士揚/姜信帆', note: '' },
       { dow: '週五', tp_dsa: '魏士揚',            tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',                   ds_tae: '姜信帆',        note: '' },
     ],
-    body_mri: [
-      { dow: '週一', tp: '', ds: '魏士揚', note: '' },
-      { dow: '週二', tp: '', ds: '黃俊肇8/11士揚', note: '' },
-      { dow: '週三', tp: '', ds: '謝棖智', note: '' },
-      { dow: '週四', tp: '', ds: '姜信帆', note: '' },
-      { dow: '週五', tp: '', ds: '姜信帆', note: '' },
+    ds_mri_daily: [
+      { dow: '週一', person: '魏士揚', note: '' },
+      { dow: '週二', person: '黃俊肇8/11士揚', note: '' },
+      { dow: '週三', person: '謝棖智', note: '' },
+      { dow: '週四', person: '姜信帆', note: '' },
+      { dow: '週五', person: '姜信帆', note: '' },
     ],
     erct: [
       { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
