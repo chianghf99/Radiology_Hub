@@ -437,6 +437,13 @@
                 evt: ALL_SCHEDULES['2026-07']
             });
 
+            // 寫入 2026-08
+            showStatus("正在導入 2026-08 班表...", "");
+            await setDoc(doc(db, "schedules", "2026-08"), {
+                ni: NI_DATA['2026-08'],
+                evt: ALL_SCHEDULES['2026-08']
+            });
+
             showStatus("🎉 所有班表資料成功導入雲端資料庫！", "success");
         } catch (error) {
             console.error("導入失敗:", error);
