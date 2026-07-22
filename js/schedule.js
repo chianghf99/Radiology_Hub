@@ -479,6 +479,8 @@ const PEOPLE = [
   { key: 'xie',      name: '謝棖智', cls: 'chip-xie',      color: '#be185d' },
   { key: 'wei',      name: '魏士揚', cls: 'chip-wei',      color: '#0e7490' },
   { key: 'zheng',    name: '鄭宇凡', cls: 'chip-zheng',    color: '#6d28d9' },
+  { key: 'liu',      name: '劉家義', cls: 'chip-liu',      color: '#0284c7' },
+  { key: 'huang_cy', name: '黃崇堯', cls: 'chip-huang-cy', color: '#78350f' },
 ];
 
 const PERSON_CLASS = {
@@ -489,6 +491,8 @@ const PERSON_CLASS = {
   '謝棖智': 'p-xie',
   '魏士揚': 'p-wei',
   '鄭宇凡': 'p-zheng',
+  '劉家義': 'p-liu',
+  '黃崇堯': 'p-huang-cy',
 };
 
 const personByName = {};
@@ -4164,13 +4168,17 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
       dateSelect.disabled = true;
     } else {
       dateSelect.disabled = false;
-      const dates = (!dow)
-        ? getAllDatesInMonth(monthKey)
-        : getDatesForDayOfWeek(monthKey, dow);
+      const dates = getAllDatesInMonth(monthKey);
+      const repDates = dow ? getDatesForDayOfWeek(monthKey, dow) : [];
+      const defaultDate = repDates.length > 0 ? repDates[0] : '';
+      
       dates.forEach(dStr => {
         const opt = document.createElement('option');
         opt.value = dStr;
         opt.textContent = dStr;
+        if (defaultDate && dStr === defaultDate) {
+          opt.selected = true;
+        }
         dateSelect.appendChild(opt);
       });
     }
