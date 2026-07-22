@@ -408,7 +408,7 @@ function personCls(name) {
 // ════════════════════════════════════════════════════
 //  全域狀態
 // ════════════════════════════════════════════════════
-let MONTH_KEYS = Object.keys(NI_DATA).sort();
+let MONTH_KEYS = Array.from(new Set([...Object.keys(NI_DATA), ...Object.keys(ALL_SCHEDULES)])).sort();
 const now = new Date();
 const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 let currentIdx = MONTH_KEYS.includes(todayKey)
@@ -1572,9 +1572,9 @@ async function loadCloudSchedules() {
     });
     
     if (hasNewData) {
-      // 重新整理月份鍵值與指引索引
+      // 重新整理月份鍵值（確保包含本機預設的所有月份，如 2026-08）
       const oldMonthKey = MONTH_KEYS[currentIdx];
-      MONTH_KEYS = Object.keys(NI_DATA).sort();
+      MONTH_KEYS = Array.from(new Set([...Object.keys(NI_DATA), ...Object.keys(ALL_SCHEDULES)])).sort();
       if (MONTH_KEYS.includes(oldMonthKey)) {
         currentIdx = MONTH_KEYS.indexOf(oldMonthKey);
       } else {
@@ -1585,7 +1585,7 @@ async function loadCloudSchedules() {
       }
       // 重新渲染畫面
       render();
-      console.log("☁️ 已成功載入並更新最新的雲端班表資料！");
+      console.log("☁️ 已成功載入並更新最新的雲端班表資料！", MONTH_KEYS);
     }
   } catch (error) {
     console.error("讀取雲端班表失敗，將維持使用本地班表:", error);
