@@ -269,6 +269,87 @@ const NI_DATA = {
     holidays: [],
     notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
   },
+  '2026-08': {
+    angio: [
+      { dow: '週一', tp_dsa: '鄭宇凡',            tp_tae: '謝棖智',              ds_dsa: '魏士揚',                   ds_tae: '魏士揚/黃俊肇', note: '' },
+      { dow: '週二', tp_dsa: '姜信帆',            tp_tae: '姜信帆',              ds_dsa: '黃俊肇8/11士揚8/18 士揚',   ds_tae: '黃俊肇8/11信帆8/18 信帆', note: '' },
+      { dow: '週三', tp_dsa: '黃俊肇8/12信帆',    tp_tae: '黃俊肇8/12信帆',      ds_dsa: '謝棖智',                   ds_tae: '謝棖智',        note: '' },
+      { dow: '週四', tp_dsa: '謝棖智',            tp_tae: '謝棖智',              ds_dsa: '鄭宇凡',                   ds_tae: '魏士揚/姜信帆', note: '' },
+      { dow: '週五', tp_dsa: '魏士揚',            tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',                   ds_tae: '姜信帆',        note: '' },
+    ],
+    erct: [
+      { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
+      { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
+      { dow: '週三', tp: '黃俊肇8/12士揚', ds: '黃俊肇8/12士揚', note: '' },
+      { dow: '週四', tp: '鄭宇凡', ds: '鄭宇凡', note: '' },
+      { dow: '週五', tp: '魏士揚8/21俊肇', ds: '魏士揚8/21俊肇', note: '' },
+    ],
+    routine_ct: [
+      { person: '黃俊肇', tp: '00-23 8/07-17棖智', ds: '00-23 8/07-17士揚', note: '' },
+      { person: '謝棖智', tp: '24-47', ds: '24-47', note: '' },
+      { person: '魏士揚', tp: '48-71', ds: '48-71', note: '' },
+      { person: '鄭宇凡', tp: '72-75', ds: '72-75', note: '' },
+      { person: '姜信帆', tp: '76-99', ds: '76-99', note: '' },
+    ],
+    mri: {
+      tp: [
+        { week: 'W1', person: '謝棖智', note: '' },
+        { week: 'W2', person: 'AM黃主任 PM魏士揚', note: '' },
+        { week: 'W3', person: '姜信帆8/19 俊肇', note: '' },
+        { week: 'W4', person: '黃俊肇8/13 信帆', note: '' },
+        { week: 'W5', person: 'AM黃主任PM 魏士揚', note: '' },
+      ],
+      ds: [
+        { week: 'W1', person: '黃俊肇8/10信帆  8/17棖智', note: '' },
+        { week: 'W2', person: '黃俊肇8/11, 8/18士揚', note: '' },
+        { week: 'W3', person: '魏士揚8/05, 8/19俊肇', note: '' },
+        { week: 'W4', person: '謝棖智8/20俊肇', note: '' },
+        { week: 'W5', person: '姜信帆8/21俊肇', note: '' },
+      ]
+    },
+    ds_mri_daily: [
+      { dow: '週一', person: '魏士揚', note: '' },
+      { dow: '週二', person: '黃俊肇8/11士揚', note: '' },
+      { dow: '週三', person: '謝棖智', note: '' },
+      { dow: '週四', person: '姜信帆', note: '' },
+      { dow: '週五', person: '姜信帆', note: '' },
+    ],
+    saturday: [
+      { date: '8/1', person: '謝棖智', note: '' },
+      { date: '8/8', person: '魏士揚', note: '' },
+      { date: '8/15', person: '鄭宇凡', note: '' },
+      { date: '8/22', person: '黃俊肇', note: '' },
+      { date: '8/29', person: '姜信帆', note: '' },
+    ],
+    mri_sunday: [
+      { date: '8/2', person: '黃俊肇', note: '' },
+      { date: '8/9', person: '謝棖智', note: '' },
+      { date: '8/16', person: '姜信帆', note: '' },
+      { date: '8/23', person: '魏士揚', note: '' },
+      { date: '8/30', person: '鄭宇凡', note: '' },
+    ],
+    picc: [
+      { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
+      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇8/11,18士揚', note: '' },
+      { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
+      { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '' },
+      { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
+    ],
+    leaves: {
+      '黃俊肇': ['8/7', '8/8', '8/9', '8/10', '8/11', '8/12', '8/13', '8/14', '8/15', '8/16', '8/17', '8/18']
+    },
+    covers: {
+      '8/7': { '黃俊肇': { routine_ct: { tp: '謝棖智', ds: '魏士揚' } } },
+      '8/10': { '黃俊肇': { ds_mri: '姜信帆' } },
+      '8/11': { '黃俊肇': { angio: { ds: '魏士揚' }, picc: { ds: '魏士揚' }, ds_mri: '魏士揚' } },
+      '8/12': { '黃俊肇': { angio: { tp: '姜信帆' }, erct: '魏士揚' } },
+      '8/13': { '黃俊肇': { mri: '姜信帆' } },
+      '8/17': { '黃俊肇': { ds_mri: '謝棖智' } },
+      '8/18': { '黃俊肇': { angio: { ds: '魏士揚' }, picc: { ds: '魏士揚' }, ds_mri: '魏士揚' } }
+    },
+    holidays: [],
+    notes: '線上會議：神內放射討論會08/??(五)15:30俊肇\n休假：俊肇(8/07-8/18) PF：8/07-17 俊肇信帆 淡水BMD 8/10信帆, 8/11棖智,  8/17士揚'
+  },
 };
 
 // ════════════════════════════════════════════════════
