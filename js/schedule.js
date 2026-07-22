@@ -4168,17 +4168,12 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
       dateSelect.disabled = true;
     } else {
       dateSelect.disabled = false;
-      const dates = getAllDatesInMonth(monthKey);
-      const repDates = dow ? getDatesForDayOfWeek(monthKey, dow) : [];
-      const defaultDate = repDates.length > 0 ? repDates[0] : '';
+      const dates = dow ? getDatesForDayOfWeek(monthKey, dow) : getAllDatesInMonth(monthKey);
       
       dates.forEach(dStr => {
         const opt = document.createElement('option');
         opt.value = dStr;
         opt.textContent = dStr;
-        if (defaultDate && dStr === defaultDate) {
-          opt.selected = true;
-        }
         dateSelect.appendChild(opt);
       });
     }
