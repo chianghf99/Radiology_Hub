@@ -3273,7 +3273,7 @@ function renderSaturday(data) {
     } else {
       card.innerHTML = `
         <div class="sat-date">${row.date}</div>
-        <div class="sat-person">${renderPerson(row.person, true, row.date, 'saturday', 'all', '週六')}</div>
+        <div class="sat-person">${renderPerson(row.person, true, null, 'saturday', 'all', '週六')}</div>
         ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
     }
     list.appendChild(card);
@@ -3321,7 +3321,7 @@ function renderSundayMri(data) {
     } else {
       card.innerHTML = `
         <div class="sat-date">${row.date}</div>
-        <div class="sat-person">${renderPerson(row.person, true, row.date, 'sunday', 'all', '週日')}</div>
+        <div class="sat-person">${renderPerson(row.person, true, null, 'sunday', 'all', '週日')}</div>
         ${row.note ? `<div class="sat-note">※ ${row.note}</div>` : ''}`;
     }
     list.appendChild(card);
