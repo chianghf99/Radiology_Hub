@@ -3363,8 +3363,8 @@ function renderPicc(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.tp, true, repDate, 'picc', 'tp', row.dow)}</td>
-        <td>${renderPerson(row.ds, true, repDate, 'picc', 'ds', row.dow)}</td>
+        <td>${renderPerson(row.tp, true, null, 'picc', 'tp', row.dow)}</td>
+        <td>${renderPerson(row.ds, true, null, 'picc', 'ds', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
