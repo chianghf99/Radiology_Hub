@@ -3345,8 +3345,11 @@ function renderPicc(data) {
       ${noteColHeader}
     </tr></thead><tbody></tbody>`;
   const tbody = t.querySelector('tbody');
+  const key = MONTH_KEYS[currentIdx];
   data.forEach((row, idx) => {
     const tr = document.createElement('tr');
+    const dowDates = getDatesForDayOfWeek(key, row.dow);
+    const repDate = dowDates.length > 0 ? dowDates[0] : null;
     if (editing) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
@@ -3356,8 +3359,8 @@ function renderPicc(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.tp, true, null, 'picc', 'tp', row.dow)}</td>
-        <td>${renderPerson(row.ds, true, null, 'picc', 'ds', row.dow)}</td>
+        <td>${renderPerson(row.tp, true, repDate, 'picc', 'tp', row.dow)}</td>
+        <td>${renderPerson(row.ds, true, repDate, 'picc', 'ds', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
@@ -3786,8 +3789,10 @@ async function saveAllSchedules() {
     NI_DATA[key] = ni;
     ALL_SCHEDULES[key] = evt;
     
-    // 退出編輯模式
+    // 自動退出編輯與代班模式
     isEditMode = false;
+    activeEditSection = null;
+    activeCoverSection = null;
     toggleEditUiState();
     render();
     alert("🎉 整個班表已成功儲存並同步至雲端資料庫！");
@@ -4489,6 +4494,8 @@ window.submitCellCover = function() {
   }
   
   closeCellCoverModal();
+  activeCoverSection = null;
+  toggleEditUiState();
   render();
 };
 
