@@ -53,6 +53,12 @@ const NI_DATA = {
       { date: '6/20', person: '姜信帆', note: '假日 — 僅 MRI' },
       { date: '6/27', person: '姜信帆', note: '' },
     ],
+    mri_sunday: [
+      { date: '6/7', person: '黃俊肇', note: '' },
+      { date: '6/14', person: '謝棖智', note: '' },
+      { date: '6/21', person: '魏士揚', note: '' },
+      { date: '6/28', person: '鄭宇凡', note: '' },
+    ],
     picc: [
       { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
       { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '' },
@@ -213,6 +219,12 @@ const NI_DATA = {
       { date: '7/11', person: '魏士揚', note: '' },
       { date: '7/18', person: '姜信帆', note: '' },
       { date: '7/25', person: '謝棖智', note: '' },
+    ],
+    mri_sunday: [
+      { date: '7/5', person: '魏士揚', note: '' },
+      { date: '7/12', person: '謝棖智', note: '' },
+      { date: '7/19', person: '黃俊肇', note: '' },
+      { date: '7/26', person: '鄭宇凡', note: '' },
     ],
     picc: [
       { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
@@ -1637,6 +1649,10 @@ async function loadCloudSchedules() {
             }
           });
         }
+        const defaultNi = NI_DATA[monthKey] || {};
+        if (!data.ni.mri_sunday && defaultNi.mri_sunday) {
+          data.ni.mri_sunday = defaultNi.mri_sunday;
+        }
         NI_DATA[monthKey] = data.ni;
         hasNewData = true;
       }
@@ -1651,6 +1667,19 @@ async function loadCloudSchedules() {
         hasNewData = true;
       }
     });
+
+    // 若使用者已登入且雲端缺少 2026-08，自動秒速同步備份至雲端
+    if (currentUser && (!querySnapshot.docs.some(d => d.id === '2026-08')) && NI_DATA['2026-08']) {
+      try {
+        await db.collection("schedules").doc("2026-08").set({
+          ni: NI_DATA['2026-08'],
+          evt: ALL_SCHEDULES['2026-08'] || {}
+        });
+        console.log("☁️ 已自動透過管理員 Session 將 2026-08 班表同步至雲端資料庫！");
+      } catch (autoSyncErr) {
+        console.warn("[AutoSync] 自動同步 2026-08 失敗:", autoSyncErr);
+      }
+    }
     
     if (hasNewData) {
       // 重新整理月份鍵值（確保包含本機預設的所有月份，如 2026-08）
