@@ -3838,9 +3838,11 @@ async function saveAllSchedules() {
 // ════════════════════════════════════════════════════
 //  中風取栓班表 (EVT) Tab 渲染
 // ════════════════════════════════════════════════════
+const evtLegendPeople = PEOPLE.filter(p => p.name !== '劉家義' && p.name !== '黃崇堯');
+
 function toggleAllFilters(showAll) {
   const pills = legendEl.querySelectorAll('.legend-pill');
-  PEOPLE.forEach((p, idx) => {
+  evtLegendPeople.forEach((p, idx) => {
     const pill = pills[idx];
     if (showAll) {
       hiddenPeople.delete(p.key);
@@ -3854,22 +3856,25 @@ function toggleAllFilters(showAll) {
 }
 
 const legendEl = document.getElementById('legend');
-PEOPLE.forEach(p => {
-  const pill = document.createElement('div');
-  pill.className = 'legend-pill';
-  pill.innerHTML = `<span class="legend-dot" style="background:${p.color}"></span>${p.name}`;
-  pill.addEventListener('click', () => {
-    if (hiddenPeople.has(p.key)) {
-      hiddenPeople.delete(p.key);
-      pill.classList.remove('dimmed');
-    } else {
-      hiddenPeople.add(p.key);
-      pill.classList.add('dimmed');
-    }
-    renderEvtCalendar();
+if (legendEl) {
+  legendEl.innerHTML = '';
+  evtLegendPeople.forEach(p => {
+    const pill = document.createElement('div');
+    pill.className = 'legend-pill';
+    pill.innerHTML = `<span class="legend-dot" style="background:${p.color}"></span>${p.name}`;
+    pill.addEventListener('click', () => {
+      if (hiddenPeople.has(p.key)) {
+        hiddenPeople.delete(p.key);
+        pill.classList.remove('dimmed');
+      } else {
+        hiddenPeople.add(p.key);
+        pill.classList.add('dimmed');
+      }
+      renderEvtCalendar();
+    });
+    legendEl.appendChild(pill);
   });
-  legendEl.appendChild(pill);
-});
+}
 
 function renderEvtCalendar() {
   const key = MONTH_KEYS[currentIdx];
