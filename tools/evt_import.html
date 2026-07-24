@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVT Report Importer</title>
+    <title>EVT Report Importer (報告匯入)</title>
     <link rel="stylesheet" href="../css/shared.css">
     <style>
         body { padding: 20px; }
@@ -109,8 +109,8 @@
         <a href="https://docs.google.com/spreadsheets/d/1sq8-khng-EF7nKLvBJnKLmCEMIsA0-BdqlcsFXA_Au4/edit?gid=0#gid=0"
            target="_blank" class="helper-link" style="font-weight: bold; font-size: 0.95rem;">📊 View Stats Sheet</a>
     </div>
-    <h1>EVT Report Importer
-        <span style="font-size:0.5em; color:#888; font-weight:normal;">貼上舊報告 → 自動解析 → 送入統計表</span>
+    <h1>EVT Report Importer (報告匯入)
+        <span style="font-size:0.5em; color:#888; font-weight:normal;">貼上報告 → 自動解析 → 送入統計表</span>
     </h1>
 
     <!-- Step 1: Paste -->
@@ -301,24 +301,6 @@
             if (isEmpty && !isCalc) {
                 tdVal.style.background = '#fff8e1';
             }
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = val;
-            input.dataset.key = field.key;
-            if (isCalcEmpty) {
-                input.placeholder = '（需先填入時間欄位）';
-                input.style.color = '#aaa';
-            }
-            input.addEventListener('input', (e) => {
-                parsedData[e.target.dataset.key] = e.target.value;
-                // 若是關聯欄位更動，重算時差/總數
-                const triggerKeys = ['onsettime','proceduretime','puncturetime','contacttime','endtime','suction_count','stent_pass_count'];
-                if (triggerKeys.includes(e.target.dataset.key)) {
-                    recalcTimings();
-                }
-            });
-            tdVal.appendChild(input);
-            tr.appendChild(tdVal);
 
             // 狀態 badge
             const tdStatus = document.createElement('td');
@@ -326,10 +308,71 @@
             if (isCalc) {
                 tdStatus.innerHTML = `<span class="badge" style="background:#e3f2fd; color:#1565c0;">計算</span>`;
             } else if (isEmpty) {
-                tdStatus.innerHTML = `<span class="badge badge-empty">未解析</span>`;
+                tdStatus.innerHTML = `<span class="badge badge-empty">${field.key === 'stats_operator' ? '未選擇' : '未解析'}</span>`;
             } else {
-                tdStatus.innerHTML = `<span class="badge badge-parsed">✓ 已解析</span>`;
+                tdStatus.innerHTML = `<span class="badge badge-parsed">${field.key === 'stats_operator' ? '✓ 已選擇' : '✓ 已解析'}</span>`;
             }
+
+            let element;
+            if (field.key === 'stats_operator') {
+                element = document.createElement('select');
+                element.style.width = '100%';
+                element.style.fontSize = 'inherit';
+                element.style.padding = '4px';
+                element.style.border = '1px solid #ccc';
+                element.style.borderRadius = '4px';
+                
+                const operators = ['', '黃俊肇', '姜信帆', '謝棖智', '魏士揚', '周兆亮', '黃勇評'];
+                operators.forEach(op => {
+                    const opt = document.createElement('option');
+                    opt.value = op;
+                    opt.textContent = op || '-- 請選擇 --';
+                    if (op === val) {
+                        opt.selected = true;
+                    }
+                    element.appendChild(opt);
+                });
+
+                element.addEventListener('change', (e) => {
+                    const selectedVal = e.target.value;
+                    parsedData[field.key] = selectedVal;
+                    if (selectedVal) {
+                        tdVal.style.background = 'transparent';
+                        tdStatus.innerHTML = `<span class="badge badge-parsed">✓ 已選擇</span>`;
+                    } else {
+                        tdVal.style.background = '#fff8e1';
+                        tdStatus.innerHTML = `<span class="badge badge-empty">未選擇</span>`;
+                    }
+                });
+            } else {
+                element = document.createElement('input');
+                element.type = 'text';
+                element.value = val;
+                if (isCalcEmpty) {
+                    element.placeholder = '（需先填入時間欄位）';
+                    element.style.color = '#aaa';
+                }
+
+                element.addEventListener('input', (e) => {
+                    const inputVal = e.target.value;
+                    parsedData[field.key] = inputVal;
+                    if (inputVal.trim() !== '') {
+                        tdVal.style.background = 'transparent';
+                        tdStatus.innerHTML = `<span class="badge badge-parsed">✓ 已解析</span>`;
+                    } else {
+                        tdVal.style.background = '#fff8e1';
+                        tdStatus.innerHTML = `<span class="badge badge-empty">未解析</span>`;
+                    }
+                    
+                    const triggerKeys = ['onsettime','proceduretime','puncturetime','contacttime','endtime','suction_count','stent_pass_count'];
+                    if (triggerKeys.includes(field.key)) {
+                        recalcTimings();
+                    }
+                });
+            }
+            element.dataset.key = field.key;
+            tdVal.appendChild(element);
+            tr.appendChild(tdVal);
             tr.appendChild(tdStatus);
 
             tbody.appendChild(tr);
