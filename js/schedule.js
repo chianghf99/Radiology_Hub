@@ -3777,14 +3777,12 @@ async function saveAllSchedules() {
     const originalEvt = ALL_SCHEDULES[key] || {};
     for (let day = 1; day <= daysInMonth; day++) {
       const tpEl = document.getElementById(`evt-tp-${day}`);
-      const dsEl = document.getElementById(`evt-ds-${day}`);
-      if (tpEl && dsEl) {
+      if (tpEl) {
         const tpVal = tpEl.value;
-        const dsVal = dsEl.value;
-        if (tpVal || dsVal) {
+        if (tpVal) {
           evt[day] = {
-            tp: tpVal || '',
-            ds: dsVal || ''
+            tp: tpVal,
+            ds: ''
           };
         }
       } else {
@@ -3923,25 +3921,19 @@ function renderEvtCalendar() {
       
       const duty = schedule[day] || {};
       const currentTp = (typeof duty === 'string') ? duty : (duty.tp || '');
-      const currentDs = (typeof duty === 'object') ? (duty.ds || '') : '';
       
-      // 台北選單
       const selectTp = document.createElement('select');
       selectTp.id = `evt-tp-${day}`;
       selectTp.style.fontSize = '0.72rem';
       selectTp.style.padding = '1px 2px';
       selectTp.style.width = '100%';
-      selectTp.innerHTML = `<option value="">北: -</option>` + PEOPLE.map(p => `<option value="${p.name}" ${p.name === currentTp ? 'selected' : ''}>北: ${p.name}</option>`).join('');
+      const evtPeople = PEOPLE.filter(p => p.name !== '劉家義' && p.name !== '黃崇堯');
+      let tpOpts = evtPeople.map(p => `<option value="${p.name}" ${p.name === currentTp ? 'selected' : ''}>${p.name}</option>`).join('');
+      if (currentTp && !evtPeople.some(p => p.name === currentTp)) {
+        tpOpts += `<option value="${currentTp}" selected>${currentTp}</option>`;
+      }
+      selectTp.innerHTML = `<option value="">-</option>` + tpOpts;
       editDiv.appendChild(selectTp);
-      
-      // 淡水選單
-      const selectDs = document.createElement('select');
-      selectDs.id = `evt-ds-${day}`;
-      selectDs.style.fontSize = '0.72rem';
-      selectDs.style.padding = '1px 2px';
-      selectDs.style.width = '100%';
-      selectDs.innerHTML = `<option value="">淡: -</option>` + PEOPLE.map(p => `<option value="${p.name}" ${p.name === currentDs ? 'selected' : ''}>淡: ${p.name}</option>`).join('');
-      editDiv.appendChild(selectDs);
       
       cell.appendChild(editDiv);
     } else {
@@ -3953,8 +3945,7 @@ function renderEvtCalendar() {
         list.style.flexDirection = 'column';
         list.style.gap = '3px';
         
-        const tpName = (typeof duty === 'string') ? duty : duty.tp;
-        const dsName = (typeof duty === 'object') ? duty.ds : '';
+        const tpName = (typeof duty === 'string') ? duty : (duty ? duty.tp : '');
         
         if (tpName) {
           const p = personByName[tpName];
@@ -3962,18 +3953,7 @@ function renderEvtCalendar() {
             const chip = document.createElement('div');
             chip.className = `oncall-chip ${p.cls}`;
             if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
-            chip.textContent = `北: ${tpName}`;
-            list.appendChild(chip);
-          }
-        }
-        
-        if (dsName) {
-          const p = personByName[dsName];
-          if (p) {
-            const chip = document.createElement('div');
-            chip.className = `oncall-chip ${p.cls}`;
-            if (hiddenPeople.has(p.key)) chip.classList.add('dimmed');
-            chip.textContent = `淡: ${dsName}`;
+            chip.textContent = tpName;
             list.appendChild(chip);
           }
         }
