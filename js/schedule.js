@@ -471,6 +471,8 @@ const ALL_SCHEDULES = {
 // ════════════════════════════════════════════════════
 //  人員與配色設定
 // ════════════════════════════════════════════════════
+const CORE_DOCTORS = ['姜信帆', '黃俊肇', '謝棖智', '魏士揚', '鄭宇凡'];
+
 const PEOPLE = [
   { key: 'jiang',    name: '姜信帆', cls: 'chip-jiang',    color: '#059669' },
   { key: 'huang_jz', name: '黃俊肇', cls: 'chip-huang-jz', color: '#d97706' },
@@ -1592,7 +1594,7 @@ function toggleEditUiState() {
         🔄 正在設定「請假代班」模式：點選以下醫師名字旁邊的 🔄 按鈕即可進行代班設定
       </span>
       <button onclick="exitSectionCover()" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 4px; border: none; background: #ef4444; color: white; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
-        ❌ 完成設定
+        ❌ 取消設定
       </button>
     `;
   } else {
@@ -2026,8 +2028,8 @@ function getDoctorTasksForToday(a) {
   if (!a) return {};
   
   const doctorTasks = {};
-  PEOPLE.forEach(p => {
-    doctorTasks[p.name] = { tasks: [], isOnLeave: false };
+  CORE_DOCTORS.forEach(docName => {
+    doctorTasks[docName] = { tasks: [], isOnLeave: false };
   });
 
   function checkLeave(name) {
@@ -2059,6 +2061,8 @@ function getDoctorTasksForToday(a) {
       suffix = ` (${ampmMatch[1]})`;
     }
     
+    if (!CORE_DOCTORS.includes(displayName)) return;
+
     if (!doctorTasks[displayName]) {
       doctorTasks[displayName] = { tasks: [], isOnLeave: false };
     }
@@ -2705,7 +2709,7 @@ function makeSection(icon, title, cls='', sectionKey=null) {
           <button class="section-edit-cancel-btn" onclick="cancelSectionEdit()">❌ 取消</button>
         </div>`;
     } else if (activeCoverSection === sectionKey) {
-      btnHtml = `<button class="section-edit-cancel-btn" style="background:#ef4444; color:white; border:none;" onclick="exitSectionCover()">❌ 完成</button>`;
+      btnHtml = `<button class="section-edit-cancel-btn" style="background:#ef4444; color:white; border:none;" onclick="exitSectionCover()">❌ 取消</button>`;
     }
     h.innerHTML = `<span>${icon} ${title}</span>${btnHtml}`;
   } else {
@@ -2717,9 +2721,11 @@ function makeSection(icon, title, cls='', sectionKey=null) {
 }
 
 function makeEditSelect(id, currentValue) {
-  return `<select id="${id}" style="width:100%; font-size:0.8rem; padding:2px;"><option value="">-</option>` + 
-    PEOPLE.map(p => `<option value="${p.name}" ${p.name === currentValue ? 'selected' : ''}>${p.name}</option>`).join('') + 
-    `</select>`;
+  let opts = CORE_DOCTORS.map(name => `<option value="${name}" ${name === currentValue ? 'selected' : ''}>${name}</option>`).join('');
+  if (currentValue && !CORE_DOCTORS.includes(currentValue)) {
+    opts += `<option value="${currentValue}" selected>${currentValue}</option>`;
+  }
+  return `<select id="${id}" style="width:100%; font-size:0.8rem; padding:2px;"><option value="">-</option>${opts}</select>`;
 }
 
 function makeEditInput(id, currentValue) {
@@ -2744,12 +2750,32 @@ window.addVisualCoverRow = function(date = '', absent = '', taskKey = 'all', mod
   const tbody = document.getElementById('visual-covers-tbody');
   if (!tbody) return;
   
+  let absentOpts = CORE_DOCTORS.map(docName => `<option value="${docName}" ${docName === absent ? 'selected' : ''}>${docName}</option>`).join('');
+  if (absent && !CORE_DOCTORS.includes(absent)) {
+    absentOpts += `<option value="${absent}" selected>${absent}</option>`;
+  }
+
+  let singleOpts = CORE_DOCTORS.map(docName => `<option value="${docName}" ${docName === tpVal && mode === 'single' ? 'selected' : ''}>${docName}</option>`).join('');
+  if (tpVal && mode === 'single' && !CORE_DOCTORS.includes(tpVal)) {
+    singleOpts += `<option value="${tpVal}" selected>${tpVal}</option>`;
+  }
+
+  let tpOpts = CORE_DOCTORS.map(docName => `<option value="${docName}" ${docName === tpVal && mode === 'advanced' ? 'selected' : ''}>${docName}</option>`).join('');
+  if (tpVal && mode === 'advanced' && !CORE_DOCTORS.includes(tpVal)) {
+    tpOpts += `<option value="${tpVal}" selected>${tpVal}</option>`;
+  }
+
+  let dsOpts = CORE_DOCTORS.map(docName => `<option value="${docName}" ${docName === dsVal && mode === 'advanced' ? 'selected' : ''}>${docName}</option>`).join('');
+  if (dsVal && mode === 'advanced' && !CORE_DOCTORS.includes(dsVal)) {
+    dsOpts += `<option value="${dsVal}" selected>${dsVal}</option>`;
+  }
+
   const tr = document.createElement('tr');
   const dateInput = `<input type="text" class="cover-date-input" value="${date}" placeholder="如: 7/17" style="width:90%; padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem; box-sizing:border-box;">`;
   const absentSelect = `
     <select class="cover-absent-select" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
       <option value="">-</option>
-      ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === absent ? 'selected' : ''}>${p.name}</option>`).join('')}
+      ${absentOpts}
     </select>`;
     
   const taskOptionsHtml = [
@@ -2778,7 +2804,7 @@ window.addVisualCoverRow = function(date = '', absent = '', taskKey = 'all', mod
     <div class="cover-single-container" style="display:${mode === 'single' ? 'block' : 'none'};">
       <select class="cover-single-select" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
         <option value="">-</option>
-        ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === tpVal && mode === 'single' ? 'selected' : ''}>${p.name}</option>`).join('')}
+        ${singleOpts}
       </select>
     </div>`;
   const advancedSelect = `
@@ -2786,12 +2812,12 @@ window.addVisualCoverRow = function(date = '', absent = '', taskKey = 'all', mod
       <span style="font-size:0.7rem; color:#64748b;">北:</span>
       <select class="cover-tp-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:60px;">
         <option value="">-</option>
-        ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === tpVal && mode === 'advanced' ? 'selected' : ''}>${p.name}</option>`).join('')}
+        ${tpOpts}
       </select>
       <span style="font-size:0.7rem; color:#64748b; margin-left:4px;">淡:</span>
       <select class="cover-ds-select" style="padding:2px 4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem; min-width:60px;">
         <option value="">-</option>
-        ${PEOPLE.map(p => `<option value="${p.name}" ${p.name === dsVal && mode === 'advanced' ? 'selected' : ''}>${p.name}</option>`).join('')}
+        ${dsOpts}
       </select>
     </div>`;
   const deleteBtn = `<button type="button" class="covers-delete-btn" onclick="this.closest('tr').remove()">🗑️ 刪除</button>`;
@@ -4186,22 +4212,22 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
     doctorSelectDs.innerHTML = '<option value="">- (無代班/取消)</option>';
   }
   
-  PEOPLE.forEach(p => {
-    if (p.name !== name) {
+  CORE_DOCTORS.forEach(docName => {
+    if (docName !== name) {
       const opt = document.createElement('option');
-      opt.value = p.name;
-      opt.textContent = p.name;
+      opt.value = docName;
+      opt.textContent = docName;
       doctorSelect.appendChild(opt);
       
       if (doctorSelectTp && doctorSelectDs) {
         const opt1 = document.createElement('option');
-        opt1.value = p.name;
-        opt1.textContent = p.name;
+        opt1.value = docName;
+        opt1.textContent = docName;
         doctorSelectTp.appendChild(opt1);
         
         const opt2 = document.createElement('option');
-        opt2.value = p.name;
-        opt2.textContent = p.name;
+        opt2.value = docName;
+        opt2.textContent = docName;
         doctorSelectDs.appendChild(opt2);
       }
     }
@@ -4500,6 +4526,7 @@ window.submitCellCover = function() {
   activeCoverSection = null;
   toggleEditUiState();
   render();
+  alert("🎉 代班設定已成功儲存並完成同步！");
 };
 
 function getDatesForDayOfWeek(monthKey, dowString) {
