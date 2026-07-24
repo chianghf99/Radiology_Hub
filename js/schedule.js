@@ -3932,9 +3932,8 @@ function renderEvtCalendar() {
       selectTp.style.fontSize = '0.72rem';
       selectTp.style.padding = '1px 2px';
       selectTp.style.width = '100%';
-      const evtPeople = PEOPLE.filter(p => p.name !== '劉家義' && p.name !== '黃崇堯');
-      let tpOpts = evtPeople.map(p => `<option value="${p.name}" ${p.name === currentTp ? 'selected' : ''}>${p.name}</option>`).join('');
-      if (currentTp && !evtPeople.some(p => p.name === currentTp)) {
+      let tpOpts = CORE_DOCTORS.map(n => `<option value="${n}" ${n === currentTp ? 'selected' : ''}>${n}</option>`).join('');
+      if (currentTp && !CORE_DOCTORS.includes(currentTp)) {
         tpOpts += `<option value="${currentTp}" selected>${currentTp}</option>`;
       }
       selectTp.innerHTML = `<option value="">-</option>` + tpOpts;
