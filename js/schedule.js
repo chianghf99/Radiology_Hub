@@ -3932,8 +3932,8 @@ function renderEvtCalendar() {
       selectTp.style.fontSize = '0.72rem';
       selectTp.style.padding = '1px 2px';
       selectTp.style.width = '100%';
-      let tpOpts = CORE_DOCTORS.map(n => `<option value="${n}" ${n === currentTp ? 'selected' : ''}>${n}</option>`).join('');
-      if (currentTp && !CORE_DOCTORS.includes(currentTp)) {
+      let tpOpts = evtLegendPeople.map(p => `<option value="${p.name}" ${p.name === currentTp ? 'selected' : ''}>${p.name}</option>`).join('');
+      if (currentTp && !evtLegendPeople.some(p => p.name === currentTp)) {
         tpOpts += `<option value="${currentTp}" selected>${currentTp}</option>`;
       }
       selectTp.innerHTML = `<option value="">-</option>` + tpOpts;
