@@ -518,6 +518,12 @@
                 <div style="font-size: 0.92rem; line-height: 1.6; color: #5d4037; background: #fff8e1; padding: 12px; border-radius: 6px; margin-bottom: 12px; white-space: pre-wrap;">{{ vcdReminderText }}</div>
                 <button class="copy-btn" style="background: #e67e22;" @click="copyVcdReminder">📋 複製自費解說備註</button>
             </div>
+
+            <div class="card" v-if="hasCoilSelected" style="border-left: 4px solid #3498db; background: #f4f9fc;">
+                <h2 style="color: #2980b9; border-bottom-color: #d4e6f1;">白金纖維環 (Coil) 事審與計費說明提醒</h2>
+                <div style="font-size: 0.92rem; line-height: 1.6; color: #2c3e50; background: #ebf5fb; padding: 12px; border-radius: 6px; margin-bottom: 12px; white-space: pre-wrap;">{{ coilReminderText }}</div>
+                <button class="copy-btn" style="background: #2980b9;" @click="copyCoilReminder">📋 複製 Coil 事審說明備註</button>
+            </div>
         </div>
     </div>
 
@@ -899,6 +905,23 @@
                 });
             };
 
+            const hasCoilSelected = computed(() => {
+                return inventory.value.some(item => item.category === "Coil (I203-2)" && item.qty > 0);
+            });
+
+            const coilReminderText = `💡 白金纖維環 (Coil) 健保事前審查與計費說明提醒：
+1. 本材料需送交健保局進行事前（緊急）報備與審查，審查作業時間約需 2 至 3 週。
+2. 醫療團隊會全力協助提出申請（臨床上核准通過率極高），但最終審查結果仍需以健保局判定為準。
+3. 醫療費用於出院時結算：若辦理出院時健保局尚未完成審查，需請您先暫行自費墊付。待日後接獲健保局核准通知後，即可攜帶收據與相關證件至本院批價櫃檯辦理退費補報；若最終未獲核准，則維持自費給付。`;
+
+            const copyCoilReminder = () => {
+                navigator.clipboard.writeText(coilReminderText).then(() => {
+                    alert('已成功複製 Coil 事審說明備註到剪貼簿！');
+                }).catch(() => {
+                    alert('複製失敗，請手動複製。');
+                });
+            };
+
             return {
                 inventory, nhiPolicies, businessContacts, procedurePolicies,
                 showModal, selectedPolicy, contactsOpen, policiesOpen, proceduresOpen,
@@ -906,7 +929,8 @@
                 groupedInventory, totalPrice, generatedOutput,
                 copyOutput, increment, decrement,
                 applyPreset, resetAllQty,
-                hasVcdSelected, vcdReminderText, copyVcdReminder
+                hasVcdSelected, vcdReminderText, copyVcdReminder,
+                hasCoilSelected, coilReminderText, copyCoilReminder
             };
         }
     }).mount('#app');
