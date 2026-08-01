@@ -512,6 +512,12 @@
                 <textarea class="output-textarea" readonly :value="generatedOutput"></textarea>
                 <button class="copy-btn" @click="copyOutput">📋 複製文字</button>
             </div>
+
+            <div class="card" v-if="hasVcdSelected" style="border-left: 4px solid #f39c12; background: #fffdf5;">
+                <h2 style="color: #d35400; border-bottom-color: #fce4d6;">血管止血裝置 (VCD) 自費解說提醒</h2>
+                <div style="font-size: 0.92rem; line-height: 1.6; color: #5d4037; background: #fff8e1; padding: 12px; border-radius: 6px; margin-bottom: 12px; white-space: pre-wrap;">{{ vcdReminderText }}</div>
+                <button class="copy-btn" style="background: #e67e22;" @click="copyVcdReminder">📋 複製自費解說備註</button>
+            </div>
         </div>
     </div>
 
@@ -879,13 +885,28 @@
             const increment = (item) => { item.qty++; };
             const decrement = (item) => { if (item.qty > 0) item.qty--; };
 
+            const hasVcdSelected = computed(() => {
+                return inventory.value.some(item => item.category === "Vascular Closure Device" && item.qty > 0);
+            });
+
+            const vcdReminderText = `💡 小提醒：使用血管止血裝置（Vascular Closure Device）可大幅縮短平躺臥床時間並提升止血過程的舒適度。但術中仍需由醫師透過血管攝影評估穿刺部位與血管狀況（如血管大小、鈣化程度等），若條件不適宜，將會改用傳統人工加壓止血，以確保您的醫療安全。`;
+
+            const copyVcdReminder = () => {
+                navigator.clipboard.writeText(vcdReminderText).then(() => {
+                    alert('已成功複製自費解說備註到剪貼簿！');
+                }).catch(() => {
+                    alert('複製失敗，請手動複製。');
+                });
+            };
+
             return {
                 inventory, nhiPolicies, businessContacts, procedurePolicies,
                 showModal, selectedPolicy, contactsOpen, policiesOpen, proceduresOpen,
                 openModal, closeModal,
                 groupedInventory, totalPrice, generatedOutput,
                 copyOutput, increment, decrement,
-                applyPreset, resetAllQty
+                applyPreset, resetAllQty,
+                hasVcdSelected, vcdReminderText, copyVcdReminder
             };
         }
     }).mount('#app');
