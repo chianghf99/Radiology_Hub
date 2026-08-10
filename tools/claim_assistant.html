@@ -52,7 +52,7 @@
                     醫療影像文字快速申報助手
                     <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded border border-white/30">100% 準確純文字貼入版</span>
                 </h1>
-                <p class="text-xs text-blue-100">專為 PACS/HIS 系統複製之表格文字設計，自動識別 CT、XA 儀器與自動智慧格式化</p>
+                <p class="text-xs text-blue-100">專為 PACS/HIS 系統複製之表格文字設計，自動識別 CT、XA、MR 儀器與自動智慧格式化</p>
             </div>
         </div>
         <div class="flex items-center gap-2 text-xs bg-emerald-500/20 text-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-400/30">
@@ -189,7 +189,7 @@
                     <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-200">
                         <div id="progressBar" class="bg-[#2980b9] h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-2"><i class="fa-solid fa-spinner animate-spin mr-1 text-[#2980b9]"></i>辨識完成後會自動提取 CT 與 XA 的日期、存取編號、檢查號與說明。</p>
+                    <p class="text-[10px] text-slate-500 mt-2"><i class="fa-solid fa-spinner animate-spin mr-1 text-[#2980b9]"></i>辨識完成後會自動提取 CT、XA 與 MR 的日期、存取編號、檢查號與說明。</p>
                 </div>
             </div>
 
@@ -241,7 +241,7 @@
                     <div class="flex flex-wrap items-center gap-2 text-xs">
                         <div class="bg-slate-100 p-1 rounded-lg flex border border-slate-200">
                             <button onclick="filterTable('ALL')" id="filterAll" class="px-2.5 py-1 rounded transition-all text-slate-500">全部項目</button>
-                            <button onclick="filterTable('CT_XA')" id="filterCtxa" class="px-2.5 py-1 rounded transition-all bg-[#1a3a5c] text-white shadow-sm font-medium">僅 CT & XA</button>
+                            <button onclick="filterTable('CT_XA_MR')" id="filterCtxa" class="px-2.5 py-1 rounded transition-all bg-[#1a3a5c] text-white shadow-sm font-medium">僅 CT & XA & MR</button>
                         </div>
                         <div class="flex items-center gap-1">
                             <button onclick="selectAll(true)" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2 py-1 rounded-lg transition-colors shadow-sm">全選當前</button>
@@ -333,7 +333,13 @@
     ];
 
     let itemsList = [];
-    let currentFilter = 'CT_XA'; // 預設只顯示 CT & XA 項目
+    let currentFilter = 'CT_XA_MR'; // 預設只顯示 CT & XA & MR 項目
+
+    // 申報主要鎖定的儀器類型
+    const TARGET_MODALITIES = ['CT', 'XA', 'MR'];
+    function isTargetModality(modality) {
+        return TARGET_MODALITIES.includes((modality || '').toUpperCase());
+    }
     let originalImage = null;   // 快照儲存以便重複調整濾鏡
 
     window.onload = function() {
@@ -564,7 +570,7 @@
                 addNewRow();
             } else {
                 itemsList = parsedRows;
-                currentFilter = 'CT_XA';
+                currentFilter = 'CT_XA_MR';
                 updateFilterUI();
                 renderTable();
                 showToast(`OCR 辨識完成！成功提取 ${parsedRows.length} 筆項目。`, "success");
@@ -620,10 +626,18 @@
                 const upperDesc = desc.toUpperCase();
                 const cleanCode = code.trim();
 
+                // 判斷 MR / MRI（需在 CT 與 XA 之前判斷，避免 MRA 被誤判為血管攝影）
+                if (
+                    /\bM\.?R\.?(I|A|V|CP)?\b/.test(upperDesc) ||
+                    upperDesc.includes("MAGNETIC RESONANCE") ||
+                    /^330[78]\d/.test(cleanCode)
+                ) {
+                    modality = "MR";
+                }
                 // 判斷 CT
-                if (upperDesc.includes("C.T.") || upperDesc.includes("CTA") || upperDesc.includes("COMPUTED TOMOGRAPHY") || cleanCode === "79993-19" || cleanCode === "79994-01") {
+                else if (upperDesc.includes("C.T.") || upperDesc.includes("CTA") || upperDesc.includes("COMPUTED TOMOGRAPHY") || cleanCode === "79993-19" || cleanCode === "79994-01") {
                     modality = "CT";
-                } 
+                }
                 // 判斷 XA / 介入性治療
                 else if (
                     cleanCode === "79101" || cleanCode === "79128" || cleanCode === "71243" || cleanCode === "71253" ||
@@ -642,8 +656,8 @@
                     modality = "Echo";
                 }
 
-                // 預設篩選勾選邏輯：如果是 CT 與 XA 就直接打勾
-                const isCtxa = (modality === "CT" || modality === "XA");
+                // 預設篩選勾選邏輯：如果是 CT、XA 與 MR 就直接打勾
+                const isTarget = isTargetModality(modality);
 
                 parsedRows.push({
                     chartNo: chartNo,
@@ -657,7 +671,7 @@
                     physician: physician,
                     desc: desc,
                     modality: modality,
-                    selected: isCtxa,
+                    selected: isTarget,
                     edited: false
                 });
                 successCount++;
@@ -668,7 +682,7 @@
             showToast("無法成功切分欄位，請確認貼入內容是否有完整 10 列欄位。", "error");
         } else {
             itemsList = parsedRows;
-            currentFilter = 'CT_XA'; // 預設只看 CT & XA
+            currentFilter = 'CT_XA_MR'; // 預設只看 CT & XA & MR
             updateFilterUI();
             renderTable();
             showToast(`成功解析！共匯入 ${successCount} 筆項目，已自動偵測儀器類型。`, "success");
@@ -714,7 +728,10 @@
             // 4. 分析儀器
             let modality = "其他";
             const upperLine = cleanLine.toUpperCase();
-            if (upperLine.includes("CT") || upperLine.includes("C.T.")) {
+            // MR 需最先判斷，避免 MRA/MR TRACTOGRAPHY 被誤判成 XA 或 CT
+            if (/\bM\.?R\.?(I|A|V|CP)?\b/.test(upperLine) || upperLine.includes("MAGNETIC RESONANCE")) {
+                modality = "MR";
+            } else if (upperLine.includes("CT") || upperLine.includes("C.T.")) {
                 modality = "CT";
             } else if (upperLine.includes("XA") || upperLine.includes("ANGIOGRAPHY") || upperLine.includes("EMBOLIZATION") || upperLine.includes("STENTING")) {
                 modality = "XA";
@@ -743,7 +760,7 @@
                 physician: "未知",
                 desc: desc,
                 modality: modality,
-                selected: (modality === "CT" || modality === "XA"),
+                selected: isTargetModality(modality),
                 edited: true
             });
         });
@@ -760,8 +777,7 @@
 
         itemsList.forEach((item, index) => {
             // 根據篩選狀態來隱藏或顯示
-            const isCtxa = item.modality === 'CT' || item.modality === 'XA';
-            if (currentFilter === 'CT_XA' && !isCtxa) return;
+            if (currentFilter === 'CT_XA_MR' && !isTargetModality(item.modality)) return;
 
             displayedCount++;
             const tr = document.createElement('tr');
@@ -820,6 +836,7 @@
         switch(modality.toUpperCase()) {
             case 'CT': return 'bg-purple-50 text-purple-700 border border-purple-200';
             case 'XA': return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
+            case 'MR': return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
             case 'CR': return 'bg-amber-50 text-amber-700 border border-amber-200';
             case 'ECHO': return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
             default: return 'bg-slate-100 text-slate-600 border border-slate-200';
@@ -845,9 +862,8 @@
     // 全選或不選
     function selectAll(checked) {
         itemsList.forEach(item => {
-            const isCtxa = item.modality === 'CT' || item.modality === 'XA';
-            if (currentFilter === 'CT_XA') {
-                if (isCtxa) item.selected = checked;
+            if (currentFilter === 'CT_XA_MR') {
+                if (isTargetModality(item.modality)) item.selected = checked;
             } else {
                 item.selected = checked;
             }
