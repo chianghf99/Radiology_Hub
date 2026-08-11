@@ -550,6 +550,49 @@ function inlineAnnotHtml(annot) {
 }
 
 // ════════════════════════════════════════════════════
+//  工作項目 (taskKey) 設定
+// ════════════════════════════════════════════════════
+// 血管攝影的 DSA 與 TAE 是兩個獨立項目，代班可各自指派，
+// 因此 taskKey 分為 angio_dsa / angio_tae。
+// 舊資料只有單一 angio 鍵（DSA 與 TAE 共用一個代班），查詢時需向下相容。
+const TASK_NAMES = {
+  'all':        '全部工作',
+  'mri':        '🧲 門住急 MRI',
+  'angio_dsa':  '🏥 血管攝影 DSA',
+  'angio_tae':  '🏥 血管攝影 TAE',
+  'angio':      '🏥 血管攝影（DSA+TAE，舊格式）',
+  'erct':       '🚨 急診 CT',
+  'routine_ct': '📋 門住 CT 號碼',
+  'ds_mri':     '🏥 淡水健檢 MRI',
+  'picc':       '💉 PICC',
+  'saturday':   '📅 週六班',
+  'sunday':     '📅 週日 MRI'
+};
+
+const KNOWN_TASK_KEYS = Object.keys(TASK_NAMES).filter(k => k !== 'all');
+
+// taskKey → 查詢順序（先找專屬鍵，找不到再退回舊的共用鍵）
+const TASK_KEY_FALLBACK = {
+  'angio_dsa': ['angio_dsa', 'angio'],
+  'angio_tae': ['angio_tae', 'angio']
+};
+
+function taskKeyChain(taskKey) {
+  if (!taskKey) return [];
+  return TASK_KEY_FALLBACK[taskKey] || [taskKey];
+}
+
+// 由代班物件取出指定工作的代班設定，自動套用向下相容的備援鍵
+function pickTaskCover(coverObj, taskKey) {
+  if (!coverObj || typeof coverObj !== 'object') return undefined;
+  for (const k of taskKeyChain(taskKey)) {
+    const v = coverObj[k];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+}
+
+// ════════════════════════════════════════════════════
 //  全域狀態
 // ════════════════════════════════════════════════════
 let MONTH_KEYS = Array.from(new Set([...Object.keys(NI_DATA), ...Object.keys(ALL_SCHEDULES)])).sort();
@@ -2114,7 +2157,11 @@ function getDoctorTasksForToday(a) {
 
     // Determine the task key for this task
     let taskKey = null;
-    if (task.includes('DSA') || task.includes('TAE') || task.includes('血管攝影')) {
+    if (task.includes('DSA')) {
+      taskKey = 'angio_dsa';
+    } else if (task.includes('TAE')) {
+      taskKey = 'angio_tae';
+    } else if (task.includes('血管攝影')) {
       taskKey = 'angio';
     } else if (task.includes('急 CT')) {
       taskKey = 'erct';
@@ -2137,8 +2184,8 @@ function getDoctorTasksForToday(a) {
       const cover = dayCovers[displayName];
       if (typeof cover === 'string') {
         coverName = cover;
-      } else if (typeof cover === 'object' && taskKey && cover[taskKey]) {
-        const taskCover = cover[taskKey];
+      } else if (typeof cover === 'object' && pickTaskCover(cover, taskKey)) {
+        const taskCover = pickTaskCover(cover, taskKey);
         if (typeof taskCover === 'string') {
           coverName = taskCover;
         } else if (typeof taskCover === 'object') {
@@ -2297,8 +2344,8 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
           coverName = cover;
           hasActiveCover = true;
         } else if (typeof cover === 'object') {
-          if (taskKey && cover[taskKey]) {
-            const taskCover = cover[taskKey];
+          const taskCover = pickTaskCover(cover, taskKey);
+          if (taskCover) {
             if (typeof taskCover === 'string') {
               coverName = taskCover;
               hasActiveCover = true;
@@ -2337,7 +2384,8 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
     }
     
     // 如果處於該區塊的請假代班編輯模式，且 name 是有效醫師，渲染 🔄 按鈕
-    if (activeCoverSection && (activeCoverSection === taskKey || (activeCoverSection === 'sunday' && taskKey === 'sunday'))) {
+    // 區塊鍵仍是 'angio'，但欄位的 taskKey 是 angio_dsa / angio_tae，故用備援鏈比對
+    if (activeCoverSection && (taskKeyChain(taskKey).includes(activeCoverSection) || (activeCoverSection === 'sunday' && taskKey === 'sunday'))) {
       const cleanName = name.replace(/AM|PM/g, '').trim();
       const isValidDoc = PEOPLE.some(p => p.name === cleanName);
       if (isValidDoc) {
@@ -2675,8 +2723,8 @@ function renderTodayCard(key) {
   const rows = [];
 
   if (a.angio) {
-    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa, true, targetDate, 'angio', 'tp'), ds: renderPerson(a.angio.ds_dsa, true, targetDate, 'angio', 'ds'), note: a.angio.note });
-    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae, true, targetDate, 'angio', 'tp'), ds: renderPerson(a.angio.ds_tae, true, targetDate, 'angio', 'ds') });
+    rows.push({ label: '血管攝影室 DSA', tp: renderPerson(a.angio.tp_dsa, true, targetDate, 'angio_dsa', 'tp'), ds: renderPerson(a.angio.ds_dsa, true, targetDate, 'angio_dsa', 'ds'), note: a.angio.note });
+    rows.push({ label: '血管攝影室 TAE', tp: renderPerson(a.angio.tp_tae, true, targetDate, 'angio_tae', 'tp'), ds: renderPerson(a.angio.ds_tae, true, targetDate, 'angio_tae', 'ds') });
   }
   if (a.erct) {
     rows.push({ label: '急診 CT', tp: renderPerson(a.erct.tp, true, targetDate, 'erct', 'tp'), ds: renderPerson(a.erct.ds, true, targetDate, 'erct', 'ds'), note: a.erct.note });
@@ -2844,17 +2892,8 @@ window.addVisualCoverRow = function(date = '', absent = '', taskKey = 'all', mod
       ${absentOpts}
     </select>`;
     
-  const taskOptionsHtml = [
-    { key: 'all', name: '全部工作' },
-    { key: 'mri', name: '🧲 門住急 MRI' },
-    { key: 'angio', name: '🏥 血管攝影' },
-    { key: 'erct', name: '🚨 急診 CT' },
-    { key: 'routine_ct', name: '📋 門住 CT 號碼' },
-    { key: 'ds_mri', name: '🏥 淡水健檢 MRI' },
-    { key: 'picc', name: '💉 PICC' },
-    { key: 'saturday', name: '📅 週六班' },
-    { key: 'sunday', name: '📅 週日 MRI' }
-  ].map(o => `<option value="${o.key}" ${o.key === taskKey ? 'selected' : ''}>${o.name}</option>`).join('');
+  const taskOptionsHtml = Object.keys(TASK_NAMES)
+    .map(k => `<option value="${k}" ${k === taskKey ? 'selected' : ''}>${TASK_NAMES[k]}</option>`).join('');
   
   const taskSelect = `
     <select class="cover-task-select" style="width:95%; padding:4px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.8rem;">
@@ -2900,17 +2939,7 @@ window.addVisualCoverRow = function(date = '', absent = '', taskKey = 'all', mod
 
 function renderLeavesAndCoversEditorSection(d) {
   const editing = isSectionEditing('leaves_covers');
-  const taskNames = {
-    'all': '全部工作',
-    'mri': '🧲 門住急 MRI',
-    'angio': '🏥 血管攝影',
-    'erct': '🚨 急診 CT',
-    'routine_ct': '📋 門住 CT 號碼',
-    'ds_mri': '🏥 淡水健檢 MRI',
-    'picc': '💉 PICC',
-    'saturday': '📅 週六班',
-    'sunday': '📅 週日 MRI'
-  };
+  const taskNames = TASK_NAMES;
   
   // 1. 唯讀預覽模式
   if (!editing) {
@@ -2988,7 +3017,7 @@ function renderLeavesAndCoversEditorSection(d) {
             if (typeof coverVal === 'string') {
               coverText = `<span class="person ${personCls(coverVal)}">${coverVal}</span>`;
             } else if (typeof coverVal === 'object' && coverVal !== null) {
-              const knownTasks = ['mri', 'angio', 'erct', 'routine_ct', 'ds_mri', 'picc', 'saturday', 'sunday'];
+              const knownTasks = KNOWN_TASK_KEYS;
               const hasTaskKeys = Object.keys(coverVal).some(k => knownTasks.includes(k) || k === 'all');
               
               if (hasTaskKeys) {
@@ -3104,7 +3133,7 @@ function renderLeavesAndCoversEditorSection(d) {
             if (typeof val === 'string') {
               window.addVisualCoverRow(dateStr, absentDoc, 'all', 'single', val, '');
             } else if (typeof val === 'object' && val !== null) {
-              const knownTasks = ['mri', 'angio', 'erct', 'routine_ct', 'ds_mri', 'picc', 'saturday', 'sunday'];
+              const knownTasks = KNOWN_TASK_KEYS;
               const hasTaskKeys = Object.keys(val).some(k => knownTasks.includes(k) || k === 'all');
               
               if (hasTaskKeys) {
@@ -3160,10 +3189,10 @@ function renderAngio(data) {
     } else {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
-        <td>${renderPerson(row.tp_dsa, true, null, 'angio', 'tp_dsa', row.dow)}</td>
-        <td>${renderPerson(row.tp_tae, true, null, 'angio', 'tp_tae', row.dow)}</td>
-        <td>${renderPerson(row.ds_dsa, true, null, 'angio', 'ds_dsa', row.dow)}</td>
-        <td>${renderPerson(row.ds_tae, true, null, 'angio', 'ds_tae', row.dow)}</td>
+        <td>${renderPerson(row.tp_dsa, true, null, 'angio_dsa', 'tp', row.dow)}</td>
+        <td>${renderPerson(row.tp_tae, true, null, 'angio_tae', 'tp', row.dow)}</td>
+        <td>${renderPerson(row.ds_dsa, true, null, 'angio_dsa', 'ds', row.dow)}</td>
+        <td>${renderPerson(row.ds_tae, true, null, 'angio_tae', 'ds', row.dow)}</td>
         <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
@@ -4122,16 +4151,7 @@ window.exitSectionCover = function() {
 
 let currentCellCoverData = null; // 暫存當前點選的格子資訊
 
-const originalTaskNames = {
-  'all': '全部工作',
-  'mri': '🧲 門住急 MRI',
-  'angio': '🏥 血管攝影',
-  'erct': '🚨 急診 CT',
-  'ds_mri': '🏥 淡水健檢 MRI',
-  'picc': '💉 PICC',
-  'saturday': '📅 週六班',
-  'sunday': '📅 週日 MRI'
-};
+const originalTaskNames = TASK_NAMES;
 
 window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
   currentCellCoverData = { taskKey, location, name, targetDate, dow };
@@ -4355,8 +4375,8 @@ window.openCellCoverModal = function(taskKey, location, name, targetDate, dow) {
         if (typeof cover === 'string') {
           if (taskKey === 'all') existingCover = cover;
         } else if (typeof cover === 'object') {
-          if (taskKey && cover[taskKey]) {
-            const taskCover = cover[taskKey];
+          const taskCover = pickTaskCover(cover, taskKey);
+          if (taskCover) {
             if (typeof taskCover === 'string') {
               existingCover = taskCover;
             } else if (typeof taskCover === 'object') {
@@ -4437,12 +4457,9 @@ window.submitCellCover = function() {
             covers[dateVal][name] = targetObj;
           }
           targetObj[taskKey] = { tp: coverTp, ds: coverDs };
-          
-          // 同步加入 leaves
-          if (!leaves[name]) leaves[name] = [];
-          if (!leaves[name].includes(dateVal)) {
-            leaves[name].push(dateVal);
-          }
+          // 注意：這裡刻意不動 leaves。單項工作換班不代表整天請假，
+          // 若一併寫進 leaves，該醫師當天其他工作會被誤標成「(休)」。
+          // 真正的請假請於「醫師請假日期設定」欄位維護。
         }
       } else {
         // 未勾選，視為取消該日期的 CT 代班
@@ -4465,28 +4482,8 @@ window.submitCellCover = function() {
         }
       }
       
-      // 同步從 leaves 中移除該日期，如果該日期沒有其他代班項目的話
-      if (leaves[name] && leaves[name].includes(dateVal)) {
-        let hasOtherCovers = false;
-        if (covers[dateVal] && covers[dateVal][name]) {
-          const item = covers[dateVal][name];
-          if (typeof item === 'string') {
-            hasOtherCovers = true;
-          } else if (typeof item === 'object') {
-            // 除了 routine_ct 之外還有其他代班
-            const keys = Object.keys(item).filter(k => k !== taskKey);
-            if (keys.length > 0) {
-              hasOtherCovers = true;
-            }
-          }
-        }
-        if (!hasOtherCovers) {
-          leaves[name] = leaves[name].filter(d => d !== dateVal);
-          if (leaves[name].length === 0) {
-            delete leaves[name];
-          }
-        }
-      }
+      // 這裡同樣不動 leaves：取消某一項代班不代表當天的請假記錄要一併刪掉，
+      // 否則真正休假的醫師會被悄悄改成沒請假。
     }
   } else {
     // 一般單選流程
@@ -4527,27 +4524,7 @@ window.submitCellCover = function() {
         }
       }
       
-      // 同步自 leaves 中移除
-      if (leaves[name] && leaves[name].includes(dateVal)) {
-        let hasOtherCovers = false;
-        if (covers[dateVal] && covers[dateVal][name]) {
-          const item = covers[dateVal][name];
-          if (typeof item === 'string') {
-            hasOtherCovers = true;
-          } else if (typeof item === 'object') {
-            const keys = Object.keys(item).filter(k => k !== taskKey);
-            if (keys.length > 0) {
-              hasOtherCovers = true;
-            }
-          }
-        }
-        if (!hasOtherCovers) {
-          leaves[name] = leaves[name].filter(d => d !== dateVal);
-          if (leaves[name].length === 0) {
-            delete leaves[name];
-          }
-        }
-      }
+      // 同上：不連動刪除 leaves
     } else {
       // 新增或更新單一代班
       if (!covers[dateVal]) covers[dateVal] = {};
@@ -4576,12 +4553,7 @@ window.submitCellCover = function() {
           targetObj[taskKey] = coverDoc;
         }
       }
-      
-      // 同步加入 Leaves
-      if (!leaves[name]) leaves[name] = [];
-      if (!leaves[name].includes(dateVal)) {
-        leaves[name].push(dateVal);
-      }
+      // 同上：單項工作換班不寫入 leaves，避免當天其他工作被誤標成「(休)」
     }
   }
   
