@@ -78,11 +78,11 @@ const NI_DATA = {
     },
     covers: {
       '6/4': {
-        '魏士揚': { picc: '謝棖智', angio: '謝棖智', mri: '謝棖智', erct: '謝棖智', routine_ct: '黃俊肇' },
-        '姜信帆': { picc: '謝棖智', angio: '謝棖智', mri: '謝棖智', erct: '謝棖智', routine_ct: '黃俊肇' }
+        '魏士揚': { mri: '謝棖智', angio: '謝棖智', picc: '謝棖智', erct: '謝棖智', routine_ct: '黃俊肇' },
+        '姜信帆': { erct: '謝棖智', mri: '謝棖智', angio: '謝棖智', picc: '謝棖智', routine_ct: '黃俊肇' }
       },
       '6/5': {
-        '魏士揚': { erct: '黃俊肇', angio: '謝棖智', picc: '謝棖智', mri: '謝棖智', routine_ct: '黃俊肇' },
+        '魏士揚': { angio: '謝棖智', picc: '謝棖智', mri: '謝棖智', erct: '黃俊肇', routine_ct: '黃俊肇' },
         '姜信帆': '黃俊肇'
       },
       '6/6': { '魏士揚': '謝棖智', '姜信帆': '黃俊肇' },
@@ -162,22 +162,22 @@ const NI_DATA = {
         '黃俊肇': {
           erct: '姜信帆',
           ds_mri: '姜信帆',
-          mri: '姜信帆',
           angio: '姜信帆',
           picc: '姜信帆',
-          routine_ct: { ds: '姜信帆', tp: '謝棖智' }
+          routine_ct: { ds: '姜信帆', tp: '謝棖智' },
+          mri: '姜信帆'
         }
       },
       '7/18': { '黃俊肇': '姜信帆' },
       '7/19': { '黃俊肇': '姜信帆' },
       '7/20': {
         '黃俊肇': {
-          erct: '姜信帆',
-          ds_mri: '姜信帆',
+          mri: '姜信帆',
           picc: '姜信帆',
           angio: '姜信帆',
           routine_ct: { tp: '謝棖智', ds: '姜信帆' },
-          mri: '姜信帆'
+          erct: '姜信帆',
+          ds_mri: '姜信帆'
         }
       },
       '7/21': {
@@ -280,40 +280,42 @@ const NI_DATA = {
       },
       '8/9': {
         '黃俊肇': {
-          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
         }
       },
       '8/10': {
         '黃俊肇': {
-          routine_ct: { tp: '謝棖智', ds: '魏士揚' },
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' },
           mri: { ds: '姜信帆' }
         }
       },
       '8/11': {
         '黃俊肇': {
-          ds_mri: { ds: '魏士揚' },
           mri: { ds: '魏士揚' },
           routine_ct: { tp: '謝棖智', ds: '魏士揚' },
           picc: { ds: '魏士揚' },
-          angio: '姜信帆'
+          angio_tae: { ds: '姜信帆' },
+          ds_mri: { ds: '魏士揚' },
+          angio_dsa: { ds: '魏士揚' }
         }
       },
       '8/12': {
         '黃俊肇': {
-          erct: { tp: '魏士揚', ds: '魏士揚' },
-          angio: '姜信帆',
-          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+          angio_dsa: { tp: '姜信帆' },
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' },
+          erct: { ds: '魏士揚', tp: '魏士揚' },
+          angio_tae: { tp: '姜信帆' }
         }
       },
       '8/13': {
         '黃俊肇': {
-          routine_ct: { tp: '謝棖智', ds: '魏士揚' },
-          mri: { tp: '姜信帆' }
+          mri: { tp: '姜信帆' },
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
         }
       },
       '8/14': {
         '黃俊肇': {
-          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
         }
       },
       '8/15': {
@@ -328,24 +330,25 @@ const NI_DATA = {
       },
       '8/17': {
         '黃俊肇': {
-          mri: { ds: '謝棖智' },
-          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+          routine_ct: { tp: '謝棖智', ds: '魏士揚' },
+          mri: { ds: '謝棖智' }
         }
       },
       '8/18': {
         '黃俊肇': {
           mri: { ds: '魏士揚' },
+          picc: { ds: '魏士揚' },
+          angio_tae: { ds: '姜信帆' },
           ds_mri: { ds: '魏士揚' },
-          angio: '姜信帆',
-          picc: { ds: '魏士揚' }
+          angio_dsa: { ds: '魏士揚' }
         }
       },
       '8/19': {
-        '魏士揚': {
-          mri: { ds: '黃俊肇' }
-        },
         '姜信帆': {
           mri: { tp: '黃俊肇' }
+        },
+        '魏士揚': {
+          mri: { ds: '黃俊肇' }
         }
       },
       '8/20': {
@@ -354,10 +357,10 @@ const NI_DATA = {
         }
       },
       '8/21': {
+        '魏士揚': { erct: '黃俊肇' },
         '姜信帆': {
           mri: { ds: '黃俊肇' }
-        },
-        '魏士揚': { erct: '黃俊肇' }
+        }
       },
     },
     holidays: [],
@@ -2811,23 +2814,113 @@ function findMonthCoverGaps(key) {
   return gaps;
 }
 
-function renderCoverGapBanner(key) {
-  const gaps = findMonthCoverGaps(key);
-  if (gaps.length === 0) return null;
+// ── 缺口的「忽略」狀態 ──
+// 有些缺口是正常的（備註限定的代班日期範圍之外、學／Cover 欄位等），
+// 每次開啟都跳紅色提醒反而變成雜訊，因此可逐筆忽略。
+// 已登入時寫入雲端，讓這份判斷對所有人一致；未登入則僅存在本機瀏覽器。
+let showIgnoredGaps = false;
 
-  const items = gaps.map(g => `
-    <div class="cover-gap-item">
+function gapKey(g) {
+  // 工作內容變動時 key 會跟著變，缺口會重新浮現，避免舊的忽略掩蓋新問題
+  return `${g.date}|${g.name}|${g.tasks.join('、')}`;
+}
+
+function ignoredGapsStorageKey(monthKey) {
+  return `scheduleIgnoredGaps:${monthKey}`;
+}
+
+function getLocalIgnoredGaps(monthKey) {
+  try {
+    const raw = localStorage.getItem(ignoredGapsStorageKey(monthKey));
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function getIgnoredGaps(monthKey) {
+  const cloud = (NI_DATA[monthKey] && NI_DATA[monthKey].ignoredGaps) || [];
+  return new Set([...cloud, ...getLocalIgnoredGaps(monthKey)]);
+}
+
+window.toggleGapIgnored = function(encodedKey, ignore) {
+  const key = decodeURIComponent(encodedKey);
+  const monthKey = MONTH_KEYS[currentIdx];
+
+  // 本機一律記錄，未登入也能用
+  const local = getLocalIgnoredGaps(monthKey).filter(k => k !== key);
+  if (ignore) local.push(key);
+  try {
+    localStorage.setItem(ignoredGapsStorageKey(monthKey), JSON.stringify(local));
+  } catch (e) {}
+
+  // 已登入則一併寫回雲端
+  if (currentUser && getDb()) {
+    if (!NI_DATA[monthKey]) NI_DATA[monthKey] = {};
+    const cloudList = (NI_DATA[monthKey].ignoredGaps || []).filter(k => k !== key);
+    if (ignore) cloudList.push(key);
+    NI_DATA[monthKey].ignoredGaps = cloudList;
+    db.collection("schedules").doc(monthKey).update({ "ni.ignoredGaps": cloudList })
+      .catch(err => console.warn("[IgnoredGaps] 雲端同步失敗，已保留本機設定:", err));
+  }
+  render();
+};
+
+window.toggleShowIgnoredGaps = function() {
+  showIgnoredGaps = !showIgnoredGaps;
+  render();
+};
+
+function renderCoverGapBanner(key) {
+  const allGaps = findMonthCoverGaps(key);
+  if (allGaps.length === 0) return null;
+
+  const ignored = getIgnoredGaps(key);
+  const active = allGaps.filter(g => !ignored.has(gapKey(g)));
+  const hidden = allGaps.filter(g => ignored.has(gapKey(g)));
+
+  const banner = document.createElement('div');
+
+  // 全部都忽略掉時只留一行極簡提示，不再用紅色橫幅打擾
+  if (active.length === 0 && !showIgnoredGaps) {
+    banner.className = 'cover-gap-muted full-width';
+    banner.innerHTML = `✔️ 本月代班無缺口（已忽略 ${hidden.length} 筆）
+      <button type="button" class="cover-gap-link" onclick="toggleShowIgnoredGaps()">檢視</button>`;
+    return banner;
+  }
+
+  const row = (g, isIgnored) => `
+    <div class="cover-gap-item${isIgnored ? ' ignored' : ''}">
       <strong>${g.date}</strong>
       <span class="person ${personCls(g.name)}">${g.name}</span>
       <span class="cover-gap-tasks">${g.tasks.join('、')}</span>
-    </div>`).join('');
+      <button type="button" class="cover-gap-ignore"
+        onclick="toggleGapIgnored('${encodeURIComponent(gapKey(g))}', ${!isIgnored})">${isIgnored ? '↩︎ 取消忽略' : '✕ 忽略'}</button>
+    </div>`;
 
-  const banner = document.createElement('div');
   banner.className = 'cover-gap-banner full-width';
+  if (active.length === 0) banner.classList.add('resolved');
+
+  const toggleBtn = hidden.length > 0
+    ? `<button type="button" class="cover-gap-link" onclick="toggleShowIgnoredGaps()">${showIgnoredGaps ? `收合已忽略的 ${hidden.length} 筆` : `顯示已忽略的 ${hidden.length} 筆`}</button>`
+    : '';
+
+  const scopeHint = currentUser
+    ? '忽略設定會同步至雲端，所有人看到的結果一致。'
+    : '未登入，忽略設定僅保存在這台裝置的瀏覽器。';
+
   banner.innerHTML = `
-    <div class="cover-gap-title">⚠️ 本月有 ${gaps.length} 筆請假工作尚未指派代班</div>
-    <div class="cover-gap-list">${items}</div>
-    <div class="cover-gap-hint">若該項工作本來就由原醫師自理（例如備註限定的代班日期範圍之外），可忽略此提醒。</div>`;
+    <div class="cover-gap-title">${active.length > 0
+      ? `⚠️ 本月有 ${active.length} 筆請假工作尚未指派代班`
+      : '✔️ 本月代班無缺口'}</div>
+    ${active.length ? `<div class="cover-gap-list">${active.map(g => row(g, false)).join('')}</div>` : ''}
+    ${showIgnoredGaps && hidden.length
+      ? `<div class="cover-gap-list cover-gap-hidden-list">${hidden.map(g => row(g, true)).join('')}</div>`
+      : ''}
+    <div class="cover-gap-foot">
+      <span class="cover-gap-hint">若該項工作本來就由原醫師自理（例如備註限定的代班日期範圍之外），可按「忽略」隱藏。${scopeHint}</span>
+      ${toggleBtn}
+    </div>`;
   return banner;
 }
 
@@ -3956,7 +4049,11 @@ async function saveAllSchedules() {
       holidays,
       notes
     };
-    
+
+    // 這裡是整份覆寫，需把不在編輯表單內的欄位帶回來，否則會被清掉
+    const prevNi = NI_DATA[key] || {};
+    if (prevNi.ignoredGaps) ni.ignoredGaps = prevNi.ignoredGaps;
+
     await db.collection("schedules").doc(key).set({
       ni,
       evt

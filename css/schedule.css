@@ -223,12 +223,67 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
   font-size: 0.76rem;
 }
 .cover-gap-hint {
-  margin-top: 10px;
   font-size: 0.72rem;
   color: #b91c1c;
   opacity: 0.85;
   line-height: 1.5;
+  flex: 1;
+  min-width: 200px;
 }
+.cover-gap-foot {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cover-gap-ignore {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #b91c1c;
+  background: none;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.cover-gap-ignore:hover { background: #fee2e2; border-color: #f87171; }
+.cover-gap-item.ignored { opacity: 0.55; background: #fafafa; }
+.cover-gap-hidden-list { margin-top: 6px; }
+.cover-gap-link {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b91c1c;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+/* 缺口全部被忽略時的極簡提示 */
+.cover-gap-muted {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  padding: 4px 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cover-gap-muted .cover-gap-link { color: var(--text-sub); }
+.cover-gap-banner.resolved {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  border-left-color: #94a3b8;
+}
+.cover-gap-banner.resolved .cover-gap-title { color: #475569; }
+.cover-gap-banner.resolved .cover-gap-hint,
+.cover-gap-banner.resolved .cover-gap-link { color: var(--text-sub); }
 
 /* ── Sections grid (NI) ── */
 .sections-grid {
