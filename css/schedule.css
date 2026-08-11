@@ -184,6 +184,52 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
+/* ── 整月代班缺口提醒 ── */
+.cover-gap-banner {
+  background: #fff5f5;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+.cover-gap-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #991b1b;
+  margin-bottom: 10px;
+}
+.cover-gap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cover-gap-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: white;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+.cover-gap-item strong {
+  color: #991b1b;
+  min-width: 38px;
+}
+.cover-gap-tasks {
+  color: var(--text-sub);
+  font-size: 0.76rem;
+}
+.cover-gap-hint {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: #b91c1c;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
 /* ── Sections grid (NI) ── */
 .sections-grid {
   display: grid;

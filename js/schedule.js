@@ -574,7 +574,9 @@ const KNOWN_TASK_KEYS = Object.keys(TASK_NAMES).filter(k => k !== 'all');
 // taskKey → 查詢順序（先找專屬鍵，找不到再退回舊的共用鍵）
 const TASK_KEY_FALLBACK = {
   'angio_dsa': ['angio_dsa', 'angio'],
-  'angio_tae': ['angio_tae', 'angio']
+  'angio_tae': ['angio_tae', 'angio'],
+  // 門住 CT 早期存成 ct，載入時雖會轉為 routine_ct，仍保留備援以防漏網
+  'routine_ct': ['routine_ct', 'ct']
 };
 
 function taskKeyChain(taskKey) {
@@ -2166,7 +2168,7 @@ function getDoctorTasksForToday(a) {
     } else if (task.includes('急 CT')) {
       taskKey = 'erct';
     } else if (task.includes('門住 CT')) {
-      taskKey = 'ct';
+      taskKey = 'routine_ct';
     } else if (task.includes('MRI') && !task.includes('解釋')) {
       taskKey = 'mri';
     } else if (task.includes('MRI') && task.includes('解釋')) {
@@ -2189,7 +2191,7 @@ function getDoctorTasksForToday(a) {
         if (typeof taskCover === 'string') {
           coverName = taskCover;
         } else if (typeof taskCover === 'object') {
-          if (taskKey === 'ct' && task.includes('北:') && task.includes('淡:')) {
+          if (taskKey === 'routine_ct' && task.includes('北:') && task.includes('淡:')) {
             isSplitCt = true;
             tpCover = taskCover.tp;
             dsCover = taskCover.ds;
@@ -2470,7 +2472,6 @@ function renderTodayCard(key) {
 
   const d = NI_DATA[targetKey];
   const dateStr = a ? `${a.month}/${a.day}` : `${targetDate.getMonth()+1}/${targetDate.getDate()}`;
-  const dayCovers = (d && d.covers && d.covers[dateStr]) ? d.covers[dateStr] : null;
 
   const card = document.createElement('div');
   card.className = 'today-card';
@@ -2670,8 +2671,11 @@ function renderTodayCard(key) {
       
       if (info.isOnLeave) {
         cardStyle = ' style="opacity: 0.6; border-color: #fca5a5; background: #fff5f5;"';
-        const hasCover = (dayCovers && dayCovers[name]);
-        const isMissingCover = (info.tasks.length > 0 && !hasCover);
+        // 有代班的工作已在 getDoctorTasksForToday 轉給代班醫師，
+        // 因此還留在休假醫師清單裡的，就是沒人代的工作。
+        // （原本只看「當天有沒有任何一筆代班」，只要有一筆就不提醒，
+        //   因此「有 DSA 沒 TAE」這種部分遺漏會被漏掉。）
+        const isMissingCover = info.tasks.length > 0;
         badgeHtml = isMissingCover
           ? ' <span style="font-size: 0.65rem; background: #dc2626; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 800; vertical-align: middle;">⚠️ 漏代班</span>'
           : ' <span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 800; vertical-align: middle;">✈️ 休假</span>';
@@ -2694,9 +2698,8 @@ function renderTodayCard(key) {
 
       if (info.isOnLeave) {
         if (filteredTasks.length > 0) {
-          const hasCover = (dayCovers && dayCovers[name]);
           filteredTasks.forEach(task => {
-            const warningSuffix = hasCover ? '' : ' <span style="color:#dc2626; font-weight:800; font-size:0.65rem;">(無代班)</span>';
+            const warningSuffix = ' <span style="color:#dc2626; font-weight:800; font-size:0.65rem;">(無代班)</span>';
             overviewHtml += `<div class="today-doctor-task-item" style="text-decoration: line-through; opacity: 0.7; border-left-color: #ef4444;">${task}${warningSuffix}</div>`;
           });
         } else {
@@ -2780,9 +2783,60 @@ function renderTodayCard(key) {
 // ════════════════════════════════════════════════════
 //  日班工作分配 Tab 渲染
 // ════════════════════════════════════════════════════
+// ────────────────────────────────────────────────
+//  整月代班缺口稽核
+// ────────────────────────────────────────────────
+// 有代班的工作會在 getDoctorTasksForToday 中轉給代班醫師，所以「還留在
+// 休假醫師清單裡的工作」就是沒人代的。這裡沿用同一套判斷逐日掃描整個月，
+// 避免管理者得一天一天點過去才發現漏設。
+function findMonthCoverGaps(key) {
+  const d = NI_DATA[key];
+  if (!d || !d.leaves || Object.keys(d.leaves).length === 0) return [];
+
+  const [y, m] = key.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const gaps = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const a = getTodayAssignments(key, new Date(y, m - 1, day));
+    if (!a) continue;
+    const doctorTasks = getDoctorTasksForToday(a);
+    Object.keys(doctorTasks).forEach(name => {
+      const info = doctorTasks[name];
+      if (info.isOnLeave && info.tasks.length > 0) {
+        gaps.push({ date: `${m}/${day}`, name, tasks: info.tasks.slice() });
+      }
+    });
+  }
+  return gaps;
+}
+
+function renderCoverGapBanner(key) {
+  const gaps = findMonthCoverGaps(key);
+  if (gaps.length === 0) return null;
+
+  const items = gaps.map(g => `
+    <div class="cover-gap-item">
+      <strong>${g.date}</strong>
+      <span class="person ${personCls(g.name)}">${g.name}</span>
+      <span class="cover-gap-tasks">${g.tasks.join('、')}</span>
+    </div>`).join('');
+
+  const banner = document.createElement('div');
+  banner.className = 'cover-gap-banner full-width';
+  banner.innerHTML = `
+    <div class="cover-gap-title">⚠️ 本月有 ${gaps.length} 筆請假工作尚未指派代班</div>
+    <div class="cover-gap-list">${items}</div>
+    <div class="cover-gap-hint">若該項工作本來就由原醫師自理（例如備註限定的代班日期範圍之外），可忽略此提醒。</div>`;
+  return banner;
+}
+
 function renderNiTab(d) {
   const root = document.getElementById('ni-sections');
   root.innerHTML = '';
+
+  const gapBanner = renderCoverGapBanner(MONTH_KEYS[currentIdx]);
+  if (gapBanner) root.appendChild(gapBanner);
 
   root.appendChild(renderAngio(d.angio));
   root.appendChild(renderErCt(d.erct));
