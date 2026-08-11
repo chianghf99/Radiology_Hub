@@ -99,6 +99,26 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
   white-space: nowrap;
 }
 
+/* 該月份尚未建立班表時的提示 */
+.today-empty-notice {
+  background: white;
+  border: 1px dashed #f59e0b;
+  border-radius: 8px;
+  padding: 18px 20px;
+  text-align: center;
+}
+.today-empty-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #b45309;
+  margin-bottom: 6px;
+}
+.today-empty-desc {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
 /* ── Today Doctors Task Grid ── */
 .today-doctors-grid {
   display: grid;
@@ -220,6 +240,22 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
   padding: 0px 5px; border-radius: 3px; margin-left: 4px;
   vertical-align: middle; border: 1px solid;
 }
+/* 姓名欄內嵌的換班註記徽章 */
+.inline-annot {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #78350f;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .note-cell { font-size: 0.72rem; color: var(--text-sub); font-style: italic; }
 .note-inline {
   font-size: 0.7rem; color: #78350f; background: #fffbeb;

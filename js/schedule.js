@@ -1,14 +1,20 @@
 // ════════════════════════════════════════════════════
 //  資料庫：NI 日班工作分配
+//
+//  ⚠️ 這裡是「離線備援」資料，不是唯一真相。
+//  正式資料在 Firestore 的 schedules 集合，頁面載入時會以雲端版本覆蓋這裡的內容
+//  （見 loadCloudSchedules()）。因此直接修改本檔案並不會改變大家看到的班表，
+//  請一律透過網頁的「⚙️ 管理設定 → 排班編輯模式」修改，資料才會進雲端。
+//  本區塊只在雲端讀取失敗（斷網等）時派上用場，最後同步自雲端：2026-08-12。
 // ════════════════════════════════════════════════════
 const NI_DATA = {
   '2026-06': {
     angio: [
-      { dow: '週一', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '魏士揚',   ds_tae: '魏士揚/黃俊肇', note: '淡水DSA：神外醫師協助；6/8 淡水DSA→俊肇' },
-      { dow: '週二', tp_dsa: '姜信帆',    tp_tae: '姜信帆',              ds_dsa: '黃俊肇',   ds_tae: '黃俊肇',        note: '' },
-      { dow: '週三', tp_dsa: '黃俊肇',    tp_tae: '黃俊肇',              ds_dsa: '謝棖智',   ds_tae: '謝棖智',        note: '' },
-      { dow: '週四', tp_dsa: '謝棖智',    tp_tae: '謝棖智',              ds_dsa: '姜信帆',   ds_tae: '魏士揚/姜信帆', note: '6/4 台北DSA→俊肇；淡水DSA→棖智' },
-      { dow: '週五', tp_dsa: '魏士揚',    tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',   ds_tae: '姜信帆',        note: '6/5 台北DSA→棖智；淡水DSA→俊肇' },
+      { dow: '週一', tp_dsa: '謝棖智', tp_tae: '謝棖智', ds_dsa: '魏士揚', ds_tae: '魏士揚/黃俊肇', note: '淡水DSA：神外醫師協助；6/8 淡水DSA→俊肇' },
+      { dow: '週二', tp_dsa: '姜信帆', tp_tae: '姜信帆', ds_dsa: '黃俊肇', ds_tae: '黃俊肇', note: '' },
+      { dow: '週三', tp_dsa: '黃俊肇', tp_tae: '黃俊肇', ds_dsa: '謝棖智', ds_tae: '謝棖智', note: '' },
+      { dow: '週四', tp_dsa: '謝棖智', tp_tae: '謝棖智', ds_dsa: '姜信帆', ds_tae: '魏士揚/姜信帆', note: '6/4 台北DSA→俊肇；淡水DSA→棖智' },
+      { dow: '週五', tp_dsa: '魏士揚', tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆', ds_tae: '姜信帆', note: '6/5 台北DSA→棖智；淡水DSA→俊肇' },
     ],
     erct: [
       { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
@@ -18,19 +24,19 @@ const NI_DATA = {
       { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '6/5 →俊肇' },
     ],
     routine_ct: [
-      { person: '黃俊肇', tp: '00–19',         ds: '00–19',  note: '' },
-      { person: '謝棖智', tp: '20–39',         ds: '20–39',  note: '' },
-      { person: '姜信帆', tp: '40–59',         ds: '80–99',  note: '6/4–6 →俊肇代' },
-      { person: '魏士揚', tp: '60–67, 89–99',  ds: '40–59',  note: '6/4–6 →俊肇代' },
-      { person: '郭律志', tp: '68–88',         ds: '60–79',  note: '' },
+      { person: '黃俊肇', tp: '00–19', ds: '00–19', note: '' },
+      { person: '謝棖智', tp: '20–39', ds: '20–39', note: '' },
+      { person: '姜信帆', tp: '40–59', ds: '80–99', note: '6/4–6 →俊肇代' },
+      { person: '魏士揚', tp: '60–67, 89–99', ds: '40–59', note: '6/4–6 →俊肇代' },
+      { person: '郭律志', tp: '68–88', ds: '60–79', note: '' },
     ],
     mri: {
       tp: [
-        { week: 'W1', person: '謝棖智',                 note: '' },
-        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
-        { week: 'W3', person: '姜信帆',                 note: '' },
-        { week: 'W4', person: '黃俊肇',                 note: '' },
-        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '6/5 PM→棖智' },
+        { week: 'W1', person: '謝棖智', note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚', note: '' },
+        { week: 'W3', person: '姜信帆', note: '' },
+        { week: 'W4', person: '黃俊肇', note: '' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚', note: '6/5 PM→棖智' },
       ],
       ds: [
         { week: 'W1', person: '黃俊肇', note: '' },
@@ -67,115 +73,30 @@ const NI_DATA = {
       { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
     ],
     leaves: {
+      '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8'],
       '姜信帆': ['6/4', '6/5', '6/6', '6/7', '6/8'],
-      '魏士揚': ['6/4', '6/5', '6/6', '6/7', '6/8']
     },
     covers: {
       '6/4': {
-        '姜信帆': { angio: '謝棖智', erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' },
-        '魏士揚': { angio: '謝棖智', erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' }
+        '姜信帆': { mri: '謝棖智', erct: '謝棖智', angio: '謝棖智', picc: '謝棖智', routine_ct: '黃俊肇' },
+        '魏士揚': { erct: '謝棖智', mri: '謝棖智', picc: '謝棖智', angio: '謝棖智', routine_ct: '黃俊肇' }
       },
       '6/5': {
-        '姜信帆': '黃俊肇',
-        '魏士揚': { angio: '謝棖智', erct: '黃俊肇', mri: '謝棖智', picc: '謝棖智', ct: '黃俊肇' }
+        '魏士揚': { angio: '謝棖智', picc: '謝棖智', mri: '謝棖智', erct: '黃俊肇', routine_ct: '黃俊肇' },
+        '姜信帆': '黃俊肇'
       },
-      '6/6': {
-        '姜信帆': '黃俊肇',
-        '魏士揚': '謝棖智'
-      }
+      '6/6': { '姜信帆': '黃俊肇', '魏士揚': '謝棖智' },
     },
     holidays: [],
     notes: '休假：姜信帆、魏士揚（6/4–6/8）\nPF 代班：6/4–6 信帆→俊肇，士揚→棖智\n線上會議：神內放射討論會 6/?? (五) 15:30 — 魏士揚',
   },
-  '2026-08': {
-    angio: [
-      { dow: '週一', tp_dsa: '鄭宇凡',            tp_tae: '謝棖智',              ds_dsa: '魏士揚',                   ds_tae: '魏士揚/黃俊肇', note: '' },
-      { dow: '週二', tp_dsa: '姜信帆',            tp_tae: '姜信帆',              ds_dsa: '黃俊肇8/11士揚8/18 士揚',   ds_tae: '黃俊肇8/11信帆8/18 信帆', note: '' },
-      { dow: '週三', tp_dsa: '黃俊肇8/12信帆',    tp_tae: '黃俊肇8/12信帆',      ds_dsa: '謝棖智',                   ds_tae: '謝棖智',        note: '' },
-      { dow: '週四', tp_dsa: '謝棖智',            tp_tae: '謝棖智',              ds_dsa: '鄭宇凡',                   ds_tae: '魏士揚/姜信帆', note: '' },
-      { dow: '週五', tp_dsa: '魏士揚',            tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',                   ds_tae: '姜信帆',        note: '' },
-    ],
-    ds_mri_daily: [
-      { dow: '週一', person: '魏士揚', note: '' },
-      { dow: '週二', person: '黃俊肇8/11士揚', note: '' },
-      { dow: '週三', person: '謝棖智', note: '' },
-      { dow: '週四', person: '姜信帆', note: '' },
-      { dow: '週五', person: '姜信帆', note: '' },
-    ],
-    erct: [
-      { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
-      { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
-      { dow: '週三', tp: '黃俊肇8/12士揚', ds: '黃俊肇8/12士揚', note: '' },
-      { dow: '週四', tp: '鄭宇凡', ds: '鄭宇凡', note: '' },
-      { dow: '週五', tp: '魏士揚8/21俊肇', ds: '魏士揚8/21俊肇', note: '' },
-    ],
-    routine_ct: [
-      { person: '黃俊肇', tp: '00-23 8/07-17棖智', ds: '00-23 8/07-17士揚', note: '' },
-      { person: '謝棖智', tp: '24-47', ds: '24-47', note: '' },
-      { person: '魏士揚', tp: '48-71', ds: '48-71', note: '' },
-      { person: '鄭宇凡', tp: '72-75', ds: '72-75', note: '' },
-      { person: '姜信帆', tp: '76-99', ds: '76-99', note: '' },
-    ],
-    mri: {
-      tp: [
-        { week: 'W1', person: '謝棖智', note: '' },
-        { week: 'W2', person: 'AM黃主任 PM魏士揚', note: '' },
-        { week: 'W3', person: '姜信帆8/19 俊肇', note: '' },
-        { week: 'W4', person: '黃俊肇8/13 信帆', note: '' },
-        { week: 'W5', person: 'AM黃主任PM 魏士揚', note: '' },
-      ],
-      ds: [
-        { week: 'W1', person: '黃俊肇8/10信帆  8/17棖智', note: '' },
-        { week: 'W2', person: '黃俊肇8/11, 8/18士揚', note: '' },
-        { week: 'W3', person: '魏士揚8/05, 8/19俊肇', note: '' },
-        { week: 'W4', person: '謝棖智8/20俊肇', note: '' },
-        { week: 'W5', person: '姜信帆8/21俊肇', note: '' },
-      ]
-    },
-    saturday: [
-      { date: '8/1', person: '謝棖智', note: '' },
-      { date: '8/8', person: '魏士揚', note: '' },
-      { date: '8/15', person: '鄭宇凡', note: '' },
-      { date: '8/22', person: '黃俊肇', note: '' },
-      { date: '8/29', person: '姜信帆', note: '' },
-    ],
-    mri_sunday: [
-      { date: '8/2', person: '黃俊肇', note: '' },
-      { date: '8/9', person: '謝棖智', note: '' },
-      { date: '8/16', person: '姜信帆', note: '' },
-      { date: '8/23', person: '魏士揚', note: '' },
-      { date: '8/30', person: '鄭宇凡', note: '' },
-    ],
-    picc: [
-      { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
-      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇8/11,18士揚', note: '' },
-      { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
-      { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '' },
-      { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
-    ],
-    leaves: {
-      '黃俊肇': ['8/7', '8/8', '8/9', '8/10', '8/11', '8/12', '8/13', '8/14', '8/15', '8/16', '8/17', '8/18']
-    },
-    covers: {
-      '8/7': { '黃俊肇': { routine_ct: { tp: '謝棖智', ds: '魏士揚' } } },
-      '8/10': { '黃俊肇': { ds_mri: '姜信帆' } },
-      '8/11': { '黃俊肇': { angio: { ds: '魏士揚' }, picc: { ds: '魏士揚' }, ds_mri: '魏士揚' } },
-      '8/12': { '黃俊肇': { angio: { tp: '姜信帆' }, erct: '魏士揚' } },
-      '8/13': { '黃俊肇': { mri: '姜信帆' } },
-      '8/17': { '黃俊肇': { ds_mri: '謝棖智' } },
-      '8/18': { '黃俊肇': { angio: { ds: '魏士揚' }, picc: { ds: '魏士揚' }, ds_mri: '魏士揚' } }
-    },
-    holidays: [],
-    notes: '線上會議：神內放射討論會08/??(五)15:30俊肇\n休假：俊肇(8/07-8/18) PF：8/07-17 俊肇信帆 淡水BMD 8/10信帆, 8/11棖智,  8/17士揚'
-  },
-
   '2026-07': {
     angio: [
-      { dow: '週一', tp_dsa: '鄭宇凡',  tp_tae: '謝棖智',        ds_dsa: '魏士揚',  ds_tae: '魏士揚/黃俊肇', note: '' },
-      { dow: '週二', tp_dsa: '姜信帆',  tp_tae: '姜信帆',        ds_dsa: '黃俊肇',  ds_tae: '黃俊肇',        note: '7/21 淡水DSA→棖智' },
-      { dow: '週三', tp_dsa: '黃俊肇',  tp_tae: '黃俊肇',        ds_dsa: '謝棖智',  ds_tae: '謝棖智',        note: '' },
-      { dow: '週四', tp_dsa: '謝棖智',  tp_tae: '謝棖智',        ds_dsa: '鄭宇凡',  ds_tae: '魏士揚/姜信帆', note: '' },
-      { dow: '週五', tp_dsa: '魏士揚',  tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆',  ds_tae: '姜信帆',        note: '' },
+      { dow: '週一', tp_dsa: '鄭宇凡', tp_tae: '謝棖智', ds_dsa: '魏士揚', ds_tae: '魏士揚/黃俊肇', note: '' },
+      { dow: '週二', tp_dsa: '姜信帆', tp_tae: '姜信帆', ds_dsa: '黃俊肇', ds_tae: '黃俊肇', note: '7/21 淡水DSA→棖智' },
+      { dow: '週三', tp_dsa: '黃俊肇', tp_tae: '黃俊肇', ds_dsa: '謝棖智', ds_tae: '謝棖智', note: '' },
+      { dow: '週四', tp_dsa: '謝棖智', tp_tae: '謝棖智', ds_dsa: '鄭宇凡', ds_tae: '魏士揚/姜信帆', note: '' },
+      { dow: '週五', tp_dsa: '魏士揚', tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆', ds_tae: '姜信帆', note: '' },
     ],
     erct: [
       { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
@@ -193,11 +114,11 @@ const NI_DATA = {
     ],
     mri: {
       tp: [
-        { week: 'W1', person: '謝棖智',                 note: '' },
-        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
-        { week: 'W3', person: '姜信帆',                 note: '' },
-        { week: 'W4', person: '黃俊肇',                 note: '' },
-        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚',  note: '' },
+        { week: 'W1', person: '謝棖智', note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚', note: '' },
+        { week: 'W3', person: '姜信帆', note: '' },
+        { week: 'W4', person: '黃俊肇', note: '' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚', note: '' },
       ],
       ds: [
         { week: 'W1', person: '黃俊肇', note: '7/20 →信帆' },
@@ -224,7 +145,7 @@ const NI_DATA = {
       { date: '7/5', person: '魏士揚', note: '' },
       { date: '7/12', person: '謝棖智', note: '' },
       { date: '7/19', person: '黃俊肇', note: '' },
-      { date: '7/26', person: '鄭宇凡', note: '' },
+      { date: '7/26', person: '姜信帆', note: '' },
     ],
     picc: [
       { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
@@ -234,94 +155,85 @@ const NI_DATA = {
       { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
     ],
     leaves: {
-      '黃俊肇': ['7/17', '7/18', '7/19', '7/20', '7/21']
+      '黃俊肇': ['7/17', '7/18', '7/19', '7/20', '7/21'],
     },
     covers: {
       '7/17': {
         '黃俊肇': {
-          ct: { tp: '謝棖智', ds: '姜信帆' },
-          angio: '姜信帆',
-          erct: '姜信帆',
-          mri: '姜信帆',
           picc: '姜信帆',
-          ds_mri: '姜信帆'
+          angio: '姜信帆',
+          ds_mri: '姜信帆',
+          routine_ct: { ds: '姜信帆', tp: '謝棖智' },
+          erct: '姜信帆',
+          mri: '姜信帆'
         }
       },
       '7/18': { '黃俊肇': '姜信帆' },
       '7/19': { '黃俊肇': '姜信帆' },
       '7/20': {
         '黃俊肇': {
-          ct: { tp: '謝棖智', ds: '姜信帆' },
-          angio: '姜信帆',
           erct: '姜信帆',
+          routine_ct: { tp: '謝棖智', ds: '姜信帆' },
           mri: '姜信帆',
-          picc: '姜信帆',
-          ds_mri: '姜信帆'
+          ds_mri: '姜信帆',
+          angio: '姜信帆',
+          picc: '姜信帆'
         }
       },
       '7/21': {
-        '黃俊肇': {
-          angio: '謝棖智',
-          mri: '謝棖智',
-          picc: '謝棖智',
-          ds_mri: '謝棖智'
-        }
+        '黃俊肇': { angio: '謝棖智', mri: '謝棖智', ds_mri: '謝棖智', picc: '謝棖智' }
       },
       '7/23': {
-        '謝棖智': {
-          mri: '黃俊肇'
-        }
+        '謝棖智': { mri: '黃俊肇' }
       },
       '7/24': {
-        '姜信帆': {
-          mri: '黃俊肇'
-        }
-      }
+        '姜信帆': { mri: '黃俊肇' }
+      },
     },
     holidays: [],
     notes: '休假：黃俊肇（7/17–7/21）\nPF 代班：7/17–20 俊肇→信帆；淡水BMD 7/20→信帆，7/21→棖智\n線上會議：神內放射討論會 7/?? (五) 15:30 — 黃俊肇',
   },
   '2026-08': {
     angio: [
-      { dow: '週一', tp_dsa: '鄭宇凡',            tp_tae: '謝棖智',              ds_dsa: '魏士揚',                   ds_tae: '魏士揚/黃俊肇', note: '' },
-      { dow: '週二', tp_dsa: '姜信帆',            tp_tae: '姜信帆',              ds_dsa: '黃俊肇8/11士揚8/18 士揚',   ds_tae: '黃俊肇8/11信帆8/18 信帆', note: '' },
-      { dow: '週三', tp_dsa: '黃俊肇8/12信帆',    tp_tae: '黃俊肇8/12信帆',      ds_dsa: '謝棖智',                   ds_tae: '謝棖智',        note: '' },
-      { dow: '週四', tp_dsa: '謝棖智',            tp_tae: '謝棖智',              ds_dsa: '鄭宇凡',                   ds_tae: '魏士揚/姜信帆', note: '' },
-      { dow: '週五', tp_dsa: '魏士揚',            tp_tae: '魏士揚/謝棖智',       ds_dsa: '姜信帆',                   ds_tae: '姜信帆',        note: '' },
+      { dow: '週一', tp_dsa: '鄭宇凡', tp_tae: '謝棖智', ds_dsa: '魏士揚', ds_tae: '魏士揚/黃俊肇', note: '' },
+      { dow: '週二', tp_dsa: '姜信帆', tp_tae: '姜信帆', ds_dsa: '黃俊肇', ds_tae: '黃俊肇', note: '8/11, 18 魏士揚/姜信帆' },
+      { dow: '週三', tp_dsa: '黃俊肇', tp_tae: '黃俊肇', ds_dsa: '謝棖智', ds_tae: '謝棖智', note: '8/12 姜信帆' },
+      { dow: '週四', tp_dsa: '謝棖智', tp_tae: '謝棖智', ds_dsa: '鄭宇凡', ds_tae: '魏士揚/姜信帆', note: '' },
+      { dow: '週五', tp_dsa: '魏士揚', tp_tae: '魏士揚/謝棖智', ds_dsa: '姜信帆', ds_tae: '姜信帆', note: '' },
     ],
     erct: [
       { dow: '週一', tp: '謝棖智', ds: '謝棖智', note: '' },
       { dow: '週二', tp: '姜信帆', ds: '姜信帆', note: '' },
-      { dow: '週三', tp: '黃俊肇8/12士揚', ds: '黃俊肇8/12士揚', note: '' },
+      { dow: '週三', tp: '黃俊肇', ds: '黃俊肇', note: '8/12士揚' },
       { dow: '週四', tp: '鄭宇凡', ds: '鄭宇凡', note: '' },
-      { dow: '週五', tp: '魏士揚8/21俊肇', ds: '魏士揚8/21俊肇', note: '' },
+      { dow: '週五', tp: '魏士揚', ds: '魏士揚', note: '8/21俊肇' },
     ],
     routine_ct: [
-      { person: '黃俊肇', tp: '00-23 8/07-17棖智', ds: '00-23 8/07-17士揚', note: '' },
-      { person: '謝棖智', tp: '24-47', ds: '24-47', note: '' },
-      { person: '魏士揚', tp: '48-71', ds: '48-71', note: '' },
-      { person: '鄭宇凡', tp: '72-75', ds: '72-75', note: '' },
-      { person: '姜信帆', tp: '76-99', ds: '76-99', note: '' },
+      { person: '黃俊肇', tp: '00–23', ds: '00–23', note: '8/07-17棖智; 8/07-17士揚' },
+      { person: '謝棖智', tp: '24–47', ds: '24–47', note: '' },
+      { person: '姜信帆', tp: '76–99', ds: '76–99', note: '' },
+      { person: '魏士揚', tp: '48–71', ds: '48–71', note: '' },
+      { person: '鄭宇凡', tp: '72–75', ds: '72–75', note: '' },
     ],
     mri: {
       tp: [
         { week: 'W1', person: '謝棖智', note: '' },
-        { week: 'W2', person: 'AM黃主任 PM魏士揚', note: '' },
-        { week: 'W3', person: '姜信帆8/19 俊肇', note: '' },
-        { week: 'W4', person: '黃俊肇8/13 信帆', note: '' },
-        { week: 'W5', person: 'AM黃主任PM 魏士揚', note: '' },
+        { week: 'W2', person: 'AM 黃主任 / PM 魏士揚', note: '' },
+        { week: 'W3', person: '姜信帆', note: '8/19 俊肇' },
+        { week: 'W4', person: '黃俊肇', note: '8/13 信帆' },
+        { week: 'W5', person: 'AM 黃主任 / PM 魏士揚', note: '' },
       ],
       ds: [
-        { week: 'W1', person: '黃俊肇8/10信帆  8/17棖智', note: '' },
-        { week: 'W2', person: '黃俊肇8/11, 8/18士揚', note: '' },
-        { week: 'W3', person: '魏士揚8/05, 8/19俊肇', note: '' },
-        { week: 'W4', person: '謝棖智8/20俊肇', note: '' },
-        { week: 'W5', person: '姜信帆8/21俊肇', note: '' },
-      ]
+        { week: 'W1', person: '黃俊肇', note: '8/10信帆  8/17棖智' },
+        { week: 'W2', person: '黃俊肇', note: '8/11, 8/18士揚' },
+        { week: 'W3', person: '魏士揚', note: '8/05, 8/19俊肇' },
+        { week: 'W4', person: '謝棖智', note: '8/20俊肇' },
+        { week: 'W5', person: '姜信帆', note: '8/21俊肇' },
+      ],
     },
     ds_mri_daily: [
       { dow: '週一', person: '魏士揚', note: '' },
-      { dow: '週二', person: '黃俊肇8/11士揚', note: '' },
+      { dow: '週二', person: '黃俊肇', note: '8/11士揚' },
       { dow: '週三', person: '謝棖智', note: '' },
       { dow: '週四', person: '姜信帆', note: '' },
       { dow: '週五', person: '姜信帆', note: '' },
@@ -342,25 +254,118 @@ const NI_DATA = {
     ],
     picc: [
       { dow: '週一', tp: '謝棖智', ds: '劉家義', note: '' },
-      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇8/11,18士揚', note: '' },
+      { dow: '週二', tp: '黃崇堯', ds: '黃俊肇', note: '8/11,18士揚' },
       { dow: '週三', tp: '魏士揚', ds: '謝棖智', note: '' },
       { dow: '週四', tp: '劉家義', ds: '姜信帆', note: '' },
       { dow: '週五', tp: '魏士揚', ds: '黃崇堯', note: '' },
     ],
     leaves: {
-      '黃俊肇': ['8/7', '8/8', '8/9', '8/10', '8/11', '8/12', '8/13', '8/14', '8/15', '8/16', '8/17', '8/18']
+      '姜信帆': ['8/19', '8/21'],
+      '黃俊肇': ['8/7', '8/8', '8/9', '8/10', '8/11', '8/12', '8/13', '8/14', '8/15', '8/16', '8/17', '8/18'],
+      '謝棖智': ['8/20'],
+      '魏士揚': ['8/5', '8/19', '8/21'],
     },
     covers: {
-      '8/7': { '黃俊肇': { routine_ct: { tp: '謝棖智', ds: '魏士揚' } } },
-      '8/10': { '黃俊肇': { ds_mri: '姜信帆' } },
-      '8/11': { '黃俊肇': { angio: { ds: '魏士揚' }, picc: { ds: '魏士揚' }, ds_mri: '魏士揚' } },
-      '8/12': { '黃俊肇': { angio: { tp: '姜信帆' }, erct: '魏士揚' } },
-      '8/13': { '黃俊肇': { mri: '姜信帆' } },
-      '8/17': { '黃俊肇': { ds_mri: '謝棖智' } },
-      '8/18': { '黃俊肇': { angio: { ds: '魏士揚' }, picc: { ds: '魏士揚' }, ds_mri: '魏士揚' } }
+      '8/5': {
+        '魏士揚': {
+          mri: { ds: '黃俊肇' }
+        }
+      },
+      '8/7': {
+        '黃俊肇': {
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
+        }
+      },
+      '8/8': {
+        '黃俊肇': {
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
+        }
+      },
+      '8/9': {
+        '黃俊肇': {
+          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+        }
+      },
+      '8/10': {
+        '黃俊肇': {
+          routine_ct: { tp: '謝棖智', ds: '魏士揚' },
+          mri: { ds: '姜信帆' }
+        }
+      },
+      '8/11': {
+        '黃俊肇': {
+          angio: '姜信帆',
+          picc: { ds: '魏士揚' },
+          routine_ct: { tp: '謝棖智', ds: '魏士揚' },
+          mri: { ds: '魏士揚' },
+          ds_mri: { ds: '魏士揚' }
+        }
+      },
+      '8/12': {
+        '黃俊肇': {
+          angio: '姜信帆',
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' },
+          erct: { tp: '魏士揚', ds: '魏士揚' }
+        }
+      },
+      '8/13': {
+        '黃俊肇': {
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' },
+          mri: { tp: '姜信帆' }
+        }
+      },
+      '8/14': {
+        '黃俊肇': {
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
+        }
+      },
+      '8/15': {
+        '黃俊肇': {
+          routine_ct: { ds: '魏士揚', tp: '謝棖智' }
+        }
+      },
+      '8/16': {
+        '黃俊肇': {
+          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+        }
+      },
+      '8/17': {
+        '黃俊肇': {
+          mri: { ds: '謝棖智' },
+          routine_ct: { tp: '謝棖智', ds: '魏士揚' }
+        }
+      },
+      '8/18': {
+        '黃俊肇': {
+          picc: { ds: '魏士揚' },
+          angio: '姜信帆',
+          mri: { ds: '魏士揚' }
+        }
+      },
+      '8/19': {
+        '姜信帆': {
+          mri: { tp: '黃俊肇' }
+        },
+        '魏士揚': {
+          mri: { ds: '黃俊肇' }
+        }
+      },
+      '8/20': {
+        '謝棖智': {
+          mri: { ds: '黃俊肇' }
+        }
+      },
+      '8/21': {
+        '魏士揚': {
+          erct: { ds: '黃俊肇' }
+        },
+        '姜信帆': {
+          mri: { ds: '黃俊肇' }
+        }
+      },
     },
     holidays: [],
-    notes: '線上會議：神內放射討論會08/??(五)15:30俊肇\n休假：俊肇(8/07-8/18) PF：8/07-17 俊肇信帆 淡水BMD 8/10信帆, 8/11棖智,  8/17士揚'
+    notes: '線上會議：神內放射討論會08/07(五)15:30俊肇\n休假：俊肇(8/07-8/18) PF：8/07-17 俊肇信帆 淡水BMD 8/10信帆, 8/11棖智,  8/17士揚',
   },
 };
 
@@ -464,8 +469,8 @@ const ALL_SCHEDULES = {
     28: { tp: '姜信帆', ds: '黃俊肇' },
     29: { tp: '姜信帆', ds: '黃俊肇' },
     30: { tp: '姜信帆', ds: '黃俊肇' },
-    31: { tp: '姜信帆', ds: '黃俊肇' }
-  }
+    31: { tp: '姜信帆', ds: '黃俊肇' },
+  },
 };
 
 // ════════════════════════════════════════════════════
@@ -502,6 +507,50 @@ PEOPLE.forEach(p => { personByName[p.name] = p; });
 
 function personCls(name) {
   return PERSON_CLASS[name] || 'p-other';
+}
+
+// ────────────────────────────────────────────────
+//  姓名欄內嵌換班註記的解析
+//  班表有時會把換班直接寫進姓名欄，例如「黃俊肇8/11士揚8/18 士揚」。
+//  這種字串含有「/」，若交給下方的 學/Cover 或 AM/PM 分隔邏輯會被切成亂碼
+//  （例如顯示成「黃俊肇8學/11士揚8Cover」），因此在此先攔截下來，
+//  將姓名與註記分開呈現，不改動原始資料。
+// ────────────────────────────────────────────────
+
+// 醫師簡稱（取全名後兩字）→ 全名，用於替註記內的簡稱上色
+const SHORT_NAME_TO_FULL = {};
+PEOPLE.forEach(p => {
+  const short = p.name.slice(-2);
+  if (!SHORT_NAME_TO_FULL[short]) SHORT_NAME_TO_FULL[short] = p.name;
+});
+
+// 依字串長度排序，確保全名優先於簡稱被比對到
+const ANNOT_NAME_RE = new RegExp(
+  Object.keys(SHORT_NAME_TO_FULL)
+    .concat(PEOPLE.map(p => p.name))
+    .sort((a, b) => b.length - a.length)
+    .join('|'),
+  'g'
+);
+
+// 將「黃俊肇8/11士揚」拆成 { base: '黃俊肇', annot: '8/11士揚' }；無內嵌註記則回傳 null
+function splitInlineAnnotation(raw) {
+  const s = String(raw).trim();
+  const idx = s.search(/\d/);
+  if (idx <= 0) return null;
+  const base = s.slice(0, idx).trim();
+  const annot = s.slice(idx).trim();
+  if (!base || !annot) return null;
+  return { base, annot };
+}
+
+// 把註記內容渲染成小徽章，並替其中的醫師名字上色
+function inlineAnnotHtml(annot) {
+  const colored = annot.replace(ANNOT_NAME_RE, m => {
+    const full = SHORT_NAME_TO_FULL[m] || m;
+    return `<span class="person ${personCls(full)}">${m}</span>`;
+  });
+  return `<span class="inline-annot" title="此欄位直接寫在姓名中的換班註記">${colored}</span>`;
 }
 
 // ════════════════════════════════════════════════════
@@ -2309,6 +2358,12 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
     return finalHtml;
   }
 
+  // 姓名欄內嵌換班註記（如「黃俊肇8/11士揚」）：先攔截，避免被下方的 / 分隔邏輯切壞
+  const inline = splitInlineAnnotation(raw);
+  if (inline) {
+    return formatName(inline.base) + inlineAnnotHtml(inline.annot);
+  }
+
   if (raw.includes('AM') || raw.includes('PM')) {
     return raw
       .split('/')
@@ -2365,10 +2420,12 @@ function renderTodayCard(key) {
 
   const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}`;
   const a = getTodayAssignments(targetKey, targetDate);
-  if (!a) return null;
+
+  // 日期標籤不依賴 a，這樣即使該月份尚未建班表也能正常顯示標題與日期切換鈕
+  const dateLabel = `${targetDate.getFullYear()}/${String(targetDate.getMonth()+1).padStart(2,'0')}/${String(targetDate.getDate()).padStart(2,'0')} （週${DOW_NAMES_TW[targetDate.getDay()]}）`;
 
   const d = NI_DATA[targetKey];
-  const dateStr = `${a.month}/${a.day}`;
+  const dateStr = a ? `${a.month}/${a.day}` : `${targetDate.getMonth()+1}/${targetDate.getDate()}`;
   const dayCovers = (d && d.covers && d.covers[dateStr]) ? d.covers[dateStr] : null;
 
   const card = document.createElement('div');
@@ -2411,7 +2468,7 @@ function renderTodayCard(key) {
     <div class="today-card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h2>📅 ${titleText}</h2>
-        <span class="today-date-badge">${a.dateStr}</span>${statusBadge}
+        <span class="today-date-badge">${dateLabel}</span>${statusBadge}
       </div>
       <div style="display:flex; gap:2px; background:#f1f5f9; padding:2px; border-radius:6px; border:1px solid #e2e8f0; align-items:center; height: 28px;">
         <button onclick="setTodayTab('today')" style="padding:3px 10px; font-size:0.75rem; border-radius:4px; border:none; font-weight:600; cursor:pointer; transition:all 0.15s; background:${bgToday}; color:${colorToday}; box-shadow:${shadowToday}; height:100%;">今日</button>
@@ -2430,6 +2487,19 @@ function renderTodayCard(key) {
         <span style="vertical-align:middle;">🕒 依目前時間自動切換時段班表</span>
       </label>
     </div>`;
+
+  // 該月份尚未建立班表：顯示提示，而不是整張卡片消失
+  // （「今日精簡」模式下月份切換列是隱藏的，若這裡回傳 null 會變成整頁空白）
+  if (!a) {
+    card.innerHTML = headerHtml + `
+      <div class="today-empty-notice">
+        <div class="today-empty-title">⚠️ 尚未建立 ${targetKey} 的班表資料</div>
+        <div class="today-empty-desc">
+          請由右上角「⚙️ 管理設定 → ➕ 建立新月份班表」新增，或用上方的「今日 / 明日 / 指定日期」切換到其他日期。
+        </div>
+      </div>`;
+    return card;
+  }
 
   card.innerHTML = headerHtml + toggleHtml;
 
@@ -3885,7 +3955,9 @@ function renderEvtCalendar() {
 
   const daysInMonth = new Date(year, month, 0).getDate();
   const startOffset = ((new Date(year, month - 1, 1).getDay()) + 6) % 7; // Mon=0
-  const todayDay = (now.getFullYear() === year && now.getMonth() + 1 === month) ? now.getDate() : -1;
+  // 用當下時間判斷「今天」，避免頁面開著跨日後仍標在舊的日期
+  const nowReal = new Date();
+  const todayDay = (nowReal.getFullYear() === year && nowReal.getMonth() + 1 === month) ? nowReal.getDate() : -1;
 
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
@@ -4000,6 +4072,32 @@ function renderTabContent() {
     renderEvtCalendar();
   }
 }
+
+// ════════════════════════════════════════════════════
+//  自動更新：時段切換 / 跨日時免手動重新整理
+// ════════════════════════════════════════════════════
+// 頁面常被整天掛在瀏覽器分頁裡，但 08:30、17:00 的時段切換與跨日
+// 原本都要重新整理才會反映，這裡定期比對「邏輯日期 + 時段」有無變化。
+function currentTickSignature() {
+  const logicalDate = getLogicalDate();
+  return `${logicalDate.toDateString()}|${getAutoFilterStatus(logicalDate)}`;
+}
+
+let lastTickSignature = currentTickSignature();
+
+function refreshIfTimeSliceChanged() {
+  // 編輯模式下的未存內容存在 DOM 裡，重繪會直接清掉，因此跳過
+  if (isEditMode || activeEditSection || activeCoverSection) return;
+  const sig = currentTickSignature();
+  if (sig === lastTickSignature) return;
+  lastTickSignature = sig;
+  render();
+}
+
+setInterval(refreshIfTimeSliceChanged, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshIfTimeSliceChanged();
+});
 
 // ════════════════════════════════════════════════════
 //  初始化

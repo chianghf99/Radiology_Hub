@@ -2,10 +2,55 @@
 <html lang="zh-TW">
 <head>
   <script>
-    window.onerror = function(message, source, lineno, colno, error) {
-      alert("⚠️ 發現 JavaScript 執行錯誤！\n訊息: " + message + "\n檔案: " + source + "\n行號: " + lineno + "\n列號: " + colno + "\nError: " + (error ? error.stack : '無'));
-      return false;
-    };
+    // 頁面發生 JS 錯誤時，改以頁面上方的提示列呈現（原本是 alert 彈窗，
+    // 一般使用者會被技術訊息打斷）。詳細內容仍完整保留在 console 與可展開的區塊中。
+    (function () {
+      var shown = false;
+
+      function showErrorBanner(detail) {
+        if (shown) return;
+        shown = true;
+
+        var bar = document.createElement('div');
+        bar.setAttribute('role', 'alert');
+        bar.style.cssText = 'background:#fef2f2;border-bottom:1px solid #fca5a5;color:#991b1b;font-size:0.82rem;padding:8px 14px;text-align:center;line-height:1.6;';
+        bar.innerHTML =
+          '<span>⚠️ 頁面發生錯誤，部分內容可能無法正確顯示，建議重新整理。</span>' +
+          ' <button type="button" style="margin-left:8px;font-size:0.72rem;font-weight:700;color:#991b1b;background:none;border:1px solid #fca5a5;border-radius:4px;padding:1px 7px;cursor:pointer;">技術詳情</button>' +
+          ' <button type="button" style="margin-left:4px;font-size:0.72rem;font-weight:700;color:#991b1b;background:none;border:none;cursor:pointer;">✕</button>' +
+          '<pre style="display:none;text-align:left;max-width:900px;margin:8px auto 0;padding:8px 10px;background:#fff;border:1px solid #fecaca;border-radius:6px;font-size:0.7rem;white-space:pre-wrap;word-break:break-all;color:#7f1d1d;"></pre>';
+
+        var buttons = bar.querySelectorAll('button');
+        var pre = bar.querySelector('pre');
+        pre.textContent = detail;
+        buttons[0].onclick = function () {
+          pre.style.display = pre.style.display === 'none' ? 'block' : 'none';
+        };
+        buttons[1].onclick = function () { bar.remove(); };
+
+        document.body.insertBefore(bar, document.body.firstChild);
+      }
+
+      function report(detail) {
+        if (document.body) {
+          showErrorBanner(detail);
+        } else {
+          document.addEventListener('DOMContentLoaded', function () { showErrorBanner(detail); });
+        }
+      }
+
+      window.onerror = function (message, source, lineno, colno, error) {
+        console.error('[schedule] 未攔截的錯誤:', message, source, lineno, colno, error);
+        report('訊息: ' + message + '\n檔案: ' + source + '\n行號: ' + lineno + ':' + colno +
+               '\n' + (error && error.stack ? error.stack : ''));
+        return false;
+      };
+
+      window.addEventListener('unhandledrejection', function (e) {
+        console.error('[schedule] 未處理的 Promise 錯誤:', e.reason);
+        report('未處理的 Promise 錯誤: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason));
+      });
+    })();
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -215,7 +260,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
-<script src="../js/schedule.js?v=20260725_1017"></script>
+<script src="../js/schedule.js?v=20260812_01"></script>
 
 </body>
 </html>
