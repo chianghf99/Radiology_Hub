@@ -3,7 +3,7 @@
 //
 //  ⚠️ 這裡是「離線備援」資料，不是唯一真相。
 //  正式資料在 Firestore 的 schedules 集合，頁面載入時會以雲端版本覆蓋這裡的內容
-//  （見 loadCloudSchedules()）。因此直接修改本檔案並不會改變大家看到的班表，
+//  （見 subscribeCloudSchedules()）。因此直接修改本檔案並不會改變大家看到的班表，
 //  請一律透過網頁的「⚙️ 管理設定 → 排班編輯模式」修改，資料才會進雲端。
 //  本區塊只在雲端讀取失敗（斷網等）時派上用場，最後同步自雲端：2026-08-12。
 // ════════════════════════════════════════════════════
@@ -983,7 +983,9 @@ async function handleCreateNewMonth() {
     alert(`月份 ${monthKey} 的空白班表已成功建立！`);
     input.value = "";
     
-    await loadCloudSchedules();
+    // 立即套用到記憶體，不必等雲端訂閱回傳（稍後 onSnapshot 會再確認一次）
+    applyScheduleDoc(monthKey, { ni, evt });
+    refreshMonthKeys();
     if (MONTH_KEYS.includes(monthKey)) {
       currentIdx = MONTH_KEYS.indexOf(monthKey);
       render();
@@ -1650,6 +1652,7 @@ function cancelEditMode() {
   isEditMode = false;
   toggleEditUiState();
   render();
+  applyPendingSnapshot();
 }
 
 function toggleEditUiState() {
@@ -1712,92 +1715,182 @@ window.cancelSectionEdit = function() {
 };
 
 // 非同步載入雲端班表資料
-async function loadCloudSchedules() {
-  if (!getDb()) return;
-  try {
-    // 等待 compat SDK 的登入狀態恢復（避免 session 尚未恢復時被 Firestore rules 拒絕）
-    await new Promise((resolve) => {
-      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-        unsubscribe();
-        resolve(user);
+// ════════════════════════════════════════════════════
+//  雲端即時同步、離線快取與資料來源標示
+// ════════════════════════════════════════════════════
+// 資料流：程式內建備援 → localStorage 快取 → Firestore 即時訂閱，
+// 後者可用時覆蓋前者。畫面上方會標明目前看到的是哪一種，
+// 避免在雲端讀取失敗時，安靜地顯示過期班表。
+const SCHEDULE_CACHE_KEY = 'scheduleCache:v1';
+
+let dataState = { source: 'local', at: null, error: null };
+let cloudUnsubscribe = null;
+let pendingSnapshotMonths = null;
+
+function setDataState(source, error) {
+  dataState = { source, at: new Date(), error: error || null };
+  renderDataSourceBadge();
+}
+
+// 舊欄位轉換與缺漏補齊
+function normalizeNi(monthKey, ni) {
+  if (ni.covers) {
+    Object.keys(ni.covers).forEach(dateStr => {
+      const dayCovers = ni.covers[dateStr];
+      if (!dayCovers || typeof dayCovers !== 'object') return;
+      Object.keys(dayCovers).forEach(absentDoc => {
+        const coverVal = dayCovers[absentDoc];
+        if (coverVal && typeof coverVal === 'object' && 'ct' in coverVal) {
+          if (!coverVal.routine_ct) coverVal.routine_ct = coverVal.ct;
+          delete coverVal.ct;
+        }
       });
     });
+  }
+  const defaultNi = NI_DATA[monthKey] || {};
+  if (!ni.mri_sunday && defaultNi.mri_sunday) ni.mri_sunday = defaultNi.mri_sunday;
+  return ni;
+}
 
-    const querySnapshot = await db.collection("schedules").get();
-    let hasNewData = false;
-    querySnapshot.forEach((doc) => {
-      const monthKey = doc.id; // 例如 '2026-07'
-      if (monthKey.startsWith("template")) return;
-      const data = doc.data();
-      if (data.ni) {
-        if (data.ni.covers) {
-          Object.keys(data.ni.covers).forEach(dateStr => {
-            const dayCovers = data.ni.covers[dateStr];
-            if (dayCovers && typeof dayCovers === 'object') {
-              Object.keys(dayCovers).forEach(absentDoc => {
-                const coverVal = dayCovers[absentDoc];
-                if (coverVal && typeof coverVal === 'object') {
-                  if ('ct' in coverVal) {
-                    if (!coverVal.routine_ct) {
-                      coverVal.routine_ct = coverVal.ct;
-                    }
-                    delete coverVal.ct;
-                  }
-                }
-              });
-            }
-          });
-        }
-        const defaultNi = NI_DATA[monthKey] || {};
-        if (!data.ni.mri_sunday && defaultNi.mri_sunday) {
-          data.ni.mri_sunday = defaultNi.mri_sunday;
-        }
-        NI_DATA[monthKey] = data.ni;
-        hasNewData = true;
-      }
-      if (data.evt) {
-        const hasCloudEvt = Object.keys(data.evt).length > 0;
-        const hasLocalEvt = ALL_SCHEDULES[monthKey] && Object.keys(ALL_SCHEDULES[monthKey]).length > 0;
-        if (!hasCloudEvt && hasLocalEvt) {
-          console.log(`[Sync] 雲端 ${monthKey} 的 evt 為空，保留本地預設中風取栓班表`);
-        } else {
-          ALL_SCHEDULES[monthKey] = data.evt;
-        }
-        hasNewData = true;
-      }
-    });
-
-    // 若使用者已登入且雲端缺少 2026-08，自動秒速同步備份至雲端
-    if (currentUser && (!querySnapshot.docs.some(d => d.id === '2026-08')) && NI_DATA['2026-08']) {
-      try {
-        await db.collection("schedules").doc("2026-08").set({
-          ni: NI_DATA['2026-08'],
-          evt: ALL_SCHEDULES['2026-08'] || {}
-        });
-        console.log("☁️ 已自動透過管理員 Session 將 2026-08 班表同步至雲端資料庫！");
-      } catch (autoSyncErr) {
-        console.warn("[AutoSync] 自動同步 2026-08 失敗:", autoSyncErr);
-      }
+function applyScheduleDoc(monthKey, data) {
+  let changed = false;
+  if (data && data.ni) {
+    NI_DATA[monthKey] = normalizeNi(monthKey, data.ni);
+    changed = true;
+  }
+  if (data && data.evt) {
+    // 雲端 evt 為空但本地有資料時，保留本地的中風取栓班表
+    const hasCloudEvt = Object.keys(data.evt).length > 0;
+    const hasLocalEvt = ALL_SCHEDULES[monthKey] && Object.keys(ALL_SCHEDULES[monthKey]).length > 0;
+    if (hasCloudEvt || !hasLocalEvt) {
+      ALL_SCHEDULES[monthKey] = data.evt;
+      changed = true;
     }
-    
-    if (hasNewData) {
-      // 重新整理月份鍵值（確保包含本機預設的所有月份，如 2026-08）
-      const oldMonthKey = MONTH_KEYS[currentIdx];
-      MONTH_KEYS = Array.from(new Set([...Object.keys(NI_DATA), ...Object.keys(ALL_SCHEDULES)])).sort();
-      if (MONTH_KEYS.includes(oldMonthKey)) {
-        currentIdx = MONTH_KEYS.indexOf(oldMonthKey);
-      } else {
-        const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        currentIdx = MONTH_KEYS.includes(todayKey)
-          ? MONTH_KEYS.indexOf(todayKey)
-          : MONTH_KEYS.length - 1;
+  }
+  return changed;
+}
+
+function applyMonths(months) {
+  let changed = false;
+  Object.keys(months).forEach(mk => {
+    if (applyScheduleDoc(mk, months[mk])) changed = true;
+  });
+  if (changed) refreshMonthKeys();
+  return changed;
+}
+
+function refreshMonthKeys() {
+  const oldMonthKey = MONTH_KEYS[currentIdx];
+  MONTH_KEYS = Array.from(new Set([...Object.keys(NI_DATA), ...Object.keys(ALL_SCHEDULES)])).sort();
+  if (MONTH_KEYS.includes(oldMonthKey)) {
+    currentIdx = MONTH_KEYS.indexOf(oldMonthKey);
+  } else {
+    const tk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    currentIdx = MONTH_KEYS.includes(tk) ? MONTH_KEYS.indexOf(tk) : MONTH_KEYS.length - 1;
+  }
+}
+
+// ── 離線快取 ──
+function saveScheduleCache(months) {
+  try {
+    localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), months }));
+  } catch (e) {
+    console.warn('[Cache] 班表快取寫入失敗（可能超出容量）:', e);
+  }
+}
+
+function loadScheduleCache() {
+  try {
+    const raw = localStorage.getItem(SCHEDULE_CACHE_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    if (!payload || !payload.months) return false;
+    if (!applyMonths(payload.months)) return false;
+    dataState = { source: 'cache', at: new Date(payload.savedAt), error: null };
+    return true;
+  } catch (e) {
+    console.warn('[Cache] 班表快取讀取失敗:', e);
+    return false;
+  }
+}
+
+// ── Firestore 即時訂閱 ──
+function subscribeCloudSchedules() {
+  if (!getDb()) {
+    setDataState(dataState.source === 'cache' ? 'cache' : 'local', '雲端資料庫尚未初始化');
+    return;
+  }
+  if (cloudUnsubscribe) return;
+
+  cloudUnsubscribe = db.collection('schedules').onSnapshot(
+    (snapshot) => {
+      const months = {};
+      snapshot.forEach(doc => {
+        if (doc.id.startsWith('template')) return;
+        months[doc.id] = doc.data();
+      });
+      if (Object.keys(months).length === 0) return;
+
+      saveScheduleCache(months);
+
+      // 編輯中的未存內容存在 DOM 裡，此時覆蓋會直接清掉，
+      // 因此先擱置，待離開編輯模式再套用。
+      if (isEditMode || activeEditSection || activeCoverSection) {
+        pendingSnapshotMonths = months;
+        setDataState('cloud');
+        return;
       }
-      // 重新渲染畫面
+
+      applyMonths(months);
+      setDataState('cloud');
       render();
-      console.log("☁️ 已成功載入並更新最新的雲端班表資料！", MONTH_KEYS);
+    },
+    (error) => {
+      console.error('雲端班表同步失敗，改用快取或內建備援:', error);
+      setDataState(dataState.source === 'cache' ? 'cache' : 'local', error.message);
     }
-  } catch (error) {
-    console.error("讀取雲端班表失敗，將維持使用本地班表:", error);
+  );
+}
+
+// 離開編輯模式後，補套用期間收到的雲端更新
+function applyPendingSnapshot() {
+  if (!pendingSnapshotMonths) return;
+  if (isEditMode || activeEditSection || activeCoverSection) return;
+  const months = pendingSnapshotMonths;
+  pendingSnapshotMonths = null;
+  applyMonths(months);
+  render();
+}
+
+// ── 資料來源標示 ──
+function formatSyncTime(date) {
+  if (!date) return '';
+  const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMin < 1) return '剛剛';
+  if (diffMin < 60) return `${diffMin} 分鐘前`;
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const sameDay = date.toDateString() === new Date().toDateString();
+  return sameDay ? `${hh}:${mm}` : `${date.getMonth() + 1}/${date.getDate()} ${hh}:${mm}`;
+}
+
+function renderDataSourceBadge() {
+  const el = document.getElementById('data-source-badge');
+  if (!el) return;
+
+  const pendingNote = pendingSnapshotMonths
+    ? '<span class="ds-pending">雲端有新版本，結束編輯後套用</span>'
+    : '';
+
+  if (dataState.source === 'cloud') {
+    el.className = 'data-source-badge ds-ok';
+    el.innerHTML = `<span>☁️ 雲端即時同步中</span><span class="ds-time">最後更新 ${formatSyncTime(dataState.at)}</span>${pendingNote}`;
+  } else if (dataState.source === 'cache') {
+    el.className = 'data-source-badge ds-warn';
+    el.innerHTML = `<span>📴 目前無法連線雲端，顯示本機快取</span><span class="ds-time">擷取於 ${formatSyncTime(dataState.at)}</span>`;
+  } else {
+    el.className = 'data-source-badge ds-error';
+    el.innerHTML = `<span>⚠️ 無法取得雲端班表，顯示程式內建的備份資料，內容可能已過期</span>`;
   }
 }
 
@@ -1890,7 +1983,10 @@ function initSchedulePage() {
     }
   });
 
-  loadCloudSchedules();
+  // 先用本機快取立即上畫面（離線也看得到），再訂閱雲端即時更新
+  if (loadScheduleCache()) render();
+  renderDataSourceBadge();
+  subscribeCloudSchedules();
 }
 
 if (document.readyState === 'loading') {
@@ -4069,6 +4165,7 @@ async function saveAllSchedules() {
     activeCoverSection = null;
     toggleEditUiState();
     render();
+    applyPendingSnapshot();
     alert("🎉 整個班表已成功儲存並同步至雲端資料庫！");
   } catch (error) {
     console.error("儲存班表失敗:", error);

@@ -184,6 +184,45 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
+/* ── 資料來源狀態列 ── */
+.data-source-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin: 14px 0 0;
+}
+.data-source-badge:empty { display: none; }
+.data-source-badge .ds-time {
+  font-weight: 500;
+  opacity: 0.75;
+}
+.data-source-badge .ds-pending {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  padding: 1px 8px;
+}
+.data-source-badge.ds-ok {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.data-source-badge.ds-warn {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.data-source-badge.ds-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
 /* ── 整月代班缺口提醒 ── */
 .cover-gap-banner {
   background: #fff5f5;

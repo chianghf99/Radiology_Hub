@@ -53,11 +53,21 @@
     })();
   </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>神經放射線班表</title>
+
+  <!-- 可加到手機主畫面離線使用 -->
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="description" content="台北 & 淡水馬偕放射線科 · 班表整合平台">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="班表">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
+
   <link rel="stylesheet" href="../css/shared.css">
   <link rel="stylesheet" href="../css/schedule.css">
-  
 </head>
 <body>
 
@@ -70,6 +80,9 @@
 </header>
 
 <main>
+  <!-- 資料來源狀態（雲端 / 快取 / 內建備援） -->
+  <div id="data-source-badge" class="data-source-badge"></div>
+
   <!-- 編輯狀態浮動列 -->
   <div id="floating-edit-bar" style="display:none; justify-content:center; align-items:center; gap:12px; margin: 10px auto 25px; padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #f59e0b; font-size: 0.9rem; max-width: 600px;">
     <span style="font-weight: 700; color: #b45309;">⚠️ 正在排班編輯模式中...</span>
@@ -260,7 +273,18 @@
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
-<script src="../js/schedule.js?v=20260812_01"></script>
+<script src="../js/schedule.js?v=20260812_02"></script>
+
+<script>
+  // 註冊 Service Worker：讓班表可加到主畫面、且離線也能查看。
+  // 抓取策略是網路優先，連得上網時一定看到最新版本（見 sw.js）。
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('../sw.js')
+        .catch(function (err) { console.warn('[SW] 註冊失敗:', err); });
+    });
+  }
+</script>
 
 </body>
 </html>
