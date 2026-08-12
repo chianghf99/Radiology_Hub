@@ -4,14 +4,21 @@
 // 只要連得上網就必須看到最新版本，快取只在離線時頂替。
 // 改版時請更新 CACHE_VERSION，舊快取會在啟用時清掉。
 
-const CACHE_VERSION = 'radiology-hub-v2';
+const CACHE_VERSION = 'radiology-hub-v3';
 
 // 離線時最低限度要能開啟班表所需的檔案
 const APP_SHELL = [
   './tools/schedule.html',
   './css/shared.css',
   './css/schedule.css',
-  './js/schedule.js',
+  // 拆檔後的班表程式，順序與 tools/schedule.html 一致
+  './js/schedule-data.js',
+  './js/schedule-core.js',
+  './js/schedule-admin.js',
+  './js/schedule-cloud.js',
+  './js/schedule-render.js',
+  './js/schedule-save.js',
+  './js/schedule-main.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
