@@ -381,6 +381,9 @@ async function saveAllSchedules() {
     NI_DATA[key] = ni;
     ALL_SCHEDULES[key] = evt;
     
+    // 已成功寫入雲端，快照不再需要（避免之後誤還原成舊內容）
+    clearEditSnapshot();
+
     // 自動退出編輯與代班模式
     isEditMode = false;
     activeEditSection = null;

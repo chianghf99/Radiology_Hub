@@ -342,7 +342,9 @@ async function handleCreateNewMonth() {
 function getCoversFromVisualTable() {
   const covers = {};
   const tbody = document.getElementById('visual-covers-tbody');
-  if (!tbody) return null;
+  // 表格不存在、或存在但尚未填入資料（見 renderLeavesAndCoversEditorSection
+  // 的延後填入）時，一律回傳 null 表示「無法判讀」，讓呼叫端保留原有代班。
+  if (!tbody || tbody.dataset.populated !== '1') return null;
   
   const rows = tbody.querySelectorAll('tr');
   rows.forEach(tr => {
@@ -411,181 +413,150 @@ function getCoversFromVisualTable() {
   return covers;
 }
 
+// 讀取編輯欄位的現值；欄位不存在時（例如該區塊沒被渲染出來）保留原值。
+// 這裡絕對不能退回空字串 —— 否則畫面上沒顯示的區塊會被整個清空。
+function readEditValue(id, fallback) {
+  const el = document.getElementById(id);
+  if (el) return el.value;
+  return (fallback === undefined || fallback === null) ? '' : fallback;
+}
+
 function syncDomToMemory(key) {
   if (!NI_DATA[key]) return;
-  
-  // 1. Angio (5 days)
-  const angio = [];
-  for (let i = 0; i < 5; i++) {
-    const el_tp_dsa = document.getElementById(`ni-angio-${i}-tp_dsa`);
-    const el_tp_tae = document.getElementById(`ni-angio-${i}-tp_tae`);
-    const el_ds_dsa = document.getElementById(`ni-angio-${i}-ds_dsa`);
-    const el_ds_tae = document.getElementById(`ni-angio-${i}-ds_tae`);
-    const el_note = document.getElementById(`ni-angio-${i}-note`);
-    angio.push({
-      dow: ['週一', '週二', '週三', '週四', '週五'][i],
-      tp_dsa: el_tp_dsa ? el_tp_dsa.value : '',
-      tp_tae: el_tp_tae ? el_tp_tae.value : '',
-      ds_dsa: el_ds_dsa ? el_ds_dsa.value : '',
-      ds_tae: el_ds_tae ? el_ds_tae.value : '',
-      note: el_note ? el_note.value : ''
-    });
-  }
-  NI_DATA[key].angio = angio;
-  
-  // 2. ERCT (5 days)
-  const erct = [];
-  for (let i = 0; i < 5; i++) {
-    const el_tp = document.getElementById(`ni-erct-${i}-tp`);
-    const el_ds = document.getElementById(`ni-erct-${i}-ds`);
-    const el_note = document.getElementById(`ni-erct-${i}-note`);
-    erct.push({
-      dow: ['週一', '週二', '週三', '週四', '週五'][i],
-      tp: el_tp ? el_tp.value : '',
-      ds: el_ds ? el_ds.value : '',
-      note: el_note ? el_note.value : ''
-    });
-  }
-  NI_DATA[key].erct = erct;
-  
-  // 3. Routine CT
-  const routine_ct = [];
-  const originalCt = NI_DATA[key].routine_ct || [];
-  originalCt.forEach((row, i) => {
-    const el_tp = document.getElementById(`ni-ct-${i}-tp`);
-    const el_ds = document.getElementById(`ni-ct-${i}-ds`);
-    const el_note = document.getElementById(`ni-ct-${i}-note`);
-    routine_ct.push({
-      person: row.person,
-      tp: el_tp ? el_tp.value : '',
-      ds: el_ds ? el_ds.value : '',
-      note: el_note ? el_note.value : ''
-    });
+  const data = NI_DATA[key];
+  const DOWS = ['週一', '週二', '週三', '週四', '週五'];
+
+  // 1. 血管攝影
+  const origAngio = data.angio || [];
+  data.angio = DOWS.map((dow, i) => {
+    const o = origAngio[i] || {};
+    return {
+      dow,
+      tp_dsa: readEditValue(`ni-angio-${i}-tp_dsa`, o.tp_dsa),
+      tp_tae: readEditValue(`ni-angio-${i}-tp_tae`, o.tp_tae),
+      ds_dsa: readEditValue(`ni-angio-${i}-ds_dsa`, o.ds_dsa),
+      ds_tae: readEditValue(`ni-angio-${i}-ds_tae`, o.ds_tae),
+      note:   readEditValue(`ni-angio-${i}-note`,   o.note)
+    };
   });
-  NI_DATA[key].routine_ct = routine_ct;
-  
-  // 4. MRI (tp and ds)
+
+  // 2. 急診 CT
+  const origErct = data.erct || [];
+  data.erct = DOWS.map((dow, i) => {
+    const o = origErct[i] || {};
+    return {
+      dow,
+      tp:   readEditValue(`ni-erct-${i}-tp`,   o.tp),
+      ds:   readEditValue(`ni-erct-${i}-ds`,   o.ds),
+      note: readEditValue(`ni-erct-${i}-note`, o.note)
+    };
+  });
+
+  // 3. 門住 CT 號碼
+  data.routine_ct = (data.routine_ct || []).map((row, i) => ({
+    person: row.person,
+    tp:   readEditValue(`ni-ct-${i}-tp`,   row.tp),
+    ds:   readEditValue(`ni-ct-${i}-ds`,   row.ds),
+    note: readEditValue(`ni-ct-${i}-note`, row.note)
+  }));
+
+  // 4. 門住急 MRI
+  const origMri = data.mri || { tp: [], ds: [] };
   const mri = { tp: [], ds: [] };
   ['tp', 'ds'].forEach(side => {
     for (let i = 0; i < 5; i++) {
-      const el_person = document.getElementById(`ni-mri-${side}-${i}-person`);
-      const el_note = document.getElementById(`ni-mri-${side}-${i}-note`);
+      const o = (origMri[side] || [])[i] || {};
       mri[side].push({
-        week: `W${i+1}`,
-        person: el_person ? el_person.value : '',
-        note: el_note ? el_note.value : ''
+        week:   `W${i + 1}`,
+        person: readEditValue(`ni-mri-${side}-${i}-person`, o.person),
+        note:   readEditValue(`ni-mri-${side}-${i}-note`,   o.note)
       });
     }
   });
-  NI_DATA[key].mri = mri;
-  
-  // 5. Ds MRI Daily (5 days)
-  const ds_mri_daily = [];
-  for (let i = 0; i < 5; i++) {
-    const el_person = document.getElementById(`ni-dsmri-${i}-person`);
-    const el_note = document.getElementById(`ni-dsmri-${i}-note`);
-    ds_mri_daily.push({
-      dow: ['週一', '週二', '週三', '週四', '週五'][i],
-      person: el_person ? el_person.value : '',
-      note: el_note ? el_note.value : ''
-    });
-  }
-  NI_DATA[key].ds_mri_daily = ds_mri_daily;
-  
-  // 6. Saturday (varies)
-  const saturday = [];
-  const originalSat = NI_DATA[key].saturday || [];
-  originalSat.forEach((row, i) => {
-    const el_person = document.getElementById(`ni-sat-${i}-person`);
-    const el_note = document.getElementById(`ni-sat-${i}-note`);
-    saturday.push({
-      date: row.date,
-      person: el_person ? el_person.value : '',
-      note: el_note ? el_note.value : ''
-    });
-  });
-  NI_DATA[key].saturday = saturday;
+  data.mri = mri;
 
-  // Sunday MRI Overtime (varies)
-  const mri_sunday = [];
-  let originalSun = NI_DATA[key].mri_sunday || [];
-  // 若雲端沒有 mri_sunday 欄位（舊文件），重新從月份計算出所有週日日期
-  if (originalSun.length === 0 && key && /^\d{4}-\d{2}$/.test(key)) {
+  // 5. 淡水健檢 / 神經 MRI
+  const origDsMri = data.ds_mri_daily || [];
+  data.ds_mri_daily = DOWS.map((dow, i) => {
+    const o = origDsMri[i] || {};
+    return {
+      dow,
+      person: readEditValue(`ni-dsmri-${i}-person`, o.person),
+      note:   readEditValue(`ni-dsmri-${i}-note`,   o.note)
+    };
+  });
+
+  // 6. 週六班
+  data.saturday = (data.saturday || []).map((row, i) => ({
+    date:   row.date,
+    person: readEditValue(`ni-sat-${i}-person`, row.person),
+    note:   readEditValue(`ni-sat-${i}-note`,   row.note)
+  }));
+
+  // 週日 MRI 加班：雲端舊文件可能沒有這個欄位，需依月份補出所有週日
+  const origSun = data.mri_sunday || [];
+  if (origSun.length === 0 && key && /^\d{4}-\d{2}$/.test(key)) {
     const [ys, ms] = key.split('-');
     const yr = parseInt(ys), mo = parseInt(ms);
     const days = new Date(yr, mo, 0).getDate();
     for (let d = 1; d <= days; d++) {
       if (new Date(yr, mo - 1, d).getDay() === 0) {
-        originalSun.push({ date: `${mo}/${d}`, person: '', note: '' });
+        origSun.push({ date: `${mo}/${d}`, person: '', note: '' });
       }
     }
   }
-  originalSun.forEach((row, i) => {
-    const el_person = document.getElementById(`ni-sun-${i}-person`);
-    const el_note = document.getElementById(`ni-sun-${i}-note`);
-    mri_sunday.push({
-      date: row.date,
-      person: el_person ? el_person.value : '',
-      note: el_note ? el_note.value : ''
-    });
+  data.mri_sunday = origSun.map((row, i) => ({
+    date:   row.date,
+    person: readEditValue(`ni-sun-${i}-person`, row.person),
+    note:   readEditValue(`ni-sun-${i}-note`,   row.note)
+  }));
+
+  // 7. PICC
+  const origPicc = data.picc || [];
+  data.picc = DOWS.map((dow, i) => {
+    const o = origPicc[i] || {};
+    return {
+      dow,
+      tp:   readEditValue(`ni-picc-${i}-tp`,   o.tp),
+      ds:   readEditValue(`ni-picc-${i}-ds`,   o.ds),
+      note: readEditValue(`ni-picc-${i}-note`, o.note)
+    };
   });
-  NI_DATA[key].mri_sunday = mri_sunday;
-  
-  // 7. PICC (5 days)
-  const picc = [];
-  for (let i = 0; i < 5; i++) {
-    const el_tp = document.getElementById(`ni-picc-${i}-tp`);
-    const el_ds = document.getElementById(`ni-picc-${i}-ds`);
-    const el_note = document.getElementById(`ni-picc-${i}-note`);
-    picc.push({
-      dow: ['週一', '週二', '週三', '週四', '週五'][i],
-      tp: el_tp ? el_tp.value : '',
-      ds: el_ds ? el_ds.value : '',
-      note: el_note ? el_note.value : ''
+
+  // 8. 請假：只有在請假欄位確實渲染出來時才重建。
+  //    否則（例如目前是今日精簡模式）整份請假紀錄會被清空。
+  const leavesRendered = PEOPLE.some(p => document.getElementById(`ni-leaves-${p.name}`));
+  if (leavesRendered) {
+    const leaves = {};
+    PEOPLE.forEach(p => {
+      const inputEl = document.getElementById(`ni-leaves-${p.name}`);
+      if (!inputEl) return;
+      const parts = inputEl.value.split(',').map(x => x.trim()).filter(Boolean);
+      if (parts.length > 0) leaves[p.name] = parts;
     });
+    data.leaves = leaves;
   }
-  NI_DATA[key].picc = picc;
-  
-  // 8. Leaves
-  const leaves = {};
-  PEOPLE.forEach(p => {
-    const inputEl = document.getElementById(`ni-leaves-${p.name}`);
-    if (inputEl) {
-      const val = inputEl.value;
-      const parts = val.split(',').map(x => x.trim()).filter(Boolean);
-      if (parts.length > 0) {
-        leaves[p.name] = parts;
-      }
-    }
-  });
-  NI_DATA[key].leaves = leaves;
-  
-  // 9. Covers
+
+  // 9. 代班（表格未渲染時回傳 null，維持原值）
   const visualCovers = getCoversFromVisualTable();
-  if (visualCovers !== null) {
-    NI_DATA[key].covers = visualCovers;
-  }
-  
-  // 10. Holidays
-  const holidays = [];
+  if (visualCovers !== null) data.covers = visualCovers;
+
+  // 10. 醫院休假日
   const holInput = document.getElementById('holidayInput');
   if (holInput) {
+    const holidays = [];
     holInput.value.split(',').forEach(p => {
       p = p.trim();
       if (!p) return;
       const match = p.match(/^(\d{1,2})\/(\d{1,2})$/);
-      if (match) {
-        holidays.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
-      }
+      if (match) holidays.push(`${parseInt(match[1])}/${parseInt(match[2])}`);
     });
-    NI_DATA[key].holidays = holidays;
+    data.holidays = holidays;
   }
-  
-  // 11. Notes
+
+  // 11. 本月備註
   const notesInput = document.getElementById('notesInput');
-  if (notesInput) {
-    NI_DATA[key].notes = notesInput.value;
-  }
+  if (notesInput) data.notes = notesInput.value;
 }
 
 function applyTemplateToMemory(key, templateData) {
@@ -764,107 +735,27 @@ async function saveCurrentAsTemplate() {
   };
 
   try {
-    if (isEditMode) {
-      // 1. Angio
-      const angio = [];
-      for (let i = 0; i < 5; i++) {
-        const el_tp_dsa = document.getElementById(`ni-angio-${i}-tp_dsa`);
-        const el_tp_tae = document.getElementById(`ni-angio-${i}-tp_tae`);
-        const el_ds_dsa = document.getElementById(`ni-angio-${i}-ds_dsa`);
-        const el_ds_tae = document.getElementById(`ni-angio-${i}-ds_tae`);
-        angio.push({
-          dow: ['週一', '週二', '週三', '週四', '週五'][i],
-          tp_dsa: el_tp_dsa ? el_tp_dsa.value : '',
-          tp_tae: el_tp_tae ? el_tp_tae.value : '',
-          ds_dsa: el_ds_dsa ? el_ds_dsa.value : '',
-          ds_tae: el_ds_tae ? el_ds_tae.value : '',
-          note: ''
-        });
-      }
-      
-      // 2. ERCT
-      const erct = [];
-      for (let i = 0; i < 5; i++) {
-        const el_tp = document.getElementById(`ni-erct-${i}-tp`);
-        const el_ds = document.getElementById(`ni-erct-${i}-ds`);
-        erct.push({
-          dow: ['週一', '週二', '週三', '週四', '週五'][i],
-          tp: el_tp ? el_tp.value : '',
-          ds: el_ds ? el_ds.value : '',
-          note: ''
-        });
-      }
-      
-      // 3. Routine CT
-      const routine_ct = [];
-      const originalCt = NI_DATA[key].routine_ct || [];
-      originalCt.forEach((row, i) => {
-        const el_tp = document.getElementById(`ni-ct-${i}-tp`);
-        const el_ds = document.getElementById(`ni-ct-${i}-ds`);
-        routine_ct.push({
-          person: row.person,
-          tp: el_tp ? el_tp.value : '',
-          ds: el_ds ? el_ds.value : '',
-          note: ''
-        });
-      });
-      
-      // 4. MRI
-      const mri = { tp: [], ds: [] };
-      ['tp', 'ds'].forEach(side => {
-        for (let i = 0; i < 5; i++) {
-          const el_person = document.getElementById(`ni-mri-${side}-${i}-person`);
-          mri[side].push({
-            week: `W${i+1}`,
-            person: el_person ? el_person.value : '',
-            note: ''
-          });
-        }
-      });
-      
-      // 5. Ds MRI Daily
-      const ds_mri_daily = [];
-      for (let i = 0; i < 5; i++) {
-        const el_person = document.getElementById(`ni-dsmri-${i}-person`);
-        ds_mri_daily.push({
-          dow: ['週一', '週二', '週三', '週四', '週五'][i],
-          person: el_person ? el_person.value : '',
-          note: ''
-        });
-      }
-      
-      // 6. PICC
-      const picc = [];
-      for (let i = 0; i < 5; i++) {
-        const el_tp = document.getElementById(`ni-picc-${i}-tp`);
-        const el_ds = document.getElementById(`ni-picc-${i}-ds`);
-        picc.push({
-          dow: ['週一', '週二', '週三', '週四', '週五'][i],
-          tp: el_tp ? el_tp.value : '',
-          ds: el_ds ? el_ds.value : '',
-          note: ''
-        });
-      }
-      
-      templateData = { angio, erct, routine_ct, mri, ds_mri_daily, picc };
-    } else {
-      const data = NI_DATA[key];
-      if (!data) {
-        alert("無當前月份資料可供儲存為範本");
-        return;
-      }
-      templateData = {
-        angio: cleanNote(data.angio),
-        erct: cleanNote(data.erct),
-        routine_ct: cleanNote(data.routine_ct),
-        mri: data.mri ? {
-          tp: cleanNote(data.mri.tp),
-          ds: cleanNote(data.mri.ds)
-        } : { tp: [], ds: [] },
-        ds_mri_daily: cleanNote(data.ds_mri_daily),
-        picc: cleanNote(data.picc)
-      };
+    // 編輯中先把輸入框的現值收回記憶體，之後與非編輯模式走同一條路徑。
+    // 原本這裡有一份各區塊逐格讀 DOM 的重複實作，且欄位不存在時會寫入空字串，
+    // 在今日精簡模式下開啟編輯會存出一份空白範本。
+    if (isEditMode) syncDomToMemory(key);
+
+    const data = NI_DATA[key];
+    if (!data) {
+      alert("無當前月份資料可供儲存為範本");
+      return;
     }
+    templateData = {
+      angio: cleanNote(data.angio),
+      erct: cleanNote(data.erct),
+      routine_ct: cleanNote(data.routine_ct),
+      mri: data.mri ? {
+        tp: cleanNote(data.mri.tp),
+        ds: cleanNote(data.mri.ds)
+      } : { tp: [], ds: [] },
+      ds_mri_daily: cleanNote(data.ds_mri_daily),
+      picc: cleanNote(data.picc)
+    };
     
     await db.collection("schedules").doc(docId).set(templateData);
     alert(`自訂範本「${trimmedName}」儲存成功！`);
@@ -913,6 +804,8 @@ async function applyTemplateToCurrent() {
     if (isEditMode) {
       syncDomToMemory(key);
       applyTemplateToMemory(key, templateData);
+      // 記憶體已是套用範本後的結果，這次重繪不可再從舊的輸入框收回
+      skipEditSyncOnce = true;
       render();
       alert(`已成功在編輯模式中帶入範本「${selectedTemplate}」！（請記得點選上方的「💾 儲存修改」以儲存至雲端，或按「❌ 取消編輯」還原）`);
       closeSettingsModal();
@@ -977,7 +870,22 @@ async function deleteSelectedTemplate() {
   }
 }
 
+// 進入編輯模式時保存一份原始資料。
+// render() 會在編輯途中把輸入框的值收回 NI_DATA（否則重繪會清掉未存內容），
+// 因此「取消編輯」必須靠這份快照還原，不能只是退出編輯狀態。
+let editSnapshot = null;
+
+function beginEditSnapshot() {
+  const key = MONTH_KEYS[currentIdx];
+  editSnapshot = { key, data: JSON.parse(JSON.stringify(NI_DATA[key] || {})) };
+}
+
+function clearEditSnapshot() {
+  editSnapshot = null;
+}
+
 function toggleEditMode() {
+  beginEditSnapshot();
   activeEditSection = 'all';
   isEditMode = true;
   toggleEditUiState();
@@ -985,6 +893,11 @@ function toggleEditMode() {
 }
 
 function cancelEditMode() {
+  // 還原進入編輯前的內容，丟棄所有未儲存的修改
+  if (editSnapshot && editSnapshot.key && NI_DATA[editSnapshot.key]) {
+    NI_DATA[editSnapshot.key] = editSnapshot.data;
+  }
+  clearEditSnapshot();
   activeEditSection = null;
   isEditMode = false;
   toggleEditUiState();
@@ -1037,6 +950,7 @@ function toggleEditUiState() {
 }
 
 window.startSectionEdit = function(sectionKey) {
+  beginEditSnapshot();
   activeEditSection = sectionKey;
   isEditMode = true;
   toggleEditUiState();

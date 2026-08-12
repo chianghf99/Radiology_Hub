@@ -9,8 +9,25 @@
 // ════════════════════════════════════════════════════
 //  主渲染控制
 // ════════════════════════════════════════════════════
+// 套用範本時已先把範本寫進記憶體，該次重繪不可再從（仍顯示舊值的）DOM 收回
+let skipEditSyncOnce = false;
+
 function render() {
   const key = MONTH_KEYS[currentIdx];
+
+  // 編輯中的未存內容原本只存在於輸入框裡，任何重繪都會直接清掉。
+  // 這裡先把現值收回記憶體，重繪後輸入框會以記憶體的值重新填回，
+  // 使用者就能在編輯途中自由切換日期、展開明細等而不會遺失內容。
+  // （syncDomToMemory 在欄位未渲染時會保留原值，故此處呼叫是安全的）
+  if ((isEditMode || activeEditSection) && !skipEditSyncOnce) {
+    try {
+      syncDomToMemory(key);
+    } catch (e) {
+      console.warn('[Edit] 收回編輯內容失敗，維持記憶體原值:', e);
+    }
+  }
+  skipEditSyncOnce = false;
+
   const [y, m] = key.split('-');
   document.getElementById('monthLabel').textContent = `${y} 年 ${parseInt(m)} 月`;
   document.getElementById('prevBtn').disabled = currentIdx === 0;

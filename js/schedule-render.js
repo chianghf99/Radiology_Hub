@@ -1374,7 +1374,10 @@ function renderLeavesAndCoversEditorSection(d) {
   container.innerHTML = leavesHtml + coversTableHtml;
   sec.appendChild(container);
   
-  // 載入當前代班資料
+  // 載入當前代班資料。
+  // 這裡是延後填入的（區塊要先掛進文件才抓得到 tbody），在填完之前
+  // 表格是空的；getCoversFromVisualTable() 必須能分辨「還沒填」與「真的沒有代班」，
+  // 否則這段空窗期若有人讀取，會把整個月的代班誤判成空的而清掉。
   setTimeout(() => {
     const tbody = document.getElementById('visual-covers-tbody');
     if (!tbody) return;
@@ -1408,8 +1411,10 @@ function renderLeavesAndCoversEditorSection(d) {
         }
       });
     }
+    // 標記已填入，這之後讀到的空表格才代表「本月確實沒有代班」
+    tbody.dataset.populated = '1';
   }, 20);
-  
+
   return sec;
 }
 
