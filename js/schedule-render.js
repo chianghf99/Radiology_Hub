@@ -472,7 +472,7 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
               } else if (!location && taskCover.tp && taskCover.ds) {
                 const tpCls = personCls(taskCover.tp);
                 const dsCls = personCls(taskCover.ds);
-                coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span style="font-size:0.72rem;color:var(--text-sub);">(北)</span><span class="person ${tpCls}">${taskCover.tp}</span><span style="font-size:0.72rem;color:var(--text-sub);margin-left:4px;">(淡)</span><span class="person ${dsCls}">${taskCover.ds}</span>`;
+                coverSuffix = `<span class="cover-arrow">→</span><span class="cover-loc">(北)</span><span class="person ${tpCls}">${taskCover.tp}</span><span class="cover-loc is-second">(淡)</span><span class="person ${dsCls}">${taskCover.ds}</span>`;
                 hasActiveCover = true;
               }
             }
@@ -480,7 +480,7 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
         }
         if (coverName) {
           const coverCls = personCls(coverName);
-          coverSuffix = `<span style="color:var(--text-sub);margin:0 3px">→</span><span class="person ${coverCls}">${coverName}</span>`;
+          coverSuffix = `<span class="cover-arrow">→</span><span class="person ${coverCls}">${coverName}</span>`;
         }
       }
 
@@ -491,9 +491,9 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
     
     let finalHtml = baseHtml;
     if (isCovered) {
-      finalHtml = `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span><span style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;">(休)</span>${coverSuffix}`;
+      finalHtml = `<span class="person ${cls} is-replaced">${name}</span><span class="leave-tag">(休)</span>${coverSuffix}`;
     } else if (hasActiveCover) {
-      finalHtml = `<span class="person ${cls}" style="text-decoration: line-through; opacity: 0.6;">${name}</span>${coverSuffix}`;
+      finalHtml = `<span class="person ${cls} is-replaced">${name}</span>${coverSuffix}`;
     }
     
     // 如果處於該區塊的請假代班編輯模式，且 name 是有效醫師，渲染 🔄 按鈕
@@ -529,11 +529,11 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
         const m = seg.match(/^(AM|PM)\s+(.+)$/);
         if (m) {
           const name = m[2].trim();
-          return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">${m[1]}</span> ${formatName(name)}`;
+          return `<span class="ampm-label">${m[1]}</span> ${formatName(name)}`;
         }
         return formatName(seg);
       })
-      .join('<span style="color:#cbd5e1;margin:0 4px">/</span>');
+      .join('<span class="name-sep">/</span>');
   }
 
   const parts = raw.split('/');
@@ -542,14 +542,14 @@ function renderPerson(raw, showTraineeTag = true, targetDate = null, taskKey = n
     const p2 = parts[1].trim();
     if (showTraineeTag) {
       return formatName(p1)
-           + `<span class="trainee-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; margin-left:4px;">學</span>`
-           + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
+           + `<span class="trainee-tag tag-learn">學</span>`
+           + `<span class="name-sep">/</span>`
            + formatName(p2)
-           + `<span class="trainee-tag" style="background:#fef3c7; color:#78350f; border-color:#fcd34d; margin-left:4px;">Cover</span>`;
+           + `<span class="trainee-tag tag-cover">Cover</span>`;
     } else {
-      return `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">AM</span> ` + formatName(p1)
-           + `<span style="color:#cbd5e1;margin:0 4px">/</span>`
-           + `<span style="font-size:0.7rem;color:var(--text-sub);font-weight:600;">PM</span> ` + formatName(p2);
+      return `<span class="ampm-label">AM</span> ` + formatName(p1)
+           + `<span class="name-sep">/</span>`
+           + `<span class="ampm-label">PM</span> ` + formatName(p2);
     }
   }
 
@@ -1448,7 +1448,7 @@ function renderAngio(data) {
         <td>${renderPerson(row.tp_tae, true, null, 'angio_tae', 'tp', row.dow)}</td>
         <td>${renderPerson(row.ds_dsa, true, null, 'angio_dsa', 'ds', row.dow)}</td>
         <td>${renderPerson(row.ds_tae, true, null, 'angio_tae', 'ds', row.dow)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td class="ni-note-cell">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -1490,7 +1490,7 @@ function renderErCt(data) {
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.tp, true, null, 'erct', 'tp', row.dow)}</td>
         <td>${renderPerson(row.ds, true, null, 'erct', 'ds', row.dow)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td class="ni-note-cell">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -1532,7 +1532,7 @@ function renderRoutineCt(data) {
         <td>${renderPerson(row.person, true, null, 'routine_ct', 'all', null)}</td>
         <td style="text-align:center;font-weight:600;">${row.tp}</td>
         <td style="text-align:center;font-weight:600;">${row.ds}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td class="ni-note-cell">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -1623,7 +1623,7 @@ function renderDsMriDaily(data) {
       tr.innerHTML = `
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.person, true, null, 'ds_mri', 'ds', row.dow)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td class="ni-note-cell">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });
@@ -1741,7 +1741,7 @@ function renderPicc(data) {
         <td class="dow">${row.dow}</td>
         <td>${renderPerson(row.tp, true, null, 'picc', 'tp', row.dow)}</td>
         <td>${renderPerson(row.ds, true, null, 'picc', 'ds', row.dow)}</td>
-        <td style="text-align: center; vertical-align: middle;">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
+        <td class="ni-note-cell">${row.note ? `<div class="note-tooltip-trigger tooltip-right">💬<span class="note-tooltip-text">${row.note}</span></div>` : '—'}</td>`;
     }
     tbody.appendChild(tr);
   });

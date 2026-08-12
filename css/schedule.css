@@ -354,6 +354,8 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
   white-space: nowrap; font-size: 0.82rem;
 }
 .ni-table td.dow.weekend { color: #c0392b; background: #fff5f5; }
+/* 各表格最右側的備註欄 */
+.ni-note-cell { text-align: center; vertical-align: middle; }
 
 /* Location badges */
 .loc {
@@ -380,6 +382,21 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
   padding: 0px 5px; border-radius: 3px; margin-left: 4px;
   vertical-align: middle; border: 1px solid;
 }
+.trainee-tag.tag-learn { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+.trainee-tag.tag-cover { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+
+/* ── 姓名渲染的視覺語彙（代班、休假、AM/PM、分隔） ── */
+.person.is-replaced { text-decoration: line-through; opacity: 0.6; }
+.leave-tag {
+  font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-left: 2px;
+}
+.cover-arrow { color: var(--text-sub); margin: 0 3px; }
+.cover-loc { font-size: 0.72rem; color: var(--text-sub); }
+.cover-loc.is-second { margin-left: 4px; }
+.ampm-label {
+  font-size: 0.7rem; color: var(--text-sub); font-weight: 600;
+}
+.name-sep { color: #cbd5e1; margin: 0 4px; }
 /* 姓名欄內嵌的換班註記徽章 */
 .inline-annot {
   display: inline-block;
