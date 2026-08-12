@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班表匯入工具</title>
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="stylesheet" href="../css/shared.css?v=20260812_07">
+  <style>
+    body { padding: 0; }
+    header { background: var(--primary-color); color: #fff; padding: 28px 20px; text-align: center; position: relative; }
+    header h1 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+    header p { margin-top: 6px; font-size: 0.88rem; opacity: 0.85; }
+    .back-link { position: absolute; top: 18px; left: 20px; color: rgba(255,255,255,.85); font-size: .85rem; text-decoration: none; }
+    .back-link:hover { color: #fff; text-decoration: underline; }
+    main { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    .card { background: #fff; border: 1px solid var(--border-color); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+    .card h2 { margin: 0 0 12px; font-size: 1rem; font-weight: 800; color: var(--primary-color); }
+    .step { font-size: .72rem; font-weight: 800; color: #fff; background: var(--accent-color); border-radius: 99px; padding: 2px 9px; margin-right: 8px; }
+
+    label.field { display: block; font-size: .82rem; font-weight: 700; color: #475569; margin: 10px 0 4px; }
+    input[type=text], input[type=file] { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: .88rem; box-sizing: border-box; font-family: inherit; }
+    .hint { font-size: .74rem; color: var(--text-sub); line-height: 1.6; margin-top: 4px; }
+
+    button { font-family: inherit; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all .15s; }
+    .btn-primary { background: var(--primary-color); color: #fff; border: none; padding: 10px 18px; font-size: .9rem; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-ghost { background: #fff; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 8px 16px; font-size: .85rem; }
+    .btn-danger { background: #dc2626; color: #fff; border: none; padding: 10px 18px; font-size: .9rem; }
+    .btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+
+    .status { font-size: .82rem; padding: 8px 12px; border-radius: 6px; margin-top: 10px; display: none; line-height: 1.6; }
+    .status.show { display: block; }
+    .status.ok { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+    .status.warn { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+    .status.err { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    .diff-block { margin-bottom: 14px; }
+    .diff-title { font-size: .82rem; font-weight: 800; color: #475569; margin-bottom: 6px; }
+    .diff-row { font-size: .78rem; padding: 5px 10px; border-radius: 5px; margin-bottom: 4px; line-height: 1.6; }
+    .diff-row.changed { background: #fffbeb; border: 1px solid #fcd34d; }
+    .diff-row.added { background: #ecfdf5; border: 1px solid #6ee7b7; }
+    .diff-row.same { color: #94a3b8; }
+    .old { color: #b91c1c; text-decoration: line-through; }
+    .new { color: #065f46; font-weight: 700; }
+
+    ul.review { margin: 6px 0 0; padding-left: 20px; font-size: .78rem; color: #78350f; line-height: 1.8; }
+    .keep-note { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-size: .78rem; padding: 10px 12px; border-radius: 6px; line-height: 1.7; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="schedule.html" class="back-link">← 返回班表</a>
+  <h1>📥 班表匯入工具</h1>
+  <p>把 NI Word 與 EVT Excel 轉成線上班表，確認差異後再寫入雲端</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2><span class="step">1</span>選擇檔案</h2>
+    <label class="field">目標月份</label>
+    <input type="text" id="monthKey" placeholder="例如: 2026-09">
+    <div class="hint">格式 YYYY-MM。若該月份已存在，只會更新班表本體，<strong>既有的請假、代班與已忽略的缺口都會保留</strong>。</div>
+
+    <label class="field">NI 日班工作分配（.docx）</label>
+    <input type="file" id="niFile" accept=".docx">
+
+    <label class="field">中風取栓班表（.xlsx）</label>
+    <input type="file" id="evtFile" accept=".xlsx">
+
+    <div style="margin-top:14px;">
+      <button class="btn-primary" id="parseBtn">🔍 解析並預覽差異</button>
+    </div>
+    <div class="status" id="parseStatus"></div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none;">
+    <h2><span class="step">2</span>確認差異</h2>
+    <div id="diffOutput"></div>
+  </div>
+
+  <div class="card" id="reviewCard" style="display:none;">
+    <h2><span class="step">3</span>需要你後續處理的換班</h2>
+    <div class="hint" style="margin-bottom:8px;">
+      這些是直接寫在姓名欄裡的換班註記。匯入後它們會保留在「備註」欄，
+      但<strong>不會自動變成代班</strong> —— 因為要判斷是哪一項工作、哪個院區、換給誰。
+      匯入完成後請到班表的「排班編輯模式」逐筆設定，畫面上方的代班缺口稽核會協助你檢查。
+    </div>
+    <ul class="review" id="reviewList"></ul>
+  </div>
+
+  <div class="card" id="importCard" style="display:none;">
+    <h2><span class="step">4</span>登入並匯入</h2>
+    <div id="authArea">
+      <button class="btn-ghost" id="loginBtn">🔑 登入 Google 帳號</button>
+      <span class="hint" style="display:inline-block; margin-left:8px;">寫入雲端需要管理者權限</span>
+    </div>
+    <div id="importArea" style="display:none;">
+      <div class="hint" style="margin-bottom:10px;">已登入：<strong id="userName"></strong></div>
+      <button class="btn-danger" id="importBtn">⬆️ 確認匯入至雲端</button>
+      <button class="btn-ghost" id="logoutBtn" style="margin-left:8px;">登出</button>
+    </div>
+    <div class="status" id="importStatus"></div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+<script src="../js/import-parser.js?v=20260812_07"></script>
+<script src="../js/import-ui.js?v=20260812_07"></script>
+
+</body>
+</html>
