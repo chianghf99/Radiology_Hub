@@ -113,11 +113,15 @@ async function readXlsxGrid(file) {
 // ── NI 解析 ─────────────────────────────────────────
 
 function parseNi(tables, paras) {
-  const ni = {}, review = [];
+  const ni = {}, review = [], annots = [];
 
-  const cell = (raw, where) => {
+  // where: { task, loc, when }  —— 儲存格的位置決定了「哪一項工作、哪個院區、哪些日期」
+  const cell = (raw, label, where) => {
     const { base, annot } = splitAnnot(raw);
-    if (annot) review.push(`${where}：「${raw}」→ 人員 ${base}，註記 ${annot}`);
+    if (annot) {
+      review.push(`${label}：「${raw}」→ 人員 ${base}，註記 ${annot}`);
+      if (where) annots.push({ ...where, base, annot, label });
+    }
     return { base, annot };
   };
 
@@ -126,9 +130,11 @@ function parseNi(tables, paras) {
   for (const r of tables[0] || []) {
     if (!r.length || !IMPORT_DOWS.includes(r[0])) continue;
     const labels = ['台北DSA', '台北TAE', '淡水DSA', '淡水TAE'];
+    const spec = [['angio_dsa', 'tp'], ['angio_tae', 'tp'], ['angio_dsa', 'ds'], ['angio_tae', 'ds']];
     const v = [], n = [];
     for (let i = 0; i < 4; i++) {
-      const { base, annot } = cell(r[i + 1], `血管攝影 ${r[0]} ${labels[i]}`);
+      const { base, annot } = cell(r[i + 1], `血管攝影 ${r[0]} ${labels[i]}`,
+        { task: spec[i][0], loc: spec[i][1], when: { type: 'dow', value: r[0] } });
       v.push(base); n.push(annot);
     }
     ni.angio.push({ dow: r[0], tp_dsa: v[0], tp_tae: v[1], ds_dsa: v[2], ds_tae: v[3], note: joinNotes(n) });
@@ -138,7 +144,8 @@ function parseNi(tables, paras) {
   ni.ds_mri_daily = [];
   for (const r of tables[1] || []) {
     if (!r.length || !IMPORT_DOWS.includes(r[0])) continue;
-    const { base, annot } = cell(r[3] || '', `淡水健檢MRI ${r[0]}`);
+    const { base, annot } = cell(r[3] || '', `淡水健檢MRI ${r[0]}`,
+      { task: 'ds_mri', loc: 'ds', when: { type: 'dow', value: r[0] } });
     ni.ds_mri_daily.push({ dow: r[0], person: base, note: annot });
   }
 
@@ -146,15 +153,19 @@ function parseNi(tables, paras) {
   ni.erct = []; ni.routine_ct = [];
   for (const r of tables[2] || []) {
     if (!r.length || !IMPORT_DOWS.includes(r[0])) continue;
-    const tp = cell(r[1], `急診CT ${r[0]} 台北`);
-    const ds = cell(r[2], `急診CT ${r[0]} 淡水`);
+    const tp = cell(r[1], `急診CT ${r[0]} 台北`, { task: 'erct', loc: 'tp', when: { type: 'dow', value: r[0] } });
+    const ds = cell(r[2], `急診CT ${r[0]} 淡水`, { task: 'erct', loc: 'ds', when: { type: 'dow', value: r[0] } });
     ni.erct.push({ dow: r[0], tp: tp.base, ds: ds.base, note: joinNotes([tp.annot, ds.annot]) });
 
     if (r.length >= 6 && r[3]) {
       const a = splitNumbers(r[4]);
       const b = splitNumbers(r[5]);
-      if (a.annot) review.push(`門住CT ${r[3]} 台北號碼：「${a.annot}」`);
-      if (b.annot) review.push(`門住CT ${r[3]} 淡水號碼：「${b.annot}」`);
+      [[a, 'tp', '台北'], [b, 'ds', '淡水']].forEach(([x, loc, name]) => {
+        if (!x.annot) return;
+        review.push(`門住CT ${r[3]} ${name}號碼：「${x.annot}」`);
+        annots.push({ task: 'routine_ct', loc, when: { type: 'any' }, base: r[3], annot: x.annot,
+                      label: `門住CT ${r[3]} ${name}號碼` });
+      });
       ni.routine_ct.push({ person: r[3], tp: a.nums, ds: b.nums, note: joinNotes([a.annot, b.annot]) });
     }
   }
@@ -165,7 +176,8 @@ function parseNi(tables, paras) {
     const side = { '台北': 'tp', '淡水': 'ds' }[r[0]];
     if (!side) continue;
     for (let i = 0; i < 5; i++) {
-      const { base, annot } = cell(r[i + 1], `門住急MRI ${r[0]} W${i + 1}`);
+      const { base, annot } = cell(r[i + 1], `門住急MRI ${r[0]} W${i + 1}`,
+        { task: 'mri', loc: side, when: { type: 'week', value: i + 1 } });
       ni.mri[side].push({ week: `W${i + 1}`, person: normalizePerson(base), note: annot });
     }
   }
@@ -188,7 +200,8 @@ function parseNi(tables, paras) {
     const side = { '台北': 'tp', '淡水': 'ds' }[r[0]];
     if (!side) continue;
     for (let i = 0; i < 5; i++) {
-      const { base, annot } = cell(r[i + 1], `PICC ${IMPORT_DOWS[i]} ${r[0]}`);
+      const { base, annot } = cell(r[i + 1], `PICC ${IMPORT_DOWS[i]} ${r[0]}`,
+        { task: 'picc', loc: side, when: { type: 'dow', value: IMPORT_DOWS[i] } });
       picc[i] = picc[i] || { dow: IMPORT_DOWS[i], tp: '', ds: '', note: '' };
       picc[i][side] = base;
       if (annot) picc[i].note = joinNotes([picc[i].note, annot]);
@@ -197,7 +210,7 @@ function parseNi(tables, paras) {
   ni.picc = Object.keys(picc).sort((a, b) => a - b).map(k => picc[k]);
 
   ni.notes = paras.filter(p => !/^\d{4}-\d{2}月$/.test(p)).join('\n');
-  return { ni, review };
+  return { ni, review, annots };
 }
 
 // ── EVT 解析 ────────────────────────────────────────
@@ -306,4 +319,162 @@ function buildDiff(parsed, cloudNi, parsedEvt, cloudEvt, monthKey) {
   }
   blocks.push({ label: '中風取栓（台北）', rows: evtRows });
   return { blocks, missingEvtDays: missing };
+}
+
+// ════════════════════════════════════════════════════
+//  由內嵌註記推導代班與請假
+//
+//  關鍵在於：儲存格的位置已經決定了「哪一項工作、哪個院區、適用哪些日期」，
+//  註記文字只需要提供「哪一天、換給誰」。因此代班是可以推導出來的，
+//  不必逐筆人工判斷 —— 但仍然要讓使用者在預覽時逐筆確認。
+// ════════════════════════════════════════════════════
+
+const IMPORT_PEOPLE = ['姜信帆', '黃俊肇', '周兆亮', '黃勇評', '謝棖智',
+                       '魏士揚', '鄭宇凡', '劉家義', '黃崇堯'];
+
+// 簡稱（全名後兩字）→ 全名
+const SHORT_TO_FULL = IMPORT_PEOPLE.reduce((m, n) => {
+  const s = n.slice(-2);
+  if (!(s in m)) m[s] = n;
+  return m;
+}, {});
+
+function resolvePerson(name) {
+  const n = (name || '').trim();
+  if (!n) return null;
+  if (IMPORT_PEOPLE.includes(n)) return n;
+  if (SHORT_TO_FULL[n]) return SHORT_TO_FULL[n];
+  return null;                       // 認不得就回 null，交由呼叫端提出警告
+}
+
+const DOW_TO_NUM = { '週一': 1, '週二': 2, '週三': 3, '週四': 4, '週五': 5 };
+
+// 把註記拆成 [{ days:[..], person }]。
+// 支援：8/11士揚 ／ 8/11, 8/18士揚 ／ 8/11,18士揚 ／ 8/07-17棖智 ／ 8/10信帆 8/17棖智
+function parseAnnotation(annot, monthNum) {
+  const tokens = String(annot || '').match(/\d{1,2}\/\d{1,2}(?:\s*[-–]\s*\d{1,2})?|\d{1,2}|[一-鿿]+/g) || [];
+  const out = [];
+  let pending = [], lastMonth = monthNum;
+
+  for (const tk of tokens) {
+    const range = /^(\d{1,2})\/(\d{1,2})\s*[-–]\s*(\d{1,2})$/.exec(tk);
+    const single = /^(\d{1,2})\/(\d{1,2})$/.exec(tk);
+    if (range) {
+      lastMonth = +range[1];
+      for (let d = +range[2]; d <= +range[3]; d++) pending.push(`${lastMonth}/${d}`);
+    } else if (single) {
+      lastMonth = +single[1];
+      pending.push(`${lastMonth}/${+single[2]}`);
+    } else if (/^\d{1,2}$/.test(tk)) {
+      pending.push(`${lastMonth}/${+tk}`);          // 只寫日、沿用前一個月份
+    } else {
+      const person = resolvePerson(tk);
+      if (pending.length) {
+        out.push({ days: pending, person, raw: tk });
+        pending = [];
+      }
+    }
+  }
+  if (pending.length) out.push({ days: pending, person: null, raw: '' });
+  return out;
+}
+
+// 該儲存格在本月適用哪些日期
+function datesForCell(when, year, month) {
+  const dim = new Date(year, month, 0).getDate();
+  const all = [];
+  for (let d = 1; d <= dim; d++) all.push(d);
+  if (when.type === 'any') return all;
+  const target = when.type === 'week' ? when.value : DOW_TO_NUM[when.value];
+  if (!target) return all;
+  return all.filter(d => new Date(year, month - 1, d).getDay() === target);
+}
+
+function buildCoverSuggestions(annots, monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  const suggestions = [], warnings = [];
+
+  (annots || []).forEach(a => {
+    const basePerson = resolvePerson(a.base);
+    if (!basePerson) {
+      warnings.push(`${a.label}：原班人員「${a.base}」不在醫師名單中，已略過`);
+      return;
+    }
+    const validDates = new Set(datesForCell(a.when, year, month).map(d => `${month}/${d}`));
+
+    parseAnnotation(a.annot, month).forEach(seg => {
+      if (!seg.person) {
+        warnings.push(`${a.label}：註記「${a.annot}」中的「${seg.raw}」不是認得的醫師姓名`);
+        return;
+      }
+      seg.days.forEach(day => {
+        if (!validDates.has(day)) {
+          warnings.push(`${a.label}：${day} 不是這一格適用的日期（此格為 ${a.when.value || '每日'}），已略過`);
+          return;
+        }
+        suggestions.push({
+          date: day, absent: basePerson, task: a.task, loc: a.loc,
+          cover: seg.person, label: a.label
+        });
+      });
+    });
+  });
+
+  suggestions.sort((x, y) => {
+    const [ax, bx] = x.date.split('/').map(Number), [ay, by] = y.date.split('/').map(Number);
+    return ax - ay || bx - by || x.task.localeCompare(y.task);
+  });
+  return { suggestions, warnings };
+}
+
+// 把選定的建議組成 covers 結構
+function suggestionsToCovers(list) {
+  const covers = {};
+  list.forEach(s => {
+    covers[s.date] = covers[s.date] || {};
+    covers[s.date][s.absent] = covers[s.date][s.absent] || {};
+    const slot = covers[s.date][s.absent];
+    if (s.loc) {
+      if (typeof slot[s.task] !== 'object' || slot[s.task] === null) slot[s.task] = {};
+      slot[s.task][s.loc] = s.cover;
+    } else {
+      slot[s.task] = s.cover;
+    }
+  });
+
+  // 台北與淡水是同一人時收斂成字串，與手動輸入「單人代班」的格式一致
+  // （兩種寫法效果相同，統一格式可避免日後重新匯入時出現無意義的差異）
+  Object.values(covers).forEach(day => Object.values(day).forEach(byDoc => {
+    Object.keys(byDoc).forEach(task => {
+      const v = byDoc[task];
+      if (v && typeof v === 'object' && v.tp && v.ds && v.tp === v.ds) byDoc[task] = v.tp;
+    });
+  }));
+  return covers;
+}
+
+// 由備註最下方的說明推導請假，例如「休假：俊肇(8/07-8/18)」
+function parseLeavesFromNotes(notes, monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  const leaves = {}, found = [];
+  const line = String(notes || '').split('\n').find(l => l.includes('休假')) || '';
+  const body = line.slice(line.indexOf('休假'));
+
+  const re = /([一-鿿]{2,3})\s*[（(]\s*(\d{1,2})\/(\d{1,2})\s*[-–~]\s*(?:(\d{1,2})\/)?(\d{1,2})\s*[）)]/g;
+  let m;
+  while ((m = re.exec(body))) {
+    const person = resolvePerson(m[1]);
+    if (!person) continue;
+    const days = [];
+    const start = new Date(year, +m[2] - 1, +m[3]);
+    const end = new Date(year, (+(m[4] || m[2])) - 1, +m[5]);
+    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push(`${d.getMonth() + 1}/${d.getDate()}`);
+    }
+    if (days.length) {
+      leaves[person] = days;
+      found.push(`${person}：${days[0]}–${days[days.length - 1]}（${days.length} 天）`);
+    }
+  }
+  return { leaves, found };
 }

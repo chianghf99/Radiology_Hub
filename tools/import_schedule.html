@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>班表匯入工具</title>
   <meta name="theme-color" content="#1a3a5c">
-  <link rel="stylesheet" href="../css/shared.css?v=20260812_07">
+  <link rel="stylesheet" href="../css/shared.css?v=20260812_08">
   <style>
     body { padding: 0; }
     header { background: var(--primary-color); color: #fff; padding: 28px 20px; text-align: center; position: relative; }
@@ -82,13 +82,27 @@
     <div id="diffOutput"></div>
   </div>
 
-  <div class="card" id="reviewCard" style="display:none;">
-    <h2><span class="step">3</span>需要你後續處理的換班</h2>
-    <div class="hint" style="margin-bottom:8px;">
-      這些是直接寫在姓名欄裡的換班註記。匯入後它們會保留在「備註」欄，
-      但<strong>不會自動變成代班</strong> —— 因為要判斷是哪一項工作、哪個院區、換給誰。
-      匯入完成後請到班表的「排班編輯模式」逐筆設定，畫面上方的代班缺口稽核會協助你檢查。
+  <div class="card" id="coverCard" style="display:none;">
+    <h2><span class="step">3</span>自動推導的代班</h2>
+    <div class="hint" style="margin-bottom:10px;">
+      由姓名欄的換班註記推導而成 —— 儲存格的位置決定「哪一項工作、哪個院區」，
+      註記文字決定「哪一天、換給誰」。<strong>請逐筆核對，取消勾選的不會寫入。</strong>
+      未勾選的部分仍會保留在備註欄，之後可在排班編輯模式手動設定。
     </div>
+    <div style="margin-bottom:8px;">
+      <button class="btn-ghost" id="checkAllBtn" style="padding:4px 10px; font-size:.78rem;">全選</button>
+      <button class="btn-ghost" id="uncheckAllBtn" style="padding:4px 10px; font-size:.78rem; margin-left:6px;">全不選</button>
+      <span class="hint" id="coverCount" style="margin-left:10px;"></span>
+    </div>
+    <div id="coverList"></div>
+
+    <div id="leaveArea" style="margin-top:16px;"></div>
+    <div id="coverWarnings"></div>
+  </div>
+
+  <div class="card" id="reviewCard" style="display:none;">
+    <h2>📋 原始註記對照</h2>
+    <div class="hint" style="margin-bottom:8px;">Word 檔中所有內嵌在姓名欄的註記原文，供核對用。</div>
     <ul class="review" id="reviewList"></ul>
   </div>
 
@@ -112,8 +126,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-<script src="../js/import-parser.js?v=20260812_07"></script>
-<script src="../js/import-ui.js?v=20260812_07"></script>
+<script src="../js/import-parser.js?v=20260812_08"></script>
+<script src="../js/import-ui.js?v=20260812_08"></script>
 
 </body>
 </html>

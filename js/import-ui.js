@@ -42,11 +42,15 @@ $('parseBtn').addEventListener('click', async () => {
   try {
     let ni = null, review = [], evt = null;
 
+    let coverSug = [], coverWarn = [], leaveInfo = { leaves: {}, found: [] };
     if (niFile) {
       const { tables, paras } = await readDocx(niFile);
       if (tables.length < 6) throw new Error(`NI 文件的表格數量不符（讀到 ${tables.length} 個，預期 6 個）。請確認選到的是 NI 日班工作分配檔。`);
       const r = parseNi(tables, paras);
       ni = r.ni; review = r.review;
+      const c = buildCoverSuggestions(r.annots, monthKey);
+      coverSug = c.suggestions; coverWarn = c.warnings;
+      leaveInfo = parseLeavesFromNotes(ni.notes, monthKey);
     }
     if (evtFile) {
       const grid = await readXlsxGrid(evtFile);
@@ -66,9 +70,10 @@ $('parseBtn').addEventListener('click', async () => {
       : { blocks: [], missingEvtDays: [] };
 
     renderPreview(diff, isNew, monthKey, !!ni, !!evt);
+    renderCovers(coverSug, coverWarn, leaveInfo, cloudNi);
     renderReview(review);
 
-    pending = { monthKey, ni, evt, cloudDoc, review };
+    pending = { monthKey, ni, evt, cloudDoc, review, coverSug, leaveInfo };
     $('importCard').style.display = '';
 
     const changed = diff.blocks.reduce((n, b) => n + b.rows.length, 0);
@@ -123,6 +128,57 @@ function renderPreview(diff, isNew, monthKey, hasNi, hasEvt) {
   $('previewCard').style.display = '';
 }
 
+const TASK_LABEL = {
+  angio_dsa: '血管攝影 DSA', angio_tae: '血管攝影 TAE', erct: '急診 CT',
+  routine_ct: '門住 CT 號碼', mri: '門住急 MRI', ds_mri: '淡水健檢 MRI', picc: 'PICC'
+};
+const LOC_LABEL = { tp: '台北', ds: '淡水' };
+
+function renderCovers(sug, warns, leaveInfo, cloudNi) {
+  const card = $('coverCard'), list = $('coverList');
+  if (!sug.length && !warns.length && !leaveInfo.found.length) { card.style.display = 'none'; return; }
+
+  const existing = (cloudNi && cloudNi.covers) || {};
+  list.innerHTML = sug.map((s, i) => {
+    const has = existing[s.date] && existing[s.date][s.absent];
+    return `<label class="diff-row ${has ? 'same' : 'added'}" style="display:flex; gap:8px; align-items:flex-start; cursor:pointer;">
+      <input type="checkbox" class="cover-cb" data-i="${i}" checked style="margin-top:3px;">
+      <span><strong>${s.date}</strong>　${s.absent} → <span class="new">${s.cover}</span>
+      　<span style="color:#64748b;">${TASK_LABEL[s.task] || s.task}${s.loc ? '（' + LOC_LABEL[s.loc] + '）' : ''}</span>
+      <span style="color:#94a3b8; font-size:.72rem;"> ← ${s.label}</span></span>
+    </label>`;
+  }).join('') || '<div class="diff-row same">沒有偵測到需要設定的代班</div>';
+
+  $('leaveArea').innerHTML = leaveInfo.found.length
+    ? `<div class="keep-note"><strong>偵測到的請假</strong>（取自備註最下方的說明）<br>
+       ${leaveInfo.found.join('<br>')}<br>
+       <label style="display:inline-flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;">
+         <input type="checkbox" id="applyLeaves" checked> 一併寫入請假設定
+       </label></div>`
+    : '';
+
+  $('coverWarnings').innerHTML = warns.length
+    ? `<div class="status show warn" style="margin-top:12px;">⚠️ 推導時略過了這些項目：<br>${warns.join('<br>')}</div>`
+    : '';
+
+  card.style.display = '';
+  updateCoverCount();
+}
+
+function updateCoverCount() {
+  const all = document.querySelectorAll('.cover-cb');
+  const on = document.querySelectorAll('.cover-cb:checked');
+  $('coverCount').textContent = `已選 ${on.length} / ${all.length} 筆`;
+}
+
+document.addEventListener('change', e => { if (e.target.classList.contains('cover-cb')) updateCoverCount(); });
+$('checkAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.cover-cb').forEach(c => { c.checked = true; }); updateCoverCount();
+});
+$('uncheckAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.cover-cb').forEach(c => { c.checked = false; }); updateCoverCount();
+});
+
 function renderReview(review) {
   const card = $('reviewCard'), list = $('reviewList');
   if (!review.length) { card.style.display = 'none'; return; }
@@ -162,6 +218,25 @@ $('importBtn').addEventListener('click', async () => {
     merged.leaves = cloudNi.leaves || {};
     merged.covers = cloudNi.covers || {};
     merged.holidays = cloudNi.holidays || [];
+
+    // 勾選的代班建議：疊加在雲端既有代班之上（既有設定不會被移除）
+    const picked = [...document.querySelectorAll('.cover-cb:checked')]
+      .map(cb => pending.coverSug[+cb.dataset.i]).filter(Boolean);
+    if (picked.length) {
+      const add = suggestionsToCovers(picked);
+      Object.keys(add).forEach(date => {
+        merged.covers[date] = merged.covers[date] || {};
+        Object.keys(add[date]).forEach(doc => {
+          merged.covers[date][doc] = { ...(merged.covers[date][doc] || {}), ...add[date][doc] };
+        });
+      });
+    }
+
+    // 請假：沿用備註推導的結果（使用者可取消）
+    const applyLeaves = document.getElementById('applyLeaves');
+    if (applyLeaves && applyLeaves.checked && Object.keys(pending.leaveInfo.leaves).length) {
+      merged.leaves = { ...merged.leaves, ...pending.leaveInfo.leaves };
+    }
     if (cloudNi.ignoredGaps) merged.ignoredGaps = cloudNi.ignoredGaps;
     if (!ni && cloudNi.notes !== undefined) merged.notes = cloudNi.notes;
 
@@ -174,9 +249,7 @@ $('importBtn').addEventListener('click', async () => {
     setStatus(box,
       `🎉 <strong>${monthKey}</strong> 已成功寫入雲端。<br>` +
       `班表頁面會即時更新，不需要重新整理。` +
-      (pending.review.length
-        ? `<br>別忘了到班表的「排班編輯模式」處理上面列出的 ${pending.review.length} 筆換班註記。`
-        : ''),
+      `<br>已寫入 ${picked.length} 筆代班設定。請到班表確認上方的「代班缺口」提醒是否還有遺漏。`,
       'ok');
   } catch (err) {
     console.error(err);
