@@ -182,15 +182,30 @@ function parseNi(tables, paras) {
     }
   }
 
-  // 表5 週六班 / 週日 MRI：儲存格形如「8/01謝棖智」
+  // 表5 週六班 / 週日 MRI
+  // 兩種版面都要支援：
+  //   (a) 標題與日期同一列：「周六… | 8/01謝棖智 | 8/08魏士揚 …」
+  //   (b) 標題自成一列，日期在後續列：「周六…」換行「7/04 鄭宇凡 | 7/11魏士揚 …」
   ni.saturday = []; ni.mri_sunday = [];
-  for (const r of tables[4] || []) {
-    const head = r[0] || '';
-    const target = /[周週]六/.test(head) ? ni.saturday : (/[周週]日/.test(head) ? ni.mri_sunday : null);
-    if (!target) continue;
-    for (const v of r.slice(1)) {
-      const m = /^(\d{1,2})\/(\d{1,2})\s*(.+)$/.exec((v || '').trim());
-      if (m) target.push({ date: `${+m[1]}/${+m[2]}`, person: m[3].trim(), note: '' });
+  {
+    let target = null;
+    const pick = (v) => {
+      const t = (v || '').trim();
+      const m = /^(\d{1,2})\/(\d{1,2})\s*(.*)$/.exec(t);
+      if (!m || !target) return;
+      let rest = m[3].trim();
+      // 括號內是說明（如「(假日僅MRI)」），不屬於姓名
+      let note = '';
+      rest = rest.replace(/[（(]([^）)]*)[）)]/g, (_, inner) => { note = inner.trim(); return ' '; }).trim();
+      if (!rest) return;
+      target.push({ date: `${+m[1]}/${+m[2]}`, person: rest, note });
+    };
+    for (const r of tables[4] || []) {
+      const head = (r[0] || '').trim();
+      if (/[周週]六/.test(head)) target = ni.saturday;
+      else if (/[周週]日/.test(head)) target = ni.mri_sunday;
+      // 標題列本身也可能帶日期；非標題列則整列都是日期
+      (/[周週][六日]/.test(head) ? r.slice(1) : r).forEach(pick);
     }
   }
 
@@ -224,15 +239,15 @@ function parseEvt(grid, monthKey) {
 
   for (let i = 0; i < grid.length; i++) {
     const days = (grid[i] || []).slice(0, 7);
-    if (!days.some(c => /^\d+$/.test(c || ''))) continue;
+    // 日期格可能帶節日註記，例如「16(除夕)」「17(初一)」，取開頭的數字即可
+    const dayNum = c => { const m = /^\s*(\d{1,2})/.exec(c || ''); return m ? +m[1] : null; };
+    if (!days.some(c => dayNum(c) !== null)) continue;
     const tpRow = grid[i + 1] || [];
     const dsRow = grid[i + 3] || [];
 
     for (let col = 0; col < 7; col++) {
-      const dv = days[col] || '';
-      if (!/^\d+$/.test(dv)) continue;
-      const day = parseInt(dv, 10);
-      if (day < 1 || day > daysInMonth) continue;
+      const day = dayNum(days[col]);
+      if (day === null || day < 1 || day > daysInMonth) continue;
 
       let tp = (tpRow[col] || '').trim();
       let ds = (dsRow[col] || '').trim();

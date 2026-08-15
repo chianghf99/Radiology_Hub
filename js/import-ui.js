@@ -69,7 +69,14 @@ $('parseBtn').addEventListener('click', async () => {
       ? buildDiff(ni || cloudNi, cloudNi, evt || cloudEvt, cloudEvt, monthKey)
       : { blocks: [], missingEvtDays: [] };
 
-    renderPreview(diff, isNew, monthKey, !!ni, !!evt);
+    // 來源檔沒有、但雲端有的區塊：匯入時會保留，這裡要讓使用者知道
+    const SECTION_LABEL = { angio: '血管攝影', erct: '急診 CT', routine_ct: '門住 CT 號碼',
+      ds_mri_daily: '淡水健檢 MRI', saturday: '週六班', mri_sunday: '週日 MRI', picc: 'PICC' };
+    const keptSections = !ni ? [] : Object.keys(SECTION_LABEL).filter(f =>
+      (!ni[f] || !ni[f].length) && (cloudNi[f] || []).length);
+
+    renderPreview(diff, isNew, monthKey, !!ni, !!evt,
+      keptSections.map(f => `${SECTION_LABEL[f]}（${cloudNi[f].length} 筆）`));
     renderCovers(coverSug, coverWarn, leaveInfo, cloudNi);
     renderReview(review);
 
@@ -93,7 +100,7 @@ $('parseBtn').addEventListener('click', async () => {
   }
 });
 
-function renderPreview(diff, isNew, monthKey, hasNi, hasEvt) {
+function renderPreview(diff, isNew, monthKey, hasNi, hasEvt, keptSections) {
   const out = $('diffOutput');
   let html = '';
 
@@ -103,6 +110,13 @@ function renderPreview(diff, isNew, monthKey, hasNi, hasEvt) {
     ${hasNi ? '' : '<br>（未選 NI 檔案，班表本體維持雲端原樣）'}
     ${hasEvt ? '' : '<br>（未選 EVT 檔案，中風取栓班表維持雲端原樣）'}
   </div>`;
+
+  if ((keptSections || []).length) {
+    html += `<div class="status show warn" style="margin-top:12px;">
+      ⚠️ 來源檔沒有這些區塊：<strong>${keptSections.join('、')}</strong>。
+      匯入後會保留雲端原有的內容，不會被清空。
+    </div>`;
+  }
 
   if (diff.missingEvtDays.length) {
     html += `<div class="status show warn" style="margin-top:12px;">
@@ -215,6 +229,23 @@ $('importBtn').addEventListener('click', async () => {
 
     // 班表本體用新解析的內容；人工判斷的結果一律沿用雲端既有值
     const merged = ni ? { ...ni } : { ...cloudNi };
+
+    // 來源檔不一定包含每個區塊（例如 7 月的 Word 就沒有「週日 MRI」那一段）。
+    // 解析為空、但雲端原本有資料時，保留雲端的 —— 空的解析結果不可以清空既有班表。
+    ['angio', 'erct', 'routine_ct', 'ds_mri_daily', 'saturday', 'mri_sunday', 'picc'].forEach(f => {
+      const parsed = merged[f];
+      const existing = cloudNi[f];
+      if ((!parsed || !parsed.length) && existing && existing.length) merged[f] = existing;
+    });
+    if (merged.mri && cloudNi.mri) {
+      ['tp', 'ds'].forEach(side => {
+        if ((!merged.mri[side] || !merged.mri[side].length) && (cloudNi.mri[side] || []).length) {
+          merged.mri[side] = cloudNi.mri[side];
+        }
+      });
+    }
+    if (!merged.notes && cloudNi.notes) merged.notes = cloudNi.notes;
+
     merged.leaves = cloudNi.leaves || {};
     merged.covers = cloudNi.covers || {};
     merged.holidays = cloudNi.holidays || [];
