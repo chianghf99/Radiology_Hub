@@ -54,7 +54,7 @@
 <div class="container">
     <a href="../index.html" class="back-link">← 返回首頁</a>
     <h1>DXA Bone Densitometry Reporter
-        <span style="font-size:0.55em; color:#888; font-weight:normal;">(Updated: 2026/07/03)</span>
+        <span style="font-size:0.55em; color:#888; font-weight:normal;">(Updated: 2026/08/20)</span>
     </h1>
 
     <form name="form">
@@ -120,18 +120,72 @@ function copyFunction() {
   navigator.clipboard.writeText(copyText.value);
 }   
 
-function activeFunction() {
-  var Reference = "T-score";
-  var AgeVal = parseFloat(document.form.Age.value) || 0;
-  if (document.form.Sex.value == "Male" && AgeVal < 50) Reference = "Z-score";
-  if (document.form.Sex.value == "Female" && !document.form.Menopause.value) Reference = "Z-score";
+// Tolerates values pasted from DXA reports (Unicode minus, full-width digits,
+// stray spaces). Returns NaN for anything that is not a plain number, so a
+// bad value can never be silently treated as a score.
+function parseScore(v) {
+  if (v === undefined || v === null) return NaN;
+  var s = String(v)
+      .replace(/[\u2212\u2012\u2013\u2014\u2015\uFF0D]/g, '-')
+      .replace(/\uFF0B/g, '+')
+      .replace(/\uFF0E/g, '.')
+      .replace(/[\uFF10-\uFF19]/g, function (d) { return String.fromCharCode(d.charCodeAt(0) - 0xFEE0); })
+      .replace(/\s/g, '');
+  return /^[+-]?(\d+\.?\d*|\.\d+)$/.test(s) ? parseFloat(s) : NaN;
+}
 
-  var SexText = document.form.Sex.value == "Female" ? 
-      (document.form.Menopause.value ? "Female with menopause at age of " + document.form.Menopause.value : "Female without menopause") : "Male";
+function activeFunction() {
+  var sex = document.form.Sex.value;
+  if (sex !== "Male" && sex !== "Female") {
+      alert("請先選擇性別 (Sex)。判斷要用 T-score 還是 Z-score 需要性別。");
+      return;
+  }
+
+  var ageRaw = (document.form.Age.value || "").trim();
+  var AgeVal = parseScore(ageRaw);
+  if (isNaN(AgeVal) || AgeVal < 0 || AgeVal > 130) {
+      alert("請輸入有效的年齡 (Age)。判斷要用 T-score 還是 Z-score 需要年齡。");
+      return;
+  }
+
+  var menoRaw = (document.form.Menopause.value || "").trim();
+  var menoVal = parseScore(menoRaw);
+  var hasMeno = menoRaw !== "" && !isNaN(menoVal);
+  if (menoRaw !== "" && isNaN(menoVal)) {
+      alert("停經年齡 (Menopause Age) 請輸入數字，未停經或不詳請留白。");
+      return;
+  }
+
+  // ISCD: T-score for postmenopausal women and men aged >= 50;
+  // Z-score for premenopausal women and men aged < 50.
+  // A blank menopause field means "not specified", not "premenopausal",
+  // so age is used as the fallback for women.
+  var Reference, refReason;
+  if (sex === "Male") {
+      if (AgeVal >= 50) { Reference = "T-score"; refReason = "male aged 50 or older"; }
+      else { Reference = "Z-score"; refReason = "male younger than 50"; }
+  } else if (hasMeno) {
+      Reference = "T-score"; refReason = "postmenopausal female";
+  } else if (AgeVal >= 50) {
+      Reference = "T-score"; refReason = "female aged 50 or older, menopausal status not specified";
+  } else {
+      Reference = "Z-score"; refReason = "female younger than 50 without documented menopause";
+  }
+
+  var SexText = sex === "Male" ? "Male"
+      : (hasMeno ? "Female with menopause at age of " + menoRaw
+                 : "Female, menopausal status not specified");
 
   function interpret(t, z, ref, region) {
-      if(!t && !z) return "Not performed.";
-      var tVal = parseFloat(t), zVal = parseFloat(z);
+      var tRaw = (t || "").trim(), zRaw = (z || "").trim();
+      if (!tRaw && !zRaw) return "Not performed.";
+      var tVal = parseScore(tRaw), zVal = parseScore(zRaw);
+      var line = `BMD: ${document.form[region+'_BMD'].value}g/cm2, T-score: ${tRaw || 'N/A'}, Z-score: ${zRaw || 'N/A'},\n`;
+      var site = region == 'L' ? 'lumbar spine' : (region == 'LH' ? 'left hip' : 'right hip');
+      var used = ref === "T-score" ? tVal : zVal;
+      if (isNaN(used)) {
+          return line + `Interpretation: NOT INTERPRETED - the ${ref} of the ${site} is missing or is not a valid number. Please check the input.`;
+      }
       var text = "";
       if (ref === "T-score") {
           if (tVal <= -2.5) text = "Osteoporosis (T-score <= -2.5)";
@@ -140,7 +194,7 @@ function activeFunction() {
       } else {
           text = zVal <= -2.0 ? "below the expected range for age (Z-score <= -2.0)" : "within the expected range for age (Z-score > -2.0)";
       }
-      return `BMD: ${document.form[region+'_BMD'].value}g/cm2, T-score: ${t}, Z-score: ${z},\nInterpretation: The BMD of the ${region=='L'?'lumbar spine':(region=='LH'?'left hip':'right hip')} is corresponding to the condition of ${text}`;
+      return line + `Interpretation: The BMD of the ${site} is corresponding to the condition of ${text}`;
   }
 
   var resL = interpret(document.form.L_T.value, document.form.L_Z.value, Reference, 'L');
@@ -153,9 +207,9 @@ function activeFunction() {
 `# Imaging Report Form for Bone Mineral Density Scan #
 
 1.Patient Information:
-Age: ${document.form.Age.value},    Sex: ${SexText}
+Age: ${ageRaw},    Sex: ${SexText}
 
-2.Reference: ${Reference}
+2.Reference: ${Reference} (${refReason})
 
 3.The bone mineral density (BMD) of the following regions was measured using dual-energy X-ray absorptiometry (DXA).
 The BMD values, along with their corresponding standard deviations (SD) for T-scores and Z-scores, are summarized as follows:
