@@ -243,15 +243,69 @@ main { max-width: 1060px; margin: 0 auto; padding: 0 20px 60px; }
   gap: 6px;
 }
 .cover-gap-item {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
   background: white;
   border: 1px solid #fecaca;
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 0.8rem;
+}
+.cover-gap-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* 每一項工作一列：左邊是工作名稱，右邊是代班醫師選單 */
+.cover-gap-task-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cover-gap-task {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 4px 0 4px 10px;
+  border-left: 3px solid #fecaca;
+}
+.cover-gap-task-name {
+  color: #475569;
+  font-size: 0.78rem;
+  min-width: 140px;
+}
+.cover-gap-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cover-gap-select {
+  font-size: 0.76rem;
+  font-family: inherit;
+  padding: 3px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  max-width: 100%;
+}
+.cover-gap-select:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
+.cover-gap-select:disabled { opacity: 0.6; cursor: wait; }
+.cover-gap-loc { font-size: 0.72rem; font-weight: 700; color: #64748b; }
+.cover-gap-na { font-size: 0.72rem; color: #94a3b8; font-style: italic; }
+.cover-gap-flash {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
 }
 .cover-gap-item strong {
   color: #991b1b;

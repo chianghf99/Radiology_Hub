@@ -269,25 +269,8 @@ function getDoctorTasksForToday(a) {
       doctorTasks[displayName] = { tasks: [], isOnLeave: false };
     }
 
-    // Determine the task key for this task
-    let taskKey = null;
-    if (task.includes('DSA')) {
-      taskKey = 'angio_dsa';
-    } else if (task.includes('TAE')) {
-      taskKey = 'angio_tae';
-    } else if (task.includes('血管攝影')) {
-      taskKey = 'angio';
-    } else if (task.includes('急 CT')) {
-      taskKey = 'erct';
-    } else if (task.includes('門住 CT')) {
-      taskKey = 'routine_ct';
-    } else if (task.includes('MRI') && !task.includes('解釋')) {
-      taskKey = 'mri';
-    } else if (task.includes('MRI') && task.includes('解釋')) {
-      taskKey = 'ds_mri';
-    } else if (task.includes('PICC')) {
-      taskKey = 'picc';
-    }
+    // 由任務標籤判斷工作代號（與缺口橫幅的指派共用同一套對應）
+    const taskKey = taskLabelToKey(task).taskKey;
 
     let coverName = null;
     let isSplitCt = false;
@@ -672,7 +655,7 @@ function renderTodayCard(key) {
     if (a.isSunday && status !== 'evt_only') {
       sunHtml += `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:5px; padding:10px 0; justify-content:center;">`;
       if (a.sunMri) {
-        const formattedPerson = renderPerson(a.sunMri.person, true, targetDate);
+        const formattedPerson = renderPerson(a.sunMri.person, true, targetDate, 'sunday');
         sunHtml += `
           <div class="today-sat-card" style="min-width:200px;">
             <div class="today-sat-label">週日 MRI 加班</div>
@@ -691,7 +674,7 @@ function renderTodayCard(key) {
     }
 
     if (a.evtDoctor && status !== 'daytime_only') {
-      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
+      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate, 'evt');
       sunHtml += `
         <div style="display:flex; justify-content:center; margin-top:10px;">
           <div class="today-sat-card" style="min-width:200px;">
@@ -711,7 +694,7 @@ function renderTodayCard(key) {
         <span>🌙 目前為非上班時間，僅顯示中風取栓 On-Call 人員</span>
       </div>`;
     if (a.evtDoctor) {
-      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
+      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate, 'evt');
       noticeHtml += `
         <div style="display:flex; justify-content:center; margin-top:10px; margin-bottom: 10px;">
           <div class="today-sat-card" style="min-width:200px;">
@@ -730,7 +713,7 @@ function renderTodayCard(key) {
   if (a.isSat) {
     let satHtml = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:5px; padding:10px 0;">`;
     if (a.sat) {
-      const formattedPerson = renderPerson(a.sat.person, true, targetDate);
+      const formattedPerson = renderPerson(a.sat.person, true, targetDate, 'saturday');
       satHtml += `
         <div class="today-sat-card">
           <div class="today-sat-label">週六班（北淡 MRI + 急 CT）</div>
@@ -741,7 +724,7 @@ function renderTodayCard(key) {
     }
     
     if (a.evtDoctor && status !== 'daytime_only') {
-      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate);
+      const formattedEvt = renderPerson(a.evtDoctor, true, targetDate, 'evt');
       satHtml += `
         <div class="today-sat-card">
           <div class="today-sat-label">中風取栓 On-Call (24H)</div>
@@ -980,9 +963,85 @@ window.toggleShowIgnoredGaps = function() {
   render();
 };
 
+// ── 在缺口橫幅直接指派代班 ──
+// 不必進入排班編輯模式、也不必到下方表格找對應欄位，選了醫師就寫入雲端。
+let lastGapAssignMsg = null;   // { text, at }：剛指派完的提示，短暫顯示
+
+// 可指派的代班醫師：排除請假本人與當天同樣請假的人
+function gapCoverCandidates(monthKey, date, absent, taskKey) {
+  const d = NI_DATA[monthKey] || {};
+  const leaves = d.leaves || {};
+  let pool = CORE_DOCTORS.slice();
+  if (taskKey === 'evt') pool = evtLegendPeople.map(p => p.name);
+  else if (taskKey === 'picc') pool = [...CORE_DOCTORS, '劉家義', '黃崇堯'];
+  return pool.filter(n => n !== absent && !((leaves[n] || []).includes(date)));
+}
+
+window.assignGapCover = async function(selectEl) {
+  const doctor = selectEl.value;
+  if (!doctor) return;
+  const { date, absent, task, loc } = selectEl.dataset;
+  const monthKey = MONTH_KEYS[currentIdx];
+
+  if (!currentUser || !getDb()) {
+    alert('請先從右上角「⚙️ 管理設定」登入，才能指派代班。');
+    selectEl.value = '';
+    return;
+  }
+  if (isEditMode || activeEditSection || activeCoverSection) {
+    alert('編輯模式中請於下方「請假與代班設定」調整，或先結束編輯。');
+    selectEl.value = '';
+    return;
+  }
+
+  const data = NI_DATA[monthKey];
+  if (!data) return;
+  const before = JSON.stringify(data.covers || {});
+  data.covers = data.covers || {};
+  const day = data.covers[date] = data.covers[date] || {};
+  if (!day[absent] || typeof day[absent] !== 'object') day[absent] = {};
+  const slot = day[absent];
+
+  if (loc) {
+    let cur = slot[task];
+    if (typeof cur === 'string') cur = { tp: cur, ds: cur };
+    if (!cur || typeof cur !== 'object') cur = {};
+    cur[loc] = doctor;
+    // 台北與淡水同一人時收斂成字串，與「單人代班」的格式一致
+    slot[task] = (cur.tp && cur.ds && cur.tp === cur.ds) ? cur.tp : cur;
+  } else {
+    slot[task] = doctor;
+  }
+
+  selectEl.disabled = true;
+  selectEl.options[0].textContent = '儲存中…';
+  try {
+    await db.collection('schedules').doc(monthKey).update({ 'ni.covers': data.covers });
+    const where = loc === 'tp' ? '台北 ' : (loc === 'ds' ? '淡水 ' : '');
+    const taskName = (TASK_NAMES[task] || task).replace(/^[^\p{L}\p{N}]+/u, '');   // 去掉前面的 emoji
+    lastGapAssignMsg = {
+      text: `已指派：${date} ${absent} ${where}${taskName} → ${doctor}`,
+      at: Date.now()
+    };
+  } catch (err) {
+    data.covers = JSON.parse(before);
+    alert('代班儲存失敗：' + err.message);
+  }
+  render();
+};
+
 function renderCoverGapBanner(key) {
   const allGaps = findMonthCoverGaps(key);
-  if (allGaps.length === 0) return null;
+  if (allGaps.length === 0) {
+    // 剛把最後一筆指派完時，短暫留下確認訊息，而不是整塊直接消失
+    if (lastGapAssignMsg && Date.now() - lastGapAssignMsg.at < 8000) {
+      const done = document.createElement('div');
+      done.className = 'cover-gap-muted full-width';
+      done.innerHTML = `<span class="cover-gap-flash">✅ ${lastGapAssignMsg.text}　本月代班已無缺口</span>`;
+      return done;
+    }
+    return null;
+  }
 
   const ignored = getIgnoredGaps(key);
   const active = allGaps.filter(g => !ignored.has(gapKey(g)));
@@ -998,13 +1057,39 @@ function renderCoverGapBanner(key) {
     return banner;
   }
 
+  const canAssign = !!currentUser && !isEditMode && !activeEditSection && !activeCoverSection;
+
+  // 每一項工作一列，附上代班醫師下拉選單
+  const taskRow = (g, task) => {
+    const { taskKey, loc } = taskLabelToKey(task);
+    let control = '';
+    if (!taskKey) {
+      control = `<span class="cover-gap-na">請於排班編輯模式設定</span>`;
+    } else if (canAssign) {
+      const opts = gapCoverCandidates(key, g.date, g.name, taskKey)
+        .map(n => `<option value="${n}">${n}</option>`).join('');
+      const locs = loc === 'both' ? ['tp', 'ds'] : [loc];
+      control = locs.map(l => `
+        ${loc === 'both' ? `<span class="cover-gap-loc">${l === 'tp' ? '北' : '淡'}</span>` : ''}
+        <select class="cover-gap-select" data-date="${g.date}" data-absent="${g.name}"
+          data-task="${taskKey}" data-loc="${l || ''}" onchange="assignGapCover(this)">
+          <option value="">指派代班…</option>${opts}
+        </select>`).join('');
+    }
+    return `<div class="cover-gap-task"><span class="cover-gap-task-name">${task}</span>
+      <span class="cover-gap-controls">${control}</span></div>`;
+  };
+
   const row = (g, isIgnored) => `
     <div class="cover-gap-item${isIgnored ? ' ignored' : ''}">
-      <strong>${g.date}</strong>
-      <span class="person ${personCls(g.name)}">${g.name}</span>
-      <span class="cover-gap-tasks">${g.tasks.join('、')}</span>
-      <button type="button" class="cover-gap-ignore"
-        onclick="toggleGapIgnored('${encodeURIComponent(gapKey(g))}', ${!isIgnored})">${isIgnored ? '↩︎ 取消忽略' : '✕ 忽略'}</button>
+      <div class="cover-gap-head">
+        <strong>${g.date}</strong>
+        <span class="person ${personCls(g.name)}">${g.name}</span>
+        ${isIgnored ? `<span class="cover-gap-tasks">${g.tasks.join('、')}</span>` : ''}
+        <button type="button" class="cover-gap-ignore"
+          onclick="toggleGapIgnored('${encodeURIComponent(gapKey(g))}', ${!isIgnored})">${isIgnored ? '↩︎ 取消忽略' : '✕ 忽略'}</button>
+      </div>
+      ${isIgnored ? '' : `<div class="cover-gap-task-list">${g.tasks.map(t => taskRow(g, t)).join('')}</div>`}
     </div>`;
 
   banner.className = 'cover-gap-banner full-width';
@@ -1014,11 +1099,17 @@ function renderCoverGapBanner(key) {
     ? `<button type="button" class="cover-gap-link" onclick="toggleShowIgnoredGaps()">${showIgnoredGaps ? `收合已忽略的 ${hidden.length} 筆` : `顯示已忽略的 ${hidden.length} 筆`}</button>`
     : '';
 
-  const scopeHint = currentUser
-    ? '忽略設定會同步至雲端，所有人看到的結果一致。'
-    : '未登入，忽略設定僅保存在這台裝置的瀏覽器。';
+  const scopeHint = !currentUser
+    ? '未登入時忽略設定僅保存在這台裝置；登入後可直接在這裡指派代班醫師。'
+    : (canAssign
+      ? '選擇醫師後會立即寫入雲端，之後可在「請假與代班明細」修改。忽略設定也會同步至雲端。'
+      : '編輯模式中請於下方「請假與代班設定」調整代班。');
+
+  const flash = lastGapAssignMsg && Date.now() - lastGapAssignMsg.at < 8000
+    ? `<div class="cover-gap-flash">✅ ${lastGapAssignMsg.text}</div>` : '';
 
   banner.innerHTML = `
+    ${flash}
     <div class="cover-gap-title">${active.length > 0
       ? `⚠️ 本月有 ${active.length} 筆請假工作尚未指派代班`
       : '✔️ 本月代班無缺口'}</div>

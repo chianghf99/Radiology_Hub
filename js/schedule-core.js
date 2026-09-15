@@ -121,6 +121,31 @@ function taskKeyChain(taskKey) {
   return TASK_KEY_FALLBACK[taskKey] || [taskKey];
 }
 
+// 由任務標籤（getDoctorTasksForToday 產生，例如「台北 TAE (Cover)」、
+// 「門住 CT (北:00–23/淡:00–23)」）反推工作代號與院區。
+// loc：'tp' 台北／'ds' 淡水／'both' 同一格含北淡（門住 CT）／null 不分院區
+function taskLabelToKey(task) {
+  const t = String(task || '');
+  let taskKey = null;
+  if (t.includes('DSA')) taskKey = 'angio_dsa';
+  else if (t.includes('TAE')) taskKey = 'angio_tae';
+  else if (t.includes('血管攝影')) taskKey = 'angio';
+  else if (t.includes('急 CT')) taskKey = 'erct';
+  else if (t.includes('門住 CT')) taskKey = 'routine_ct';
+  else if (t.includes('MRI') && t.includes('解釋')) taskKey = 'ds_mri';
+  else if (t.includes('週日 MRI')) taskKey = 'sunday';     // 須在一般 MRI 之前判斷
+  else if (t.includes('MRI')) taskKey = 'mri';
+  else if (t.includes('PICC')) taskKey = 'picc';
+  else if (t.includes('週六班')) taskKey = 'saturday';
+  else if (t.includes('中風取栓')) taskKey = 'evt';
+
+  let loc = null;
+  if (t.includes('北:') && t.includes('淡:')) loc = 'both';
+  else if (t.includes('台北') || t.includes('北:')) loc = 'tp';
+  else if (t.includes('淡水') || t.includes('淡:')) loc = 'ds';
+  return { taskKey, loc };
+}
+
 // 由代班物件取出指定工作的代班設定，自動套用向下相容的備援鍵
 function pickTaskCover(coverObj, taskKey) {
   if (!coverObj || typeof coverObj !== 'object') return undefined;
