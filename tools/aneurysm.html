@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>未破裂顱內動脈瘤臨床評估與醫病共享決策系統 (UIAs SDM Platform)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            medblue: {
+              50: '#f0f6fe',
+              100: '#dde9fc',
+              500: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    /* Print specific optimization */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        font-size: 11pt !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-border {
+        border: 1px solid #cbd5e1 !important;
+      }
+      .print-shadow-none {
+        box-shadow: none !important;
+      }
+      .page-break-inside-avoid {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .page-break-before {
+        break-before: page !important;
+        page-break-before: always !important;
+      }
+      input[type="text"], input[type="number"], select, textarea {
+        border-bottom: 1px solid #94a3b8 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Top Sticky Navigation & Quick Actions -->
+  <header class="no-print sticky top-0 z-40 bg-medblue-900 text-white shadow-md border-b border-medblue-800 backdrop-blur-md bg-opacity-95">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-blue-500/20 rounded-lg border border-blue-400/30">
+          <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <a href="../index.html" class="text-xs text-blue-200 hover:text-white hover:underline">← 返回首頁</a>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight">顱內動脈瘤臨床評估與醫病共享決策系統 <span class="text-xs font-normal text-blue-300">(Updated: 2026/11/03)</span></h1>
+          <p class="text-xs text-blue-200">PHASES 破裂風險模型 & UIATS 跨專科處置天平決策工具</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center flex-wrap gap-2 text-xs">
+        <div class="hidden md:flex items-center bg-slate-800/80 px-2 py-1 rounded border border-slate-700 space-x-2">
+          <span class="text-slate-400">快速案例載入：</span>
+          <button onclick="loadSampleCase('high_risk')" class="px-2 py-1 rounded bg-rose-900/60 text-rose-200 hover:bg-rose-800 border border-rose-700/50 transition">高危動脈瘤 (建議治療)</button>
+          <button onclick="loadSampleCase('low_risk')" class="px-2 py-1 rounded bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800 border border-emerald-700/50 transition">小型低危 (建議觀察)</button>
+        </div>
+        <button onclick="resetAllFields()" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          重設
+        </button>
+        <button onclick="window.print()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-white shadow transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          列印 / 匯出 PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Floating Summary Bar -->
+    <div class="bg-medblue-950/90 border-t border-medblue-800/80 px-4 py-2">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between text-xs sm:text-sm gap-2">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400">PHASES 總分:</span>
+            <span id="nav-phases-score" class="font-bold text-amber-300 text-base">0 分</span>
+            <span id="nav-phases-rate" class="text-xs px-2 py-0.5 rounded bg-amber-950/60 text-amber-200 border border-amber-800/60">5年破裂率 0.4%</span>
+          </div>
+          <div class="h-4 w-px bg-slate-700 hidden sm:block"></div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400">UIATS 差值 (Δ):</span>
+            <span id="nav-uiats-delta" class="font-bold text-slate-200 text-base">0 分</span>
+            <span id="nav-uiats-verdict" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">計算中</span>
+          </div>
+        </div>
+        <div class="text-slate-400 text-xs hidden lg:block">
+          點選右側勾選項目即時更新計算結果
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Print Header Only (Visible during printing) -->
+  <div class="hidden print:block p-4 border-b-2 border-slate-900 mb-4">
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-bold text-slate-900">未破裂顱內動脈瘤臨床評估與醫病共享決策單 (SDM)</h1>
+        <p class="text-xs text-slate-600">Clinical Assessment & Shared Decision-Making Worksheet for Unruptured Intracranial Aneurysms</p>
+      </div>
+      <div class="text-right text-xs text-slate-500">
+        <p>列印生成日期：<span id="print-date-display"></span></p>
+        <p>整合 PHASES 破裂模型與 UIATS 決策天平</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 py-6 space-y-6">
+
+    <!-- 01. 基本資料與就醫背景 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-inside-avoid">
+      <div class="bg-gradient-to-r from-slate-900 to-medblue-900 text-white px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="bg-blue-500/30 text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-400/30">01</span>
+          <h2 class="font-bold text-base tracking-wide">基本資料與臨床就醫背景</h2>
+          <span class="text-xs text-slate-300 hidden sm:inline">| Patient Profile & Background</span>
+        </div>
+        <button type="button" onclick="syncPatientDataToCalculators()" class="no-print text-xs bg-blue-600/60 hover:bg-blue-600 px-2.5 py-1 rounded text-white transition flex items-center gap-1 border border-blue-400/40">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          一鍵同步至量表
+        </button>
+      </div>
+
+      <div class="p-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">病患姓名</label>
+          <input type="text" id="pt-name" placeholder="請輸入姓名" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-medblue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">病歷號碼 (Chart No.)</label>
+          <input type="text" id="pt-chart" placeholder="病歷號" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-medblue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">年齡 (歲)</label>
+          <input type="number" id="pt-age" min="1" max="110" placeholder="例如: 62" oninput="handleAgeInput(this.value)" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-medblue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">性別</label>
+          <select id="pt-gender" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-medblue-500 focus:outline-none">
+            <option value="female">女性 (Female)</option>
+            <option value="male">男性 (Male)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">評估日期</label>
+          <input type="date" id="pt-date" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-medblue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">主治/評估醫師</label>
+          <input type="text" id="pt-doctor" placeholder="醫師姓名" class="w-full text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-medblue-500 focus:outline-none">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">動脈瘤發現契機</label>
+          <div class="flex flex-wrap gap-2 text-xs pt-1">
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="pt_finding" value="incidental" class="rounded text-medblue-600"> 健檢意外發現</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="pt_finding" value="headache" class="rounded text-medblue-600"> 慢性頭痛</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="pt_finding" value="cranial_nerve" class="rounded text-medblue-600"> 動眼神經/複視</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="pt_finding" value="stroke" class="rounded text-medblue-600"> 缺血中風/TIA</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02. 影像評估與幾何形態 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-inside-avoid">
+      <div class="bg-gradient-to-r from-slate-900 to-medblue-900 text-white px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="bg-blue-500/30 text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-400/30">02</span>
+          <h2 class="font-bold text-base tracking-wide">神經影像評估與動脈瘤形態特徵</h2>
+          <span class="text-xs text-slate-300 hidden sm:inline">| Morphology & High-Risk Features</span>
+        </div>
+        <span class="text-xs text-blue-200">即時計算 Aspect Ratio / Size Ratio</span>
+      </div>
+
+      <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- 幾何量測 -->
+        <div class="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+            <svg class="w-4 h-4 text-medblue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+            立體影像測量值 (mm)
+          </h3>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-600 mb-0.5 font-medium">最大瘤徑 (Max Size)</label>
+              <div class="relative">
+                <input type="number" step="0.1" id="geom-size" placeholder="如 5.5" oninput="calcMorphologyRatios()" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-7 focus:ring-1 focus:ring-medblue-500 focus:outline-none">
+                <span class="absolute right-2 top-1.5 text-slate-400 text-xs">mm</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-0.5 font-medium">頸部寬度 (Neck)</label>
+              <div class="relative">
+                <input type="number" step="0.1" id="geom-neck" placeholder="如 3.2" oninput="calcMorphologyRatios()" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-7 focus:ring-1 focus:ring-medblue-500 focus:outline-none">
+                <span class="absolute right-2 top-1.5 text-slate-400 text-xs">mm</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-0.5 font-medium">瘤體高度 (Height)</label>
+              <div class="relative">
+                <input type="number" step="0.1" id="geom-height" placeholder="如 4.8" oninput="calcMorphologyRatios()" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-7 focus:ring-1 focus:ring-medblue-500 focus:outline-none">
+                <span class="absolute right-2 top-1.5 text-slate-400 text-xs">mm</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-0.5 font-medium">載瘤動脈直徑 (Parent)</label>
+              <div class="relative">
+                <input type="number" step="0.1" id="geom-parent" placeholder="如 2.5" oninput="calcMorphologyRatios()" class="w-full border border-slate-300 rounded px-2.5 py-1.5 pr-7 focus:ring-1 focus:ring-medblue-500 focus:outline-none">
+                <span class="absolute right-2 top-1.5 text-slate-400 text-xs">mm</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 自動計算出的比值顯示 -->
+          <div class="pt-2 border-t border-slate-200 space-y-1.5 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Aspect Ratio (高/頸寬):</span>
+              <span id="badge-ar" class="font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">-- (閾值 > 1.6)</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Size Ratio (瘤徑/載瘤動脈):</span>
+              <span id="badge-sr" class="font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">-- (閾值 > 3.0)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 解剖位置與型態勾選 -->
+        <div class="space-y-2 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+          <h3 class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+            <svg class="w-4 h-4 text-medblue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+            解剖位置 (Anatomical Site)
+          </h3>
+          <select id="geom-site-select" onchange="syncSiteToCalculators(this.value)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-medblue-500 focus:outline-none">
+            <option value="ICA">ICA (內頸動脈 - 海綿竇段/床突旁/眼動脈段)</option>
+            <option value="MCA">MCA (中大腦動脈主幹 / 分叉處)</option>
+            <option value="ACoA">ACoA (前交通動脈) / ACA (前大腦動脈)</option>
+            <option value="PCoA">PCoA (後交通動脈)</option>
+            <option value="BasilarTip">Basilar Tip (基底動脈頂端分叉處)</option>
+            <option value="PosteriorTrunk">後循環幹 (Vertebrobasilar trunk / PICA / VA)</option>
+          </select>
+
+          <div class="pt-2 border-t border-slate-200 space-y-1.5">
+            <label class="font-medium text-slate-700 block">動脈瘤幾何外觀與特徵：</label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="geom-daughter" onchange="syncMorphologyCheck(this.checked)" class="rounded text-medblue-600">
+              <span class="text-rose-700 font-medium">具有 Daughter sac / 分葉狀 (Lobulated)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="geom-growth" onchange="syncGrowthCheck(this.checked)" class="rounded text-medblue-600">
+              <span>隨訪追蹤影像確認瘤體增大 (Growth)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="geom-awe" class="rounded text-medblue-600">
+              <span>管壁磁振顯影陽性 (Aneurysm Wall Enhancement)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 影像檢查技術備忘 -->
+        <div class="space-y-2 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+          <h3 class="font-bold text-slate-700 uppercase tracking-wider">影像檢驗方式與多發性</h3>
+          <div class="space-y-2">
+            <div>
+              <span class="text-slate-600 block mb-1">檢查工具：</span>
+              <div class="flex gap-3">
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked class="rounded text-medblue-600"> CTA</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="rounded text-medblue-600"> MRA</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="rounded text-medblue-600"> DSA (導管攝影)</label>
+              </div>
+            </div>
+            <div>
+              <span class="text-slate-600 block mb-1">數量狀態：</span>
+              <div class="flex gap-3">
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="multiplicity" value="single" checked onchange="syncMultiplicity(false)" class="text-medblue-600"> 單發</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="multiplicity" value="multi" onchange="syncMultiplicity(true)" class="text-medblue-600"> 多發性 (Multiplicity)</label>
+              </div>
+            </div>
+            <div class="bg-amber-50 p-2.5 rounded border border-amber-200 text-amber-900 leading-relaxed text-[11px]">
+              <strong>💡 臨床提醒：</strong>PHASES 模型主要基於尺寸與位置，若動脈瘤伴隨<strong>不規則分葉、Aspect ratio > 1.6、或 AWE 管壁增強</strong>，實際破裂威脅通常顯著高於純粹尺寸預測值。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03. PHASES Score 即時破裂機率計算器 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-inside-avoid">
+      <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="bg-blue-400/30 text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-300/30">03</span>
+          <h2 class="font-bold text-base tracking-wide">PHASES 評分系統：5 年自然破裂機率預估</h2>
+          <span class="text-xs text-blue-200 hidden md:inline">| Lancet Neurol 2014; 13: 59–66</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-blue-200">當前 PHASES 總分：</span>
+          <span id="phases-badge-score" class="bg-amber-400 text-slate-900 px-2.5 py-0.5 rounded-full font-black text-sm">0 分</span>
+        </div>
+      </div>
+
+      <div class="p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 評分選單 (佔 2 欄) -->
+        <div class="lg:col-span-2 space-y-4 text-xs sm:text-sm">
+          
+          <!-- P: Population -->
+          <div class="border-b border-slate-100 pb-3">
+            <div class="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 inline-flex items-center justify-center text-xs font-bold">P</span>
+              種族與族群背景 (Population)
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pl-6">
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_p" value="0" checked onchange="calcPhases(); syncEthnicity()" class="text-blue-600">
+                <span>北美 / 歐洲 / 其他 (含台灣) (+0)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_p" value="3" onchange="calcPhases(); syncEthnicity()" class="text-blue-600">
+                <span>日本族裔 Japanese (+3)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_p" value="5" onchange="calcPhases(); syncEthnicity()" class="text-blue-600">
+                <span>芬蘭族裔 Finnish (+5)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- H: Hypertension -->
+          <div class="border-b border-slate-100 pb-3">
+            <div class="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 inline-flex items-center justify-center text-xs font-bold">H</span>
+              高血壓病史 (Hypertension)
+            </div>
+            <div class="grid grid-cols-2 gap-2 pl-6">
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_h" value="0" checked onchange="calcPhases()" class="text-blue-600">
+                <span>無高血壓 (+0)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_h" value="1" id="phases_h_yes" onchange="calcPhases()" class="text-blue-600">
+                <span>有高血壓病史 / 服藥中 (+1)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- A: Age -->
+          <div class="border-b border-slate-100 pb-3">
+            <div class="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 inline-flex items-center justify-center text-xs font-bold">A</span>
+              年齡 (Age)
+            </div>
+            <div class="grid grid-cols-2 gap-2 pl-6">
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_a" value="0" checked id="phases_a_under70" onchange="calcPhases()" class="text-blue-600">
+                <span>年齡 &lt; 70 歲 (+0)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_a" value="1" id="phases_a_ge70" onchange="calcPhases()" class="text-blue-600">
+                <span>年齡 &ge; 70 歲 (+1)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- S: Size -->
+          <div class="border-b border-slate-100 pb-3">
+            <div class="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 inline-flex items-center justify-center text-xs font-bold">S</span>
+              動脈瘤最大直徑 (Size)
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-6">
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s1" value="0" checked id="phases_s_under7" onchange="calcPhases()" class="text-blue-600">
+                <span>&lt; 7.0 mm (+0)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s1" value="3" id="phases_s_7to9" onchange="calcPhases()" class="text-blue-600">
+                <span>7.0–9.9 mm (+3)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s1" value="6" id="phases_s_10to19" onchange="calcPhases()" class="text-blue-600">
+                <span>10.0–19.9 mm (+6)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s1" value="10" id="phases_s_ge20" onchange="calcPhases()" class="text-blue-600">
+                <span>&ge; 20.0 mm (+10)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- E: Earlier SAH -->
+          <div class="border-b border-slate-100 pb-3">
+            <div class="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 inline-flex items-center justify-center text-xs font-bold">E</span>
+              既往蛛網膜下腔出血病史 (Earlier SAH)
+            </div>
+            <div class="grid grid-cols-2 gap-2 pl-6">
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_e" value="0" checked onchange="calcPhases()" class="text-blue-600">
+                <span>無 SAH 病史 (+0)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_e" value="1" id="phases_e_yes" onchange="calcPhases()" class="text-blue-600">
+                <span>曾有其他動脈瘤引發 SAH (+1)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- S: Site -->
+          <div>
+            <div class="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 inline-flex items-center justify-center text-xs font-bold">S</span>
+              動脈瘤解剖位置 (Site)
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pl-6">
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s2" value="0" checked id="phases_site_ica" onchange="calcPhases()" class="text-blue-600">
+                <span>ICA 內頸動脈 (+0)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s2" value="2" id="phases_site_mca" onchange="calcPhases()" class="text-blue-600">
+                <span>MCA 中大腦動脈 (+2)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="phases_s2" value="4" id="phases_site_post" onchange="calcPhases()" class="text-blue-600">
+                <span>ACoA / ACA / PCoA / 後循環 (+4)</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 破裂機率即時速查卡 (佔 1 欄) -->
+        <div class="bg-gradient-to-br from-slate-50 to-blue-50/50 rounded-xl p-5 border border-blue-100 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">自然病程破裂估算結果</div>
+            <div class="flex items-baseline gap-2 mb-2">
+              <span id="phases-result-score" class="text-4xl font-black text-medblue-900">0</span>
+              <span class="text-slate-600 text-sm font-semibold">分 (總分 0–22)</span>
+            </div>
+
+            <!-- Risk meter card -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex justify-between items-center text-xs text-slate-500">
+                <span>預估 5 年自然累積破裂率</span>
+                <span id="phases-tier-tag" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">低破裂風險</span>
+              </div>
+              <div class="text-3xl font-extrabold text-slate-900 flex items-baseline gap-1" id="phases-percentage-display">
+                0.4 <span class="text-lg font-bold text-slate-500">%</span>
+              </div>
+
+              <!-- Visual progress bar -->
+              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div id="phases-risk-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 4%;"></div>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-normal" id="phases-interpretation-text">
+                對應 5 年破裂機率約 0.4%（年平均約 0.08%）。多數無高危特徵之微小動脈瘤建議優先控制血壓並定期影像追蹤。
+              </p>
+            </div>
+          </div>
+
+          <!-- PHASES Reference Table -->
+          <div class="text-[11px] bg-white p-3 rounded-lg border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-700 pb-1 border-b border-slate-100">PHASES 評分速查基準表</div>
+            <div class="flex justify-between py-0.5 text-slate-600"><span>&le; 2 分：0.4%</span><span>3 分：0.7%</span><span>4 分：0.9%</span></div>
+            <div class="flex justify-between py-0.5 text-slate-600"><span>5 分：1.3%</span><span>6 分：1.7%</span><span>7 分：2.4%</span></div>
+            <div class="flex justify-between py-0.5 text-slate-600"><span>8 分：3.2%</span><span>9 分：4.3%</span><span>10 分：5.3%</span></div>
+            <div class="flex justify-between py-0.5 text-rose-700 font-semibold"><span>11 分：7.2%</span><span>&ge; 12 分：17.8%</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 04. UIATS 決策天平計算器 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-inside-avoid">
+      <div class="bg-gradient-to-r from-slate-900 via-medblue-950 to-slate-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="bg-blue-400/30 text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-300/30">04</span>
+          <h2 class="font-bold text-base tracking-wide">UIATS 決策天平：積極治療 vs 保守追蹤</h2>
+          <span class="text-xs text-blue-200 hidden md:inline">| Neurology 2015; 85: 881–889</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-300">決策差值 (Δ = 治療 - 保守)：</span>
+          <span id="uiats-header-delta" class="px-2.5 py-0.5 rounded-full font-black text-sm bg-slate-800 text-white border border-slate-600">0 分</span>
+        </div>
+      </div>
+
+      <!-- Decision Rule Explanation Bar -->
+      <div class="bg-slate-100 border-b border-slate-200 px-5 py-2 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-4">
+          <span class="inline-flex items-center gap-1 font-semibold text-emerald-800"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Δ &ge; +3 建議積極治療</span>
+          <span class="inline-flex items-center gap-1 font-semibold text-amber-700"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> -2 &le; Δ &le; +2 臨床均勢 (深度討論價值觀)</span>
+          <span class="inline-flex items-center gap-1 font-semibold text-rose-800"><span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Δ &le; -3 建議保守追蹤</span>
+        </div>
+        <span class="text-slate-500 italic hidden sm:inline">雙邊總分差異越大，臨床建議傾向越明確</span>
+      </div>
+
+      <!-- Balance Visualization Meter -->
+      <div class="p-5 bg-slate-50 border-b border-slate-200">
+        <div class="max-w-3xl mx-auto space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-emerald-700 flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              支持積極治療：<span id="meter-repair-score" class="text-sm">0</span> 分
+            </span>
+            <span id="meter-verdict-badge" class="px-3 py-1 rounded-full text-xs font-bold shadow-sm bg-slate-200 text-slate-800">
+              判定中
+            </span>
+            <span class="text-rose-700 flex items-center gap-1">
+              支持保守追蹤：<span id="meter-cons-score" class="text-sm">5</span> 分
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            </span>
+          </div>
+
+          <!-- Dual visual comparison bar -->
+          <div class="h-4 w-full bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
+            <div id="bar-repair-fill" class="bg-emerald-600 transition-all duration-300" style="width: 20%;"></div>
+            <div id="bar-cons-fill" class="bg-rose-500 transition-all duration-300" style="width: 80%;"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-500 px-1">
+            <span>Favor Repair (破裂威脅、長餘命、形態危險)</span>
+            <span>Favor Conservative (手術風險、高齡、共病壽命)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- UIATS Two Columns Grid -->
+      <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Left Column: Favor Repair -->
+        <div class="bg-emerald-50/50 rounded-xl border border-emerald-200/80 p-4 space-y-4">
+          <div class="flex justify-between items-center pb-2 border-b border-emerald-200">
+            <h3 class="font-bold text-sm text-emerald-900 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+              【支持積極治療點數】 Points Favor Repair
+            </h3>
+            <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded" id="uiats-repair-subtotal">小計：0 分</span>
+          </div>
+
+          <!-- Repair: Age -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">1. 病患年齡層 (年輕預期餘命長)：</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_age" value="4" onchange="calcUiats()" class="text-emerald-600"> &lt; 40 歲 (+4)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_age" value="3" checked onchange="calcUiats()" class="text-emerald-600"> 40–60 歲 (+3)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_age" value="2" onchange="calcUiats()" class="text-emerald-600"> 61–70 歲 (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_age" value="1" onchange="calcUiats()" class="text-emerald-600"> 71–80 歲 (+1)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_age" value="0" onchange="calcUiats()" class="text-emerald-600"> &gt; 80 歲 (+0)
+              </label>
+            </div>
+          </div>
+
+          <!-- Repair: Size -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">2. 動脈瘤最大直徑：</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_size" value="0" checked onchange="calcUiats()" class="text-emerald-600"> &le; 3.9 mm (+0)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_size" value="1" onchange="calcUiats()" class="text-emerald-600"> 4.0–6.9 mm (+1)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_size" value="2" onchange="calcUiats()" class="text-emerald-600"> 7.0–12.9 mm (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_size" value="3" onchange="calcUiats()" class="text-emerald-600"> 13.0–24.9 mm (+3)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_size" value="4" onchange="calcUiats()" class="text-emerald-600"> &ge; 25.0 mm (+4)
+              </label>
+            </div>
+          </div>
+
+          <!-- Repair: Location -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">3. 動脈瘤解剖位置：</div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_loc" value="5" onchange="calcUiats()" class="text-emerald-600"> 基底動脈頂端 Basilar Tip (+5)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_loc" value="4" onchange="calcUiats()" class="text-emerald-600"> 椎基底動脈幹 Trunk/PICA (+4)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_loc" value="2" onchange="calcUiats()" class="text-emerald-600"> ACoA 前交通 / PCoA 後交通 (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="radio" name="uiats_rep_loc" value="0" checked onchange="calcUiats()" class="text-emerald-600"> 其他部位 (MCA / ICA 等) (+0)
+              </label>
+            </div>
+          </div>
+
+          <!-- Repair: Morphology Checkboxes -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">4. 形態與幾何高危特徵 (符合可複選)：</div>
+            <div class="space-y-1">
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_morph_irreg" value="3" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>外型不規則囊狀 / 分葉 / Daughter sac (+3)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_morph_ratio" value="1" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>Aspect ratio &gt; 1.6 或 Size ratio &gt; 3.0 (+1)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Repair: Symptoms & Dynamics Checkboxes -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">5. 臨床壓迫、缺血症狀與動態 (符合可複選)：</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_sym_cn" value="4" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>腦神經麻痺(如動眼神經) (+4)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_sym_mass" value="4" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>影像或臨床質量壓迫效應 (+4)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_sym_ischemic" value="3" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>瘤內血栓脫落引發缺血/TIA (+3)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_dyn_growth" value="4" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>追蹤影像發現瘤體增大 Growth (+4)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer sm:col-span-2">
+                <input type="checkbox" id="uiats_rep_dyn_denovo" value="3" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>追蹤過程新生之動脈瘤 (De novo aneurysm) (+3)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_sym_epi" value="1" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>動脈瘤相關癲癇 (+1)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_multi" value="1" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>多發性動脈瘤 Multiplicity (+1)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer sm:col-span-2">
+                <input type="checkbox" id="uiats_rep_steno" value="1" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span>對側血管狹窄 / 阻塞病變 (+1)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Repair: Background & Psych Checkboxes -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">6. 病患危險病史與心理負擔 (符合可複選)：</div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_sah" value="4" onchange="calcUiats()" class="rounded text-emerald-600"> 曾有其他 SAH (+4)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_smoke" value="3" onchange="calcUiats()" class="rounded text-emerald-600"> 目前仍有吸菸 (+3)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_fam" value="3" onchange="calcUiats()" class="rounded text-emerald-600"> 一等親家族病史 (+3)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_htn" value="2" onchange="calcUiats()" class="rounded text-emerald-600"> 高血壓 SBP&gt;140 (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_eth" value="2" onchange="calcUiats()" class="rounded text-emerald-600"> 日本 / 芬蘭 / 因紐特族裔 (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_adpkd" value="2" onchange="calcUiats()" class="rounded text-emerald-600"> 多囊腎 ADPKD (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_drug" value="2" onchange="calcUiats()" class="rounded text-emerald-600"> 藥物濫用 (古柯鹼/安非他命) (+2)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_rep_hx_alcohol" value="1" onchange="calcUiats()" class="rounded text-emerald-600"> 酒精濫用 (+1)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-emerald-100 hover:bg-emerald-50/50 cursor-pointer col-span-2">
+                <input type="checkbox" id="uiats_rep_hx_qol" value="2" onchange="calcUiats()" class="rounded text-emerald-600">
+                <span class="text-emerald-900 font-medium">因極度恐懼破裂導致生活品質顯著受損 (+2)</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Favor Conservative -->
+        <div class="bg-rose-50/50 rounded-xl border border-rose-200/80 p-4 space-y-4">
+          <div class="flex justify-between items-center pb-2 border-b border-rose-200">
+            <h3 class="font-bold text-sm text-rose-900 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+              【支持保守追蹤點數】 Points Favor Conservative
+            </h3>
+            <span class="text-xs font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded" id="uiats-cons-subtotal">小計：5 分</span>
+          </div>
+
+          <!-- Cons: Constant Factor -->
+          <div class="bg-white p-2.5 rounded-lg border border-rose-200 text-xs flex items-center justify-between">
+            <div>
+              <span class="font-bold text-rose-950 block">侵入性處置固有基準風險 (Constant factor)</span>
+              <span class="text-[11px] text-slate-500">任何動脈瘤開顱或血管內介入治療之預設基礎手術風險</span>
+            </div>
+            <span class="font-extrabold text-rose-700 bg-rose-50 px-2.5 py-1 rounded border border-rose-200 text-sm">+5 分</span>
+          </div>
+
+          <!-- Cons: Age Related Risk -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">1. 年齡相關之處置風險代價：</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_age" value="0" onchange="calcUiats()" class="text-rose-600"> &lt; 40 歲 (+0)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_age" value="1" checked onchange="calcUiats()" class="text-rose-600"> 40–60 歲 (+1)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_age" value="3" onchange="calcUiats()" class="text-rose-600"> 61–70 歲 (+3)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_age" value="4" onchange="calcUiats()" class="text-rose-600"> 71–80 歲 (+4)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_age" value="5" onchange="calcUiats()" class="text-rose-600"> &gt; 80 歲 (+5)
+              </label>
+            </div>
+          </div>
+
+          <!-- Cons: Size Related Risk -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">2. 動脈瘤尺寸相關處置併發症風險：</div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_size" value="0" checked onchange="calcUiats()" class="text-rose-600"> &lt; 6.0 mm (+0)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_size" value="1" onchange="calcUiats()" class="text-rose-600"> 6.0–10.0 mm (+1)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_size" value="3" onchange="calcUiats()" class="text-rose-600"> 10.1–20.0 mm (+3)
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_size" value="5" onchange="calcUiats()" class="text-rose-600"> &gt; 20.0 mm (+5)
+              </label>
+            </div>
+          </div>
+
+          <!-- Cons: Anatomical Complexity -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">3. 手術與介入解剖技術複雜度：</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_complex" value="0" checked onchange="calcUiats()" class="text-rose-600">
+                <span>標準低難度 / 典型囊狀 (+0)</span>
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_complex" value="3" onchange="calcUiats()" class="text-rose-600">
+                <span class="text-rose-900 font-medium">高複雜度(寬頸/分支自瘤體/迂曲) (+3)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Cons: Life Expectancy -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">4. 因共病導致之預期餘命：</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_life" value="1" checked onchange="calcUiats()" class="text-rose-600">
+                <span>餘命 &gt; 10 年 (+1)</span>
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_life" value="3" onchange="calcUiats()" class="text-rose-600">
+                <span>餘命 5–10 年 (+3)</span>
+              </label>
+              <label class="flex items-center gap-1.5 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="radio" name="uiats_cons_life" value="4" onchange="calcUiats()" class="text-rose-600">
+                <span>餘命 &lt; 5 年 (+4)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Cons: Comorbidities Checkboxes -->
+          <div class="text-xs space-y-1.5">
+            <div class="font-semibold text-slate-700">5. 神經與全身共病風險 (符合可複選)：</div>
+            <div class="space-y-1">
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_cons_co_cog" value="3" onchange="calcUiats()" class="rounded text-rose-600">
+                <span>中重度神經認知障礙 Neurocognitive disorder (+3)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_cons_co_coag" value="2" onchange="calcUiats()" class="rounded text-rose-600">
+                <span>凝血病變 / 易栓症 / 無法接受抗血小板藥物 (+2)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 bg-white rounded border border-rose-100 hover:bg-rose-50/50 cursor-pointer">
+                <input type="checkbox" id="uiats_cons_co_psych" value="2" onchange="calcUiats()" class="rounded text-rose-600">
+                <span>嚴重精神疾病無法配合術後照護與隨訪 (+2)</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Result Card -->
+      <div class="p-5 bg-white border-t border-slate-200">
+        <div class="rounded-xl p-4 border flex flex-col md:flex-row items-center justify-between gap-4" id="uiats-final-box">
+          <div class="space-y-1 text-center md:text-left">
+            <div class="text-xs uppercase tracking-wider font-bold text-slate-500">UIATS 跨專科專家共識最終裁定</div>
+            <div class="text-lg font-bold text-slate-800" id="uiats-final-title">
+              計算中
+            </div>
+            <p class="text-xs text-slate-600 max-w-2xl" id="uiats-final-desc">
+              請勾選上方兩造條件以得出臨床建議差值。
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-center px-4 py-2 bg-slate-50 rounded-lg border border-slate-200">
+              <div class="text-[10px] text-slate-500 uppercase font-semibold">差值 Δ</div>
+              <div class="text-2xl font-black text-slate-800" id="uiats-final-delta">0</div>
+            </div>
+            <div class="text-xs px-3 py-2 rounded-lg font-bold text-center min-w-[120px]" id="uiats-final-badge">
+              --
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05. 處置方案橫向比較表 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-inside-avoid">
+      <div class="bg-gradient-to-r from-slate-900 to-medblue-900 text-white px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="bg-blue-500/30 text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-400/30">05</span>
+          <h2 class="font-bold text-base tracking-wide">三大處置路徑比較與風險效益說明</h2>
+          <span class="text-xs text-slate-300 hidden sm:inline">| Modality Comparison & Trade-offs</span>
+        </div>
+        <span class="text-xs text-blue-200">醫病溝通輔助說明</span>
+      </div>
+
+      <div class="p-5 overflow-x-auto">
+        <table class="w-full text-xs text-left border-collapse min-w-[650px]">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+              <th class="p-3 w-1/4">比較維度</th>
+              <th class="p-3 w-1/4 text-emerald-800 bg-emerald-50/60">方案 A：積極內科追蹤</th>
+              <th class="p-3 w-1/4 text-blue-800 bg-blue-50/60">方案 B：微創血管內介入治療</th>
+              <th class="p-3 w-1/4 text-purple-800 bg-purple-50/60">方案 C：開顱顯微夾閉術</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <tr>
+              <td class="p-3 font-semibold bg-slate-50 text-slate-700">處置方式與原理</td>
+              <td class="p-3 leading-relaxed">嚴格控制收縮壓&lt;130mmHg、戒菸，每6-12個月定期進行 MRA 或 CTA 追蹤大小形態。</td>
+              <td class="p-3 leading-relaxed">經鼠蹊或手腕血管穿刺，微導管進入動脈瘤進行線圈栓塞、支架輔助栓塞或置入密網導流支架。</td>
+              <td class="p-3 leading-relaxed">神經外科開顱手術，在手術顯微鏡下剝離神經血管，以鈦合金血管夾自瘤頸夾閉阻斷血流。</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-semibold bg-slate-50 text-slate-700">核心優勢</td>
+              <td class="p-3 text-emerald-700 font-medium">免除手術與全身麻醉風險；無圍手術期中風或出血之立即傷害威脅。</td>
+              <td class="p-3 text-blue-700 font-medium">微創針孔傷口、免開顱、恢復快(住院約2-4天)；極適合後循環與高位內頸動脈瘤。</td>
+              <td class="p-3 text-purple-700 font-medium">機械性即刻夾閉瘤頸，長期根治率極高；再通復發率極低(&lt;1-2%)；適合外側MCA分叉瘤。</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-semibold bg-slate-50 text-slate-700">潛在風險與限制</td>
+              <td class="p-3 text-rose-700">動脈瘤持續存在，需終身承受累積破裂風險與心理焦慮；若瘤體增大仍需轉為手術。</td>
+              <td class="p-3 text-rose-700">圍手術期缺血性中風(約2-4%)、術中破裂出血(約1-2%)；再通率約5-15%；支架需長期服用雙抗藥物。</td>
+              <td class="p-3 text-rose-700">開顱創傷與全身麻醉代價；開顱併發症(中風、出血、感染、癲癇約3-5%)；住院與復原期較長(1-2週)。</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-semibold bg-slate-50 text-slate-700">臨床適應情境</td>
+              <td class="p-3">動脈瘤小(&lt;4-5mm)、形態規則、低危位置(如海綿竇段)、高齡或共病嚴重者。</td>
+              <td class="p-3">後循環(Basilar tip/VA)、海綿竇/床突旁ICA、年長或無法耐受開顱創傷者；或適合密網支架之大型瘤。</td>
+              <td class="p-3">年輕且預期餘命長、中大腦動脈(MCA)分叉瘤、分支自瘤體發出、伴隨大血腫壓迫者。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 06. 醫病共享決策共識與簽章欄 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-inside-avoid">
+      <div class="bg-gradient-to-r from-slate-900 to-medblue-900 text-white px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="bg-blue-500/30 text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-400/30">06</span>
+          <h2 class="font-bold text-base tracking-wide">醫病共享決策共識與諮詢簽署</h2>
+          <span class="text-xs text-slate-300 hidden sm:inline">| SDM Record & Signatures</span>
+        </div>
+        <span class="text-xs text-blue-200">落實知情同意與價值觀確認</span>
+      </div>
+
+      <div class="p-5 space-y-5 text-xs sm:text-sm">
+        
+        <!-- 病患價值觀確認 -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+          <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">一、病患與家屬價值觀與焦點確認：</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="font-semibold text-slate-700 block mb-1">對動脈瘤破裂焦慮程度：</span>
+              <div class="space-y-1">
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="sdm_anxiety" value="high" class="text-medblue-600"> 極度焦慮，嚴重影響日常生活作息</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="sdm_anxiety" value="mid" checked class="text-medblue-600"> 中度關切，希望了解各項處置利弊</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="sdm_anxiety" value="low" class="text-medblue-600"> 能理性接納統計數據並配合定期追蹤</label>
+              </div>
+            </div>
+            <div>
+              <span class="font-semibold text-slate-700 block mb-1">對侵入性手術/處置風險接受度：</span>
+              <div class="space-y-1">
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="sdm_risk_tol" value="active" class="text-medblue-600"> 積極進取（寧可承擔手術併發症風險亦求徹底處理）</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="sdm_risk_tol" value="balanced" checked class="text-medblue-600"> 審慎平衡（依客觀評分與醫師團隊建議決定）</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="sdm_risk_tol" value="passive" class="text-medblue-600"> 偏好保守（強烈希望迴避侵入處置與麻醉風險）</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 本次決策結論 -->
+        <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-200 space-y-2">
+          <h3 class="font-bold text-blue-950 text-xs uppercase tracking-wider">二、本次門診諮詢共同擬定之決策結論：</h3>
+          <div class="space-y-2 text-xs">
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="radio" name="sdm_final_decision" value="repair" class="mt-0.5 text-medblue-600">
+              <div>
+                <strong class="text-emerald-800">【建議積極治療】</strong> 經評估破裂風險高於處置風險，擬安排介入處置：
+                <div class="flex gap-4 mt-1 text-slate-600 pl-2">
+                  <label class="flex items-center gap-1"><input type="checkbox" class="rounded text-medblue-600"> 血管內介入栓塞 (線圈/支架/密網導流支架/WEB)</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="rounded text-medblue-600"> 開顱顯微夾閉術</label>
+                </div>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="radio" name="sdm_final_decision" value="conservative" checked class="mt-0.5 text-medblue-600">
+              <div>
+                <strong class="text-blue-800">【建議保守追蹤】</strong> 目前破裂風險極低或處置風險偏高，採取內科嚴格控制與追蹤方案：
+                <div class="flex gap-4 mt-1 text-slate-600 pl-2">
+                  <span>預計於：</span>
+                  <label class="flex items-center gap-1"><input type="radio" name="fup_months" value="3"> 3 個月</label>
+                  <label class="flex items-center gap-1"><input type="radio" name="fup_months" value="6" checked> 6 個月</label>
+                  <label class="flex items-center gap-1"><input type="radio" name="fup_months" value="12"> 12 個月</label>
+                  <span>回診安排：</span>
+                  <label class="flex items-center gap-1"><input type="checkbox" checked class="rounded text-medblue-600"> MRA</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="rounded text-medblue-600"> CTA</label>
+                </div>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="sdm_final_decision" value="dsa" class="text-medblue-600">
+              <div><strong class="text-amber-800">【安排進一步評估】</strong> 建議先安排數位減影血管攝影 (DSA) 以精準評估瘤頸與血流特徵後再定奪。</div>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="sdm_final_decision" value="pending" class="text-medblue-600">
+              <div><strong class="text-slate-700">【病患/家屬攜回考慮】</strong> 已充分知悉相關自然病程與處置風險，攜回資料商議後預約回診決策。</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 急診紅旗警訊 Red Flag Warnings -->
+        <div class="bg-amber-50 p-3.5 rounded-lg border border-amber-200 text-xs text-amber-950 space-y-1">
+          <div class="font-bold text-amber-900 flex items-center gap-1">
+            <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            居家重要生活叮嚀與急診紅旗警訊 (Red Flag Warnings)：
+          </div>
+          <p class="leading-relaxed">
+            1. <strong>嚴格控制血壓</strong>：早晚定時量測記錄，收縮壓建議控制於 120–130 mmHg 以下；絕對戒菸，避免閉氣用力搬重物。<br>
+            2. <strong>緊急送醫警訊</strong>：若突然發生「如雷擊般此生最劇烈之頭痛」、劇烈噴射嘔吐、脖子僵硬、眼瞼下垂複視、半身無力或意識改變，請<strong>立即撥打 119 送急診</strong>並主動告知具有腦動脈瘤病史！
+          </p>
+        </div>
+
+        <!-- 簽名欄位 -->
+        <div class="pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+          <div class="space-y-3">
+            <div>
+              <span class="text-slate-600 block mb-1">說明與諮詢醫師簽名：</span>
+              <div class="border-b border-slate-400 h-8 flex items-end font-semibold text-slate-800" id="sign-doctor-display"></div>
+            </div>
+            <div class="flex justify-between text-slate-500">
+              <span>諮詢日期時間：</span>
+              <span id="sign-datetime-now">202__ 年 __ 月 __ 日</span>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <span class="text-slate-600 block mb-1">病患本人 / 代理人簽名：</span>
+              <div class="border-b border-slate-400 h-8 flex items-end"></div>
+            </div>
+            <div class="flex gap-4 text-slate-600">
+              <span>與病患關係：</span>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="rel" checked> 本人</label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="rel"> 配偶</label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="rel"> 子女</label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="rel"> 其他</label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="no-print bg-slate-900 text-slate-400 text-xs py-4 text-center border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4">
+      <p>本工具僅供臨床神經醫學專業人員輔助評估與醫病溝通諮詢參考，非唯一醫療診斷依據。臨床治療請依病患個別狀態與院所多專科團隊決策為準。</p>
+      <p class="text-[11px] text-slate-500 mt-1">Based on PHASES Score (Lancet Neurol 2014) & UIATS Consensus (Neurology 2015).</p>
+    </div>
+  </footer>
+
+  <!-- Toast Notification System (Replacement for alert) -->
+  <div id="toast-container" class="no-print fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Initialize date fields
+    window.addEventListener('DOMContentLoaded', () => {
+      // toISOString 是 UTC，台灣清晨 8 點前會變成前一天
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const ptDate = document.getElementById('pt-date');
+      if (ptDate) ptDate.value = today;
+
+      const printDateDisplay = document.getElementById('print-date-display');
+      if (printDateDisplay) printDateDisplay.innerText = new Date().toLocaleDateString('zh-TW');
+
+      const signDatetimeNow = document.getElementById('sign-datetime-now');
+      if (signDatetimeNow) signDatetimeNow.innerText = new Date().toLocaleDateString('zh-TW');
+
+      // Initial Calculations
+      calcPhases();
+      calcUiats();
+      calcMorphologyRatios();
+    });
+
+    // Toast Alert Replacement
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold text-white transition-all transform duration-300 opacity-0 translate-y-2 flex items-center gap-2 ${
+        type === 'success' ? 'bg-emerald-600' :
+        type === 'warning' ? 'bg-amber-600' :
+        type === 'danger' ? 'bg-rose-600' : 'bg-medblue-700'
+      }`;
+      toast.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      
+      // Animate in
+      setTimeout(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      }, 50);
+
+      // Dismiss after 3s
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Morphology Aspect & Size Ratio Calculations
+    function calcMorphologyRatios() {
+      const size = parseFloat(document.getElementById('geom-size').value) || 0;
+      const neck = parseFloat(document.getElementById('geom-neck').value) || 0;
+      const height = parseFloat(document.getElementById('geom-height').value) || 0;
+      const parentVessel = parseFloat(document.getElementById('geom-parent').value) || 0;
+
+      const badgeAr = document.getElementById('badge-ar');
+      const badgeSr = document.getElementById('badge-sr');
+
+      let ar = 0;
+      let sr = 0;
+
+      if (neck > 0 && height > 0) {
+        ar = height / neck;
+        badgeAr.innerText = `${ar.toFixed(2)} ${ar > 1.6 ? '⚠️ 高破裂比 (>1.6)' : '(≤1.6)'}`;
+        badgeAr.className = `font-bold px-2 py-0.5 rounded ${ar > 1.6 ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-slate-200 text-slate-700'}`;
+      } else {
+        badgeAr.innerText = '-- (閾值 > 1.6)';
+        badgeAr.className = 'font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700';
+      }
+
+      if (parentVessel > 0 && size > 0) {
+        sr = size / parentVessel;
+        badgeSr.innerText = `${sr.toFixed(2)} ${sr > 3.0 ? '⚠️ 高破裂比 (>3.0)' : '(≤3.0)'}`;
+        badgeSr.className = `font-bold px-2 py-0.5 rounded ${sr > 3.0 ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-slate-200 text-slate-700'}`;
+      } else {
+        badgeSr.innerText = '-- (閾值 > 3.0)';
+        badgeSr.className = 'font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700';
+      }
+
+      // Auto update UIATS ratio checkbox if either ratio is high
+      const ratioCheckbox = document.getElementById('uiats_rep_morph_ratio');
+      if (ar > 1.6 || sr > 3.0) {
+        if (!ratioCheckbox.checked) {
+          ratioCheckbox.checked = true;
+          calcUiats();
+        }
+      }
+    }
+
+    // Sync site select to calculators
+    function syncSiteToCalculators(siteValue) {
+      // Sync to PHASES
+      if (siteValue === 'ICA') {
+        document.getElementById('phases_site_ica').checked = true;
+      } else if (siteValue === 'MCA') {
+        document.getElementById('phases_site_mca').checked = true;
+      } else {
+        document.getElementById('phases_site_post').checked = true;
+      }
+      calcPhases();
+
+      // Sync to UIATS
+      const uiatsLocRadios = document.getElementsByName('uiats_rep_loc');
+      if (siteValue === 'BasilarTip') {
+        uiatsLocRadios.forEach(r => { if (r.value === '5') r.checked = true; });
+      } else if (siteValue === 'PosteriorTrunk') {
+        uiatsLocRadios.forEach(r => { if (r.value === '4') r.checked = true; });
+      } else if (siteValue === 'ACoA' || siteValue === 'PCoA') {
+        uiatsLocRadios.forEach(r => { if (r.value === '2') r.checked = true; });
+      } else {
+        uiatsLocRadios.forEach(r => { if (r.value === '0') r.checked = true; });
+      }
+      calcUiats();
+    }
+
+    // Sync morphology checkbox
+    function syncMorphologyCheck(checked) {
+      document.getElementById('uiats_rep_morph_irreg').checked = checked;
+      calcUiats();
+    }
+
+    function syncMultiplicity(isMulti) {
+      document.getElementById('uiats_rep_multi').checked = isMulti;
+      calcUiats();
+    }
+
+    // PHASES 日本/芬蘭族裔同時是 UIATS 的危險因子
+    function syncEthnicity() {
+      document.getElementById('uiats_rep_hx_eth').checked = getRadioValue('phases_p') > 0;
+      calcUiats();
+    }
+
+    function syncGrowthCheck(checked) {
+      document.getElementById('uiats_rep_dyn_growth').checked = checked;
+      calcUiats();
+    }
+
+    // Handle Age input
+    function handleAgeInput(val) {
+      const age = parseInt(val, 10);
+      if (!age) return;
+
+      // Sync PHASES Age
+      if (age >= 70) {
+        document.getElementById('phases_a_ge70').checked = true;
+      } else {
+        document.getElementById('phases_a_under70').checked = true;
+      }
+      calcPhases();
+
+      // Sync UIATS Age Repair & Conservative
+      const repAgeRadios = document.getElementsByName('uiats_rep_age');
+      const consAgeRadios = document.getElementsByName('uiats_cons_age');
+
+      if (age < 40) {
+        repAgeRadios.forEach(r => { if (r.value === '4') r.checked = true; });
+        consAgeRadios.forEach(r => { if (r.value === '0') r.checked = true; });
+      } else if (age <= 60) {
+        repAgeRadios.forEach(r => { if (r.value === '3') r.checked = true; });
+        consAgeRadios.forEach(r => { if (r.value === '1') r.checked = true; });
+      } else if (age <= 70) {
+        repAgeRadios.forEach(r => { if (r.value === '2') r.checked = true; });
+        consAgeRadios.forEach(r => { if (r.value === '3') r.checked = true; });
+      } else if (age <= 80) {
+        repAgeRadios.forEach(r => { if (r.value === '1') r.checked = true; });
+        consAgeRadios.forEach(r => { if (r.value === '4') r.checked = true; });
+      } else {
+        repAgeRadios.forEach(r => { if (r.value === '0') r.checked = true; });
+        consAgeRadios.forEach(r => { if (r.value === '5') r.checked = true; });
+      }
+      calcUiats();
+    }
+
+    // One-click sync from top cards to calculations
+    function syncPatientDataToCalculators() {
+      const ageVal = document.getElementById('pt-age').value;
+      if (ageVal) handleAgeInput(ageVal);
+
+      const sizeVal = parseFloat(document.getElementById('geom-size').value);
+      if (sizeVal) {
+        // Sync PHASES Size
+        if (sizeVal < 7.0) document.getElementById('phases_s_under7').checked = true;
+        else if (sizeVal < 10.0) document.getElementById('phases_s_7to9').checked = true;
+        else if (sizeVal < 20.0) document.getElementById('phases_s_10to19').checked = true;
+        else document.getElementById('phases_s_ge20').checked = true;
+        calcPhases();
+
+        // Sync UIATS Size
+        const repSizeRadios = document.getElementsByName('uiats_rep_size');
+        if (sizeVal <= 3.9) repSizeRadios.forEach(r => { if (r.value === '0') r.checked = true; });
+        else if (sizeVal < 7.0) repSizeRadios.forEach(r => { if (r.value === '1') r.checked = true; });
+        else if (sizeVal < 13.0) repSizeRadios.forEach(r => { if (r.value === '2') r.checked = true; });
+        else if (sizeVal < 25.0) repSizeRadios.forEach(r => { if (r.value === '3') r.checked = true; });
+        else repSizeRadios.forEach(r => { if (r.value === '4') r.checked = true; });
+
+        const consSizeRadios = document.getElementsByName('uiats_cons_size');
+        if (sizeVal < 6.0) consSizeRadios.forEach(r => { if (r.value === '0') r.checked = true; });
+        else if (sizeVal <= 10.0) consSizeRadios.forEach(r => { if (r.value === '1') r.checked = true; });
+        else if (sizeVal <= 20.0) consSizeRadios.forEach(r => { if (r.value === '3') r.checked = true; });
+        else consSizeRadios.forEach(r => { if (r.value === '5') r.checked = true; });
+        calcUiats();
+      }
+
+      const siteVal = document.getElementById('geom-site-select').value;
+      if (siteVal) syncSiteToCalculators(siteVal);
+
+      calcMorphologyRatios();
+      showToast('已將基本資料、年齡、尺寸與解剖位置自動同步至 PHASES 與 UIATS 量表！', 'success');
+    }
+
+    // -------------------------------------------------------------
+    // PHASES Score Calculation
+    // -------------------------------------------------------------
+    function getRadioValue(name) {
+      const radios = document.getElementsByName(name);
+      for (const r of radios) {
+        if (r.checked) return parseInt(r.value, 10);
+      }
+      return 0;
+    }
+
+    function calcPhases() {
+      const p = getRadioValue('phases_p');
+      const h = getRadioValue('phases_h');
+      const a = getRadioValue('phases_a');
+      const s1 = getRadioValue('phases_s1');
+      const e = getRadioValue('phases_e');
+      const s2 = getRadioValue('phases_s2');
+
+      const total = p + h + a + s1 + e + s2;
+
+      // Update score badges
+      document.getElementById('phases-badge-score').innerText = `${total} 分`;
+      document.getElementById('phases-result-score').innerText = total;
+      document.getElementById('nav-phases-score').innerText = `${total} 分`;
+
+      // 5-Year Risk Mapping
+      let rateText = "0.4";
+      let rateNumeric = 0.4;
+      let tier = "低破裂風險";
+      let tierClass = "bg-emerald-100 text-emerald-800";
+      let interpretation = "對應 5 年自然累積破裂率極低（約 0.4%）。若動脈瘤外型規則且無生長，通常建議生活管理並安排影像定期追蹤。";
+
+      // Greving et al. Lancet Neurol 2014, Figure 3：各分數對應之 5 年破裂率
+      const PHASES_RISK = { 3: 0.7, 4: 0.9, 5: 1.3, 6: 1.7, 7: 2.4, 8: 3.2, 9: 4.3, 10: 5.3, 11: 7.2 };
+      rateNumeric = total <= 2 ? 0.4 : (total >= 12 ? 17.8 : PHASES_RISK[total]);
+      rateText = rateNumeric.toFixed(1);
+
+      if (total <= 2) {
+        tier = "極低破裂風險";
+        tierClass = "bg-emerald-100 text-emerald-800";
+      } else if (total <= 4) {
+        tier = "低破裂風險";
+        tierClass = "bg-emerald-100 text-emerald-800";
+        interpretation = `對應 5 年累積破裂率約 ${rateText}%。破裂風險通常低於預防性治療之處置風險。`;
+      } else if (total <= 6) {
+        tier = "輕中度風險";
+        tierClass = "bg-blue-100 text-blue-800";
+        interpretation = `對應 5 年累積破裂率約 ${rateText}%。需搭配病患年齡、形態特徵與心理焦慮程度，綜合權衡治療利益。`;
+      } else if (total <= 9) {
+        tier = "中高破裂風險";
+        tierClass = "bg-amber-100 text-amber-800";
+        interpretation = `對應 5 年累積破裂率約 ${rateText}%。破裂威脅逐漸上升，應詳細評估治療可行性與預期處置風險。`;
+      } else if (total <= 11) {
+        tier = "高破裂風險";
+        tierClass = "bg-rose-200 text-rose-900";
+        interpretation = `對應 5 年累積破裂率約 ${rateText}%。破裂風險已可能與預防性治療之處置風險相當或更高，建議轉介神經血管團隊評估。`;
+      } else {
+        tier = "極高破裂風險";
+        tierClass = "bg-rose-900 text-white";
+        interpretation = "對應 5 年累積破裂率約 17.8%（95% CI 15.2–20.7%）。建議儘速由神經外科 / 神經介入團隊評估處置。";
+      }
+
+      document.getElementById('phases-percentage-display').innerHTML = `${rateText} <span class="text-base font-bold text-slate-500">%</span>`;
+      document.getElementById('nav-phases-rate').innerText = `5年破裂率 ${rateText}%`;
+      
+      const tierTag = document.getElementById('phases-tier-tag');
+      tierTag.innerText = tier;
+      tierTag.className = `px-2 py-0.5 rounded text-[11px] font-bold ${tierClass}`;
+
+      document.getElementById('phases-interpretation-text').innerText = interpretation;
+
+      // Update progress bar (滿格對應 15%)
+      const barPercent = Math.min(100, Math.max(5, (rateNumeric / 15) * 100));
+      const riskBar = document.getElementById('phases-risk-bar');
+      riskBar.style.width = `${barPercent}%`;
+      if (rateNumeric < 1.5) {
+        riskBar.className = 'bg-emerald-500 h-2.5 rounded-full transition-all duration-500';
+      } else if (rateNumeric < 4.5) {
+        riskBar.className = 'bg-amber-500 h-2.5 rounded-full transition-all duration-500';
+      } else {
+        riskBar.className = 'bg-rose-600 h-2.5 rounded-full transition-all duration-500';
+      }
+    }
+
+    // -------------------------------------------------------------
+    // UIATS Score & Balance Calculation
+    // -------------------------------------------------------------
+    function calcUiats() {
+      // 1. Calculate Favor Repair
+      let repairScore = 0;
+      repairScore += getRadioValue('uiats_rep_age');
+      repairScore += getRadioValue('uiats_rep_size');
+      repairScore += getRadioValue('uiats_rep_loc');
+
+      if (document.getElementById('uiats_rep_morph_irreg').checked) repairScore += 3;
+      if (document.getElementById('uiats_rep_morph_ratio').checked) repairScore += 1;
+
+      if (document.getElementById('uiats_rep_sym_cn').checked) repairScore += 4;
+      if (document.getElementById('uiats_rep_sym_mass').checked) repairScore += 4;
+      if (document.getElementById('uiats_rep_sym_ischemic').checked) repairScore += 3;
+      if (document.getElementById('uiats_rep_dyn_growth').checked) repairScore += 4;
+      if (document.getElementById('uiats_rep_dyn_denovo').checked) repairScore += 3;
+
+      if (document.getElementById('uiats_rep_hx_sah').checked) repairScore += 4;
+      if (document.getElementById('uiats_rep_hx_smoke').checked) repairScore += 3;
+      if (document.getElementById('uiats_rep_hx_fam').checked) repairScore += 3;
+      if (document.getElementById('uiats_rep_hx_htn').checked) repairScore += 2;
+      if (document.getElementById('uiats_rep_hx_qol').checked) repairScore += 2;
+      if (document.getElementById('uiats_rep_hx_eth').checked) repairScore += 2;
+      if (document.getElementById('uiats_rep_hx_adpkd').checked) repairScore += 2;
+      if (document.getElementById('uiats_rep_hx_drug').checked) repairScore += 2;
+      if (document.getElementById('uiats_rep_hx_alcohol').checked) repairScore += 1;
+      if (document.getElementById('uiats_rep_sym_epi').checked) repairScore += 1;
+      if (document.getElementById('uiats_rep_multi').checked) repairScore += 1;
+      if (document.getElementById('uiats_rep_steno').checked) repairScore += 1;
+
+      // 2. Calculate Favor Conservative
+      let consScore = 5; // Constant factor
+      consScore += getRadioValue('uiats_cons_age');
+      consScore += getRadioValue('uiats_cons_size');
+      consScore += getRadioValue('uiats_cons_complex');
+      consScore += getRadioValue('uiats_cons_life');
+
+      if (document.getElementById('uiats_cons_co_cog').checked) consScore += 3;
+      if (document.getElementById('uiats_cons_co_coag').checked) consScore += 2;
+      if (document.getElementById('uiats_cons_co_psych').checked) consScore += 2;
+
+      // 3. Difference Delta
+      const delta = repairScore - consScore;
+
+      // Update subtotals and displays
+      document.getElementById('uiats-repair-subtotal').innerText = `小計：${repairScore} 分`;
+      document.getElementById('uiats-cons-subtotal').innerText = `小計：${consScore} 分`;
+      document.getElementById('meter-repair-score').innerText = repairScore;
+      document.getElementById('meter-cons-score').innerText = consScore;
+
+      const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
+      document.getElementById('uiats-header-delta').innerText = `${deltaStr} 分`;
+      document.getElementById('uiats-final-delta').innerText = deltaStr;
+      document.getElementById('nav-uiats-delta').innerText = `${deltaStr} 分`;
+
+      // Update visual balance bar
+      const totalPoints = repairScore + consScore;
+      let repairPercent = 50;
+      let consPercent = 50;
+      if (totalPoints > 0) {
+        repairPercent = Math.round((repairScore / totalPoints) * 100);
+        consPercent = 100 - repairPercent;
+      }
+      document.getElementById('bar-repair-fill').style.width = `${repairPercent}%`;
+      document.getElementById('bar-cons-fill').style.width = `${consPercent}%`;
+
+      // Determine Verdict
+      const meterBadge = document.getElementById('meter-verdict-badge');
+      const finalBox = document.getElementById('uiats-final-box');
+      const finalTitle = document.getElementById('uiats-final-title');
+      const finalDesc = document.getElementById('uiats-final-desc');
+      const finalBadge = document.getElementById('uiats-final-badge');
+      const navVerdict = document.getElementById('nav-uiats-verdict');
+
+      if (delta >= 3) {
+        // Favor Repair
+        meterBadge.innerText = '建議積極治療 (Favor Repair)';
+        meterBadge.className = 'px-3 py-1 rounded-full text-xs font-bold shadow-sm bg-emerald-600 text-white';
+
+        finalBox.className = 'rounded-xl p-4 border border-emerald-300 bg-emerald-50/70 flex flex-col md:flex-row items-center justify-between gap-4';
+        finalTitle.innerText = '建議積極治療 (Favors Aneurysm Repair)';
+        finalTitle.className = 'text-lg font-bold text-emerald-900';
+        finalDesc.innerText = '差值 Δ ≥ +3 分。評估顯示動脈瘤之破裂風險、餘命年限或臨床症狀等威脅，已顯著超越微創介入或開顱夾閉處置所承擔之圍手術期風險。建議安排神經專科醫師討論具體治療路徑。';
+        
+        finalBadge.innerText = '傾向治療 (Repair)';
+        finalBadge.className = 'text-xs px-3 py-2 rounded-lg font-bold text-center min-w-[120px] bg-emerald-600 text-white';
+
+        navVerdict.innerText = '建議積極治療 (Δ ≥ +3)';
+        navVerdict.className = 'text-xs px-2 py-0.5 rounded bg-emerald-900 text-emerald-200 border border-emerald-700';
+
+      } else if (delta <= -3) {
+        // Favor Conservative
+        meterBadge.innerText = '建議保守追蹤 (Favor Conservative)';
+        meterBadge.className = 'px-3 py-1 rounded-full text-xs font-bold shadow-sm bg-rose-600 text-white';
+
+        finalBox.className = 'rounded-xl p-4 border border-rose-300 bg-rose-50/70 flex flex-col md:flex-row items-center justify-between gap-4';
+        finalTitle.innerText = '建議保守觀察與影像追蹤 (Favors Conservative Management)';
+        finalTitle.className = 'text-lg font-bold text-rose-900';
+        finalDesc.innerText = '差值 Δ ≤ -3 分。評估顯示動脈瘤目前之自然破裂風險極低，或是處置本身承擔之併發症代價（高齡、共病、處置固有常數、解剖難度）高於動脈瘤自身的危險。建議以內科生活管理與定期 MRA/CTA 追蹤為主。';
+
+        finalBadge.innerText = '傾向保守 (Conservative)';
+        finalBadge.className = 'text-xs px-3 py-2 rounded-lg font-bold text-center min-w-[120px] bg-rose-600 text-white';
+
+        navVerdict.innerText = '建議保守追蹤 (Δ ≤ -3)';
+        navVerdict.className = 'text-xs px-2 py-0.5 rounded bg-rose-900 text-rose-200 border border-rose-700';
+
+      } else {
+        // Clinical Equipoise
+        meterBadge.innerText = '臨床均勢區 (Clinical Equipoise)';
+        meterBadge.className = 'px-3 py-1 rounded-full text-xs font-bold shadow-sm bg-amber-500 text-white';
+
+        finalBox.className = 'rounded-xl p-4 border border-amber-300 bg-amber-50/70 flex flex-col md:flex-row items-center justify-between gap-4';
+        finalTitle.innerText = '臨床均勢狀態 (Clinical Equipoise / Inconclusive)';
+        finalTitle.className = 'text-lg font-bold text-amber-900';
+        finalDesc.innerText = '差值介於 -2 至 +2 分之間。治療與保守追蹤在客觀統計天平上互有千秋，未具壓倒性優劣。此時決策應高度回歸病患與家屬的個人價值觀、心理恐懼程度、對手術風險的耐受度與工作生活規劃共同定奪。';
+
+        finalBadge.innerText = '均勢討論 (Equipoise)';
+        finalBadge.className = 'text-xs px-3 py-2 rounded-lg font-bold text-center min-w-[120px] bg-amber-500 text-white';
+
+        navVerdict.innerText = '臨床均勢 (-2 ≤ Δ ≤ +2)';
+        navVerdict.className = 'text-xs px-2 py-0.5 rounded bg-amber-900 text-amber-200 border border-amber-700';
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Preset Demo Cases
+    // -------------------------------------------------------------
+    function loadSampleCase(type) {
+      if (type === 'high_risk') {
+        // 54 歲女性，8.5 mm ACoA 動脈瘤，吸菸，有 Daughter sac，高血壓
+        document.getElementById('pt-name').value = '林女士 (範例)';
+        document.getElementById('pt-chart').value = 'UIA-88201';
+        document.getElementById('pt-age').value = '54';
+        document.getElementById('pt-gender').value = 'female';
+        document.getElementById('pt-doctor').value = '陳醫師';
+
+        // Morphology
+        document.getElementById('geom-size').value = '8.5';
+        document.getElementById('geom-neck').value = '3.8';
+        document.getElementById('geom-height').value = '7.2';
+        document.getElementById('geom-parent').value = '2.2';
+        document.getElementById('geom-site-select').value = 'ACoA';
+        document.getElementById('geom-daughter').checked = true;
+        document.getElementById('geom-growth').checked = true;
+
+        // PHASES inputs
+        document.querySelector('input[name="phases_p"][value="0"]').checked = true;
+        document.getElementById('phases_h_yes').checked = true;
+        document.getElementById('phases_a_under70').checked = true;
+        document.getElementById('phases_s_7to9').checked = true;
+        document.getElementById('phases_e_yes').checked = false;
+        document.getElementById('phases_site_post').checked = true; // ACoA
+
+        // UIATS inputs
+        // Repair
+        document.querySelector('input[name="uiats_rep_age"][value="3"]').checked = true; // 40-60
+        document.querySelector('input[name="uiats_rep_size"][value="2"]').checked = true; // 7-12.9
+        document.querySelector('input[name="uiats_rep_loc"][value="2"]').checked = true; // ACoA
+        document.getElementById('uiats_rep_morph_irreg').checked = true;
+        document.getElementById('uiats_rep_morph_ratio').checked = true;
+        document.getElementById('uiats_rep_dyn_growth').checked = true;
+        document.getElementById('uiats_rep_hx_smoke').checked = true;
+        document.getElementById('uiats_rep_hx_htn').checked = true;
+        document.getElementById('uiats_rep_hx_qol').checked = true;
+
+        // Cons
+        document.querySelector('input[name="uiats_cons_age"][value="1"]').checked = true; // 40-60
+        document.querySelector('input[name="uiats_cons_size"][value="1"]').checked = true; // 6-10
+        document.querySelector('input[name="uiats_cons_complex"][value="0"]').checked = true;
+        document.querySelector('input[name="uiats_cons_life"][value="1"]').checked = true;
+        document.getElementById('uiats_cons_co_cog').checked = false;
+        document.getElementById('uiats_cons_co_coag').checked = false;
+        document.getElementById('uiats_cons_co_psych').checked = false;
+
+        calcMorphologyRatios();
+        calcPhases();
+        calcUiats();
+        showToast('已載入高危動脈瘤範例：54歲、8.5mm ACoA、有生長與分葉，計算顯示建議積極治療！', 'danger');
+
+      } else if (type === 'low_risk') {
+        // 73 歲男性，3.2 mm ICA 床突旁動脈瘤，無症狀，無吸菸
+        document.getElementById('pt-name').value = '張先生 (範例)';
+        document.getElementById('pt-chart').value = 'UIA-39102';
+        document.getElementById('pt-age').value = '73';
+        document.getElementById('pt-gender').value = 'male';
+        document.getElementById('pt-doctor').value = '王醫師';
+
+        // Morphology
+        document.getElementById('geom-size').value = '3.2';
+        document.getElementById('geom-neck').value = '2.8';
+        document.getElementById('geom-height').value = '2.5';
+        document.getElementById('geom-parent').value = '3.5';
+        document.getElementById('geom-site-select').value = 'ICA';
+        document.getElementById('geom-daughter').checked = false;
+        document.getElementById('geom-growth').checked = false;
+
+        // PHASES
+        document.querySelector('input[name="phases_p"][value="0"]').checked = true;
+        document.querySelector('input[name="phases_h"][value="0"]').checked = true;
+        document.getElementById('phases_a_ge70').checked = true;
+        document.getElementById('phases_s_under7').checked = true;
+        document.querySelector('input[name="phases_e"][value="0"]').checked = true;
+        document.getElementById('phases_site_ica').checked = true;
+
+        // UIATS
+        // Repair
+        document.querySelector('input[name="uiats_rep_age"][value="1"]').checked = true; // 71-80
+        document.querySelector('input[name="uiats_rep_size"][value="0"]').checked = true; // <=3.9
+        document.querySelector('input[name="uiats_rep_loc"][value="0"]').checked = true; // ICA
+        document.getElementById('uiats_rep_morph_irreg').checked = false;
+        document.getElementById('uiats_rep_morph_ratio').checked = false;
+        document.getElementById('uiats_rep_dyn_growth').checked = false;
+        document.getElementById('uiats_rep_dyn_denovo').checked = false;
+        document.getElementById('uiats_rep_sym_cn').checked = false;
+        document.getElementById('uiats_rep_sym_mass').checked = false;
+        document.getElementById('uiats_rep_sym_ischemic').checked = false;
+        document.getElementById('uiats_rep_hx_sah').checked = false;
+        document.getElementById('uiats_rep_hx_smoke').checked = false;
+        document.getElementById('uiats_rep_hx_fam').checked = false;
+        document.getElementById('uiats_rep_hx_htn').checked = false;
+        document.getElementById('uiats_rep_hx_qol').checked = false;
+        ['uiats_rep_hx_eth', 'uiats_rep_hx_adpkd', 'uiats_rep_hx_drug', 'uiats_rep_hx_alcohol',
+         'uiats_rep_sym_epi', 'uiats_rep_multi', 'uiats_rep_steno'].forEach(id => document.getElementById(id).checked = false);
+        document.querySelector('input[name="multiplicity"][value="single"]').checked = true;
+
+        // Cons
+        document.querySelector('input[name="uiats_cons_age"][value="4"]').checked = true; // 71-80
+        document.querySelector('input[name="uiats_cons_size"][value="0"]').checked = true; // <6
+        document.querySelector('input[name="uiats_cons_complex"][value="0"]').checked = true;
+        document.querySelector('input[name="uiats_cons_life"][value="3"]').checked = true; // 5-10 yrs
+        document.getElementById('uiats_cons_co_cog').checked = false;
+        document.getElementById('uiats_cons_co_coag').checked = false;
+        document.getElementById('uiats_cons_co_psych').checked = false;
+
+        calcMorphologyRatios();
+        calcPhases();
+        calcUiats();
+        showToast('已載入低危動脈瘤範例：73歲、3.2mm ICA海綿竇旁，破裂率極低，建議保守追蹤！', 'success');
+      }
+    }
+
+    // Reset Form
+    function resetAllFields() {
+      document.getElementById('pt-name').value = '';
+      document.getElementById('pt-chart').value = '';
+      document.getElementById('pt-age').value = '';
+      document.getElementById('geom-size').value = '';
+      document.getElementById('geom-neck').value = '';
+      document.getElementById('geom-height').value = '';
+      document.getElementById('geom-parent').value = '';
+      document.getElementById('geom-daughter').checked = false;
+      document.getElementById('geom-growth').checked = false;
+      document.getElementById('geom-awe').checked = false;
+
+      // Reset checkboxes
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        if (!cb.closest('.no-reset')) cb.checked = false;
+      });
+
+      // Reset default radio buttons
+      document.querySelector('input[name="multiplicity"][value="single"]').checked = true;
+      document.querySelector('input[name="phases_p"][value="0"]').checked = true;
+      document.querySelector('input[name="phases_h"][value="0"]').checked = true;
+      document.querySelector('input[name="phases_a"][value="0"]').checked = true;
+      document.querySelector('input[name="phases_s1"][value="0"]').checked = true;
+      document.querySelector('input[name="phases_e"][value="0"]').checked = true;
+      document.querySelector('input[name="phases_s2"][value="0"]').checked = true;
+
+      document.querySelector('input[name="uiats_rep_age"][value="3"]').checked = true;
+      document.querySelector('input[name="uiats_rep_size"][value="0"]').checked = true;
+      document.querySelector('input[name="uiats_rep_loc"][value="0"]').checked = true;
+
+      document.querySelector('input[name="uiats_cons_age"][value="1"]').checked = true;
+      document.querySelector('input[name="uiats_cons_size"][value="0"]').checked = true;
+      document.querySelector('input[name="uiats_cons_complex"][value="0"]').checked = true;
+      document.querySelector('input[name="uiats_cons_life"][value="1"]').checked = true;
+
+      calcMorphologyRatios();
+      calcPhases();
+      calcUiats();
+      showToast('表單已重設為初始狀態', 'info');
+    }
+  </script>
+</body>
+</html>
